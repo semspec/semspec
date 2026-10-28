@@ -204,23 +204,45 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
   // view starts at its top left corner, so the root of the scope is on the screen.
   const vw = useStore((s) => s.width);
   const vh = useStore((s) => s.height);
+  const domNode = useStore((s) => s.domNode);
   const fit = useCallback(
     (animate = true) => {
-      const b = flow.getNodesBounds(flow.getNodes());
-      if (!b.width || !vw || !vh) return;
-      const z = Math.min(1, Math.max(0.7, Math.min((vw - 48) / b.width, (vh - 110) / b.height)));
-      const x = b.width * z + 48 <= vw ? (vw - b.width * z) / 2 - b.x * z : 24 - b.x * z;
-      const y = b.height * z + 110 <= vh ? (vh - b.height * z) / 2 - b.y * z + 24 : 64 - b.y * z;
+      // The bounds come from the positions of the layout, and the size from the element, so the fit
+      // does not depend on what React Flow has measured yet.
+      const rect = domNode?.getBoundingClientRect();
+      const size = SIZE[mode];
+      const pts = ids.map((id) => positions.get(id)).filter((p): p is Pos => !!p);
+      if (!rect || !rect.width || !pts.length) return;
+      const minX = Math.min(...pts.map((p) => p.x));
+      const minY = Math.min(...pts.map((p) => p.y));
+      const width = Math.max(...pts.map((p) => p.x)) + size.w - minX;
+      const height = Math.max(...pts.map((p) => p.y)) + size.h - minY;
+      const z = Math.min(1, Math.max(0.7, Math.min((rect.width - 48) / width, (rect.height - 110) / height)));
+      const x = width * z + 48 <= rect.width ? (rect.width - width * z) / 2 - minX * z : 24 - minX * z;
+      // A canvas taller than the view shows the root of the scope in the middle of the left edge.
+      const rootPos = positions.get(v.scope?.type === 'node' ? v.scope.id : (v.walkRoot ?? ids[0]));
+      const y =
+        height * z + 110 <= rect.height
+          ? (rect.height - height * z) / 2 - minY * z + 24
+          : rootPos
+            ? rect.height / 2 - (rootPos.y + size.h / 2) * z + 24
+            : 64 - minY * z;
       flow.setViewport({ x, y, zoom: z }, { duration: animate ? 250 : 0 });
     },
-    [flow, vw, vh],
+    [flow, domNode, ids, positions, mode, v.scope, v.walkRoot],
   );
+  // Fit on a new scope, a re-layout and a change of mode. A walk step keeps the view. A change of
+  // the panel size fits again, until the reader moves or zooms the canvas.
+  const moved = useRef(false);
   useEffect(() => {
+    moved.current = false;
+  }, [v.layoutTick, mode, scopeKey, confirmed]);
+  useEffect(() => {
+    if (moved.current) return;
     const t = setTimeout(() => fit(false), 80);
     return () => clearTimeout(t);
-    // Fit on a new scope, a re-layout and a change of mode. A walk step keeps the view.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [v.layoutTick, mode, scopeKey, confirmed, vw > 0 && vh > 0]);
+  }, [v.layoutTick, mode, scopeKey, confirmed, Math.round(vw / 40), Math.round(vh / 40)]);
 
   if (ids.length > BIG && !confirmed) {
     return (
@@ -270,6 +292,10 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       onNodeMouseEnter={(_, n) => setHovered(n.id)}
       onNodeMouseLeave={() => setHovered(null)}
       onPaneClick={() => v.select(null)}
+      onMoveStart={(event) => {
+        // An event means that the reader moved the canvas. A move by the code has none.
+        if (event) moved.current = true;
+      }}
       zoomOnDoubleClick={false}
       nodesConnectable={false}
       minZoom={0.1}
