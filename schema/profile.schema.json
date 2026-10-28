@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://requirement-explorer.invalid/schema/profile.schema.json",
+  "title": "Requirement Explorer profile",
+  "description": "A profile tells the explorer what the fields of a graph mean: the node kinds, how nodes nest, which fields name other nodes, the lifecycle, the title rules, the chips and the details.",
+  "type": "object",
+  "required": ["project", "source", "fields", "lifecycle", "kinds", "edges"],
+  "additionalProperties": false,
+  "properties": {
+    "project": { "type": "string", "description": "The name of the project. The page shows it as secondary text." },
+    "source": {
+      "type": "object",
+      "required": ["nodes", "id", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "nodes": { "type": "string", "description": "The key of the list of nodes in the graph." },
+        "id": { "type": "string", "description": "The key of the id of a node." },
+        "kind": { "type": "string", "description": "The key of the kind of a node." }
+      }
+    },
+    "fields": {
+      "type": "object",
+      "required": ["title", "statement"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "array", "items": { "type": "string" }, "description": "Fields that hold a title. The first non-empty one wins. A node with none gets a title from its id." },
+        "idPrefixPattern": { "type": "string", "description": "A regular expression. The part of the id that it matches is cut before the id becomes a title." },
+        "statement": { "type": "array", "items": { "type": "string" }, "description": "Fields that hold the main text of a node. The first non-empty one wins." },
+        "level": { "type": "string", "description": "The field of the level of a node, for example a priority." },
+        "delivery": { "type": "string", "description": "The field of the delivery state of a node, for example a release." },
+        "decided": { "type": "string", "description": "The field of a date." }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "required": ["field", "fallback"],
+      "additionalProperties": false,
+      "properties": {
+        "field": { "type": "string" },
+        "fallback": { "type": "string", "description": "The state of a node that has none." },
+        "byKind": { "type": "object", "additionalProperties": { "type": "string" }, "description": "A fallback for 1 kind." },
+        "states": {
+          "type": "object",
+          "additionalProperties": { "type": "object", "properties": { "muted": { "type": "boolean" } }, "additionalProperties": false },
+          "description": "A state with `muted` set shows struck through and dimmed. The node counts as not live."
+        }
+      }
+    },
+    "kinds": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/kind" } },
+    "edges": {
+      "type": "object",
+      "description": "1 entry for each edge name: the parent and link fields, and the names of the part edge and of the check edge.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["labels"],
+        "additionalProperties": false,
+        "properties": {
+          "labels": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 2, "description": "The label from the source and the label from the target." },
+          "down": { "type": "boolean", "description": "Set when the target is the more general node. The layout puts it on the left." }
+        }
+      }
+    },
+    "links": { "type": "array", "items": { "type": "string" }, "description": "Fields that hold lists of node ids and are not parent fields." },
+    "refs": {
+      "type": "object",
+      "required": ["field", "target", "note"],
+      "additionalProperties": false,
+      "description": "A field that holds a list of objects, each with the id of a node and a note.",
+      "properties": { "field": { "type": "string" }, "target": { "type": "string" }, "note": { "type": "string" } }
+    },
+    "supersededBy": { "type": "string", "description": "The field that names the node that replaces this node." },
+    "linkedScopeEdges": { "type": "array", "items": { "type": "string" }, "description": "The edges that pull a linked node into the scope of a node." },
+    "parts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "owner", "field", "id", "text", "edge"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "type": "string", "description": "The kind that each part becomes." },
+          "owner": { "type": "string", "description": "The kind of the node that owns the parts." },
+          "field": { "type": "string", "description": "The field of the owner that holds the list of parts." },
+          "id": { "type": "string", "description": "The field of a part that holds its name." },
+          "text": { "type": "string", "description": "The field of a part that holds its text." },
+          "idPrefixPattern": { "type": "string" },
+          "setup": { "type": "string" },
+          "scope": { "type": "string" },
+          "edge": { "type": "string", "description": "The name of the edge from a part to its owner." },
+          "sectionTitle": { "type": "string" }
+        }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "required": ["kind", "field", "edge", "typeField"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "description": "The kind that each check becomes." },
+        "field": { "type": "string", "description": "The field that holds a list of checks, on a node or on a part." },
+        "edge": { "type": "string" },
+        "typeField": { "type": "string", "description": "The field of a check that holds its type." },
+        "types": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["key", "title"],
+            "additionalProperties": false,
+            "properties": {
+              "key": { "type": "array", "items": { "type": "string" }, "description": "Fields that make the identity of a check. 2 checks with the same type and key share 1 node." },
+              "title": { "type": "array", "items": { "type": "string" }, "description": "Fields for the title. The first non-empty one wins." },
+              "titlePrefix": { "type": "string" }
+            }
+          }
+        },
+        "detail": { "type": "object" },
+        "sectionTitle": { "type": "string" },
+        "noneText": { "type": "string" }
+      }
+    },
+    "facets": {
+      "type": "object",
+      "required": ["groupKind", "groupLabel"],
+      "additionalProperties": false,
+      "properties": { "groupKind": { "type": "string" }, "groupLabel": { "type": "string" } }
+    },
+    "entry": {
+      "type": "object",
+      "required": ["kind", "childKind", "title", "countLabel"],
+      "additionalProperties": false,
+      "description": "The start page lists the nodes of this kind, with the number of their children.",
+      "properties": { "kind": { "type": "string" }, "childKind": { "type": "string" }, "title": { "type": "string" }, "countLabel": { "type": "string" } }
+    },
+    "groups": { "type": "object", "properties": { "hierarchy": { "type": "string" } }, "additionalProperties": false },
+    "details": { "type": "object", "description": "What the details panel shows. See the README." }
+  },
+  "$defs": {
+    "chip": {
+      "oneOf": [
+        { "enum": ["lifecycle", "members", "coverage", "verified", "verifyTypes", "checkType"] },
+        {
+          "type": "object",
+          "required": ["field"],
+          "additionalProperties": false,
+          "properties": {
+            "field": { "type": "string" },
+            "format": { "enum": ["upper"] },
+            "tone": { "enum": ["life", "muted", "count", "level", "good", "warn", "plain"] },
+            "template": { "type": "string", "description": "Text with {value}." },
+            "slice": { "type": "integer", "minimum": 1 }
+          }
+        }
+      ]
+    },
+    "kind": {
+      "type": "object",
+      "required": ["id", "label", "plural", "role", "color"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "plural": { "type": "string" },
+        "prefix": { "type": "string" },
+        "role": { "enum": ["hierarchy", "part", "linked", "check"] },
+        "color": {
+          "type": "object",
+          "required": ["light", "dark"],
+          "additionalProperties": false,
+          "properties": { "light": { "type": "string" }, "dark": { "type": "string" } }
+        },
+        "parents": {
+          "type": "array",
+          "items": { "type": "array", "items": { "type": "string" } },
+          "description": "Groups of parent fields. The first group that names a node places the node in the tree. Every group makes the scope."
+        },
+        "placedUnder": { "type": "string", "description": "A node of this kind is placed when it reaches a node of the named kind." },
+        "unplacedLabel": { "type": "string" },
+        "citation": {
+          "type": "object",
+          "required": ["source", "parts"],
+          "additionalProperties": false,
+          "properties": {
+            "source": { "type": "string", "description": "A path to the field that names the source." },
+            "subtitle": { "type": "string" },
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["field"],
+                "additionalProperties": false,
+                "properties": { "field": { "type": "string" }, "prefix": { "type": "string" }, "wrap": { "type": "string", "minLength": 2, "maxLength": 2 } }
+              }
+            }
+          }
+        },
+        "chips": { "type": "array", "items": { "$ref": "#/$defs/chip" } }
+      }
+    }
+  }
+}

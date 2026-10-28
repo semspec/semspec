@@ -1,0 +1,57 @@
+{
+  "project": "Heater safety case",
+  "source": { "nodes": "items", "id": "key", "kind": "type" },
+  "fields": {
+    "title": ["label"],
+    "idPrefixPattern": "^[a-z]+-",
+    "statement": ["claim", "description"],
+    "level": "integrity",
+    "delivery": "phase"
+  },
+  "lifecycle": { "field": "state", "fallback": "open", "states": { "retired": { "muted": true } } },
+  "kinds": [
+    { "id": "goal", "label": "Goal", "plural": "goals", "prefix": "g-", "role": "hierarchy", "color": { "light": "#2b8a3e", "dark": "#69db7c" }, "chips": ["lifecycle", "members"] },
+    { "id": "subgoal", "label": "Subgoal", "plural": "subgoals", "prefix": "sg-", "role": "hierarchy", "parents": [["goals"]], "color": { "light": "#5c940d", "dark": "#a9e34b" }, "chips": ["lifecycle", "coverage"] },
+    {
+      "id": "mitigation",
+      "label": "Mitigation",
+      "plural": "mitigations",
+      "prefix": "mit-",
+      "role": "hierarchy",
+      "parents": [["subgoals"], ["goals"]],
+      "placedUnder": "subgoal",
+      "unplacedLabel": "Not placed under a subgoal",
+      "color": { "light": "#d9480f", "dark": "#ffa94d" },
+      "chips": [{ "field": "integrity", "format": "upper", "tone": "level" }, "lifecycle"]
+    },
+    { "id": "argument", "label": "Argument", "plural": "arguments", "role": "part", "color": { "light": "#c2255c", "dark": "#f783ac" }, "chips": ["verified"] },
+    { "id": "hazard", "label": "Hazard", "plural": "hazards", "prefix": "hz-", "role": "linked", "color": { "light": "#e03131", "dark": "#ff8787" }, "chips": [{ "field": "severity" }] },
+    { "id": "evidence", "label": "Evidence", "plural": "evidence", "role": "check", "color": { "light": "#6c757d", "dark": "#ced4da" }, "chips": ["checkType"] }
+  ],
+  "edges": {
+    "goals": { "labels": ["Supports goal", "Supported by"], "down": true },
+    "subgoals": { "labels": ["Supports subgoal", "Supported by"], "down": true },
+    "addresses": { "labels": ["Addresses", "Addressed by"] },
+    "argument": { "labels": ["Argument of", "Has argument"], "down": true },
+    "evidence": { "labels": ["Backed by", "Backs"] }
+  },
+  "links": ["addresses"],
+  "linkedScopeEdges": ["addresses"],
+  "parts": [{ "kind": "argument", "owner": "subgoal", "field": "arguments", "id": "name", "text": "text", "edge": "argument", "sectionTitle": "Arguments" }],
+  "checks": {
+    "kind": "evidence",
+    "field": "evidence",
+    "edge": "evidence",
+    "typeField": "form",
+    "types": {
+      "report": { "key": ["doc"], "title": ["doc"], "titlePrefix": "report" },
+      "analysis": { "key": ["doc", "section"], "title": ["section", "doc"], "titlePrefix": "analysis" }
+    },
+    "sectionTitle": "Evidence",
+    "noneText": "No evidence."
+  },
+  "facets": { "groupKind": "goal", "groupLabel": "Goal" },
+  "entry": { "kind": "goal", "childKind": "subgoal", "title": "Pick a goal to see its argument", "countLabel": "subgoals" },
+  "groups": { "hierarchy": "Argument tree" },
+  "details": { "properties": [{ "label": "State", "field": "state" }, { "label": "Phase", "field": "phase" }, { "label": "Integrity", "field": "integrity", "format": "upper" }] }
+}

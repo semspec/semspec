@@ -1,0 +1,12 @@
+{
+  "items": [
+    { "key": "g-safe-operation", "type": "goal", "claim": "The heater is safe to operate." },
+    { "key": "sg-detect-overheat", "type": "subgoal", "claim": "An overheat is detected within 2 s.", "goals": ["g-safe-operation"], "arguments": [{ "name": "sensor-redundant", "text": "2 sensors vote on the temperature.", "evidence": [{ "form": "report", "doc": "FTA-12" }] }, { "name": "sensor-drift", "text": "A sensor drift is caught." }] },
+    { "key": "sg-stop-heater", "type": "subgoal", "claim": "The heater stops after a detected overheat.", "goals": ["g-safe-operation"] },
+    { "key": "mit-thermal-fuse", "type": "mitigation", "description": "A thermal fuse cuts the supply at 90 C.", "integrity": "high", "subgoals": ["sg-stop-heater"], "addresses": ["hz-overheat"], "evidence": [{ "form": "analysis", "doc": "FMEA-3", "section": "4.2" }] },
+    { "key": "mit-watchdog", "type": "mitigation", "description": "A watchdog resets the controller.", "integrity": "medium", "goals": ["g-safe-operation"] },
+    { "key": "mit-loose", "type": "mitigation", "description": "A mitigation that no goal names." },
+    { "key": "mit-loose-old", "type": "mitigation", "description": "An old mitigation.", "state": "retired", "goals": [] },
+    { "key": "hz-overheat", "type": "hazard", "label": "Overheat of the housing", "description": "The housing gets hotter than 90 C.", "severity": "critical" }
+  ]
+}
