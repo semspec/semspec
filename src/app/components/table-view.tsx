@@ -155,8 +155,9 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="table-view">
-      <div className="min-h-0 flex-1 overflow-auto">
-        <Table className="w-full table-fixed text-[13px]" style={{ minWidth: table.getTotalSize() }}>
+      {/* The table container is the only scroll container, so the sticky header and the column filters stay at its top. */}
+      <div className="flex min-h-0 flex-1 flex-col">
+        <Table containerClassName="min-h-0 flex-1 overflow-auto" className="w-full table-fixed text-[13px]" style={{ minWidth: table.getTotalSize() }}>
           <colgroup>
             {table.getVisibleLeafColumns().map((c) => (
               <col key={c.id} style={c.id === 'title' ? { minWidth: 260 } : { width: c.getSize() }} />

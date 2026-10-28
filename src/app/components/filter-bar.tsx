@@ -6,7 +6,7 @@ import { ChevronDown, Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList, CommandShortcut } from '@/components/ui/command';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -130,7 +130,8 @@ export function FilterBar({ v }: { v: Viewer }) {
                         {o.kind && <KindDot kind={o.kind} />}
                         <span>{o.label}</span>
                         {o.hint && <span className="font-mono text-[10px] text-muted-foreground">{o.hint}</span>}
-                        <span className="ml-auto pl-3 text-xs text-muted-foreground tabular-nums">{o.count}</span>
+                        {/* The shortcut slot hides the check icon of CommandItem, so the count is the only right-aligned element. */}
+                        <CommandShortcut className="min-w-8 pl-3 text-right tracking-normal tabular-nums">{o.count}</CommandShortcut>
                       </CommandItem>
                     ))}
                   </CommandList>
