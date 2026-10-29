@@ -1,0 +1,7 @@
+id: cap-deliverables
+kind: capability
+title: Deliverables
+state: draft
+statement: The profile lists the deliverables of a kind.
+features:
+  - feat-obligations

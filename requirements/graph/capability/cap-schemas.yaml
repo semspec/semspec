@@ -1,0 +1,6 @@
+id: cap-schemas
+kind: capability
+title: Write schemas of the kinds
+statement: The schema command writes a JSON Schema for each kind.
+features:
+  - feat-profile

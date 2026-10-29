@@ -1,0 +1,54 @@
+id: req-schema-fields
+kind: requirement
+title: Type the fields of a kind
+statement: A schema types each field that the profile names.
+capabilities:
+  - cap-schemas
+area:
+  - core
+acceptance:
+  - id: keys
+    text: The id and the kind use the keys of the profile.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: requires the id and the kind under the keys of the profile
+  - id: fields
+    text: The title, statement, lifecycle, parent and link fields have a type.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: types the title, statement and lifecycle fields and the parent and link fields
+  - id: refs
+    text: The refs field and the supersededBy field have a description.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: describes the refs and the supersededBy field
+  - id: parts
+    text: Only the owner kind of a part has the part field.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: describes the parts of the owner kind only, with the checks and the status
+  - id: enums
+    text: The check type and the status have an enum.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: gives the check type an enum, and the status and its detail field to a node
+      - type: unit
+        file: test/core.test.ts
+        name: refuses a status that the profile does not know, on a node and on a part
+  - id: filters
+    text: A field filter allows a string or a list of strings.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: allows a string or a list of strings for a field filter

@@ -1,0 +1,23 @@
+id: req-validate-profile
+kind: requirement
+title: Refuse an invalid profile
+statement: Semspec refuses a profile with a missing key or an unknown kind.
+capabilities:
+  - cap-validate
+area:
+  - core
+acceptance:
+  - id: missing-key
+    text: A profile with no kinds, or an entry with an unknown kind, gives an error.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: refuse a profile with a missing part and an unknown kind
+  - id: accept
+    text: Both fixture profiles are valid.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: accept both fixtures

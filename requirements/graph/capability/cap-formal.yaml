@@ -1,0 +1,7 @@
+id: cap-formal
+kind: capability
+title: Formal models and traces
+state: draft
+statement: Formal models and traces check the conditions.
+features:
+  - feat-verify

@@ -1,0 +1,6 @@
+id: cap-cards-table
+kind: capability
+title: Cards, Table and details
+statement: Cards and the Table list nodes. The details panel shows 1 node.
+features:
+  - feat-views

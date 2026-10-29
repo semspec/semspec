@@ -1,0 +1,6 @@
+id: cap-read-folder
+kind: capability
+title: Read a graph folder
+statement: Semspec reads a graph from a folder of YAML files.
+features:
+  - feat-graph-input

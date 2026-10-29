@@ -1,0 +1,23 @@
+id: req-placement
+kind: requirement
+title: Place nodes in the tree
+statement: A node sits under the first parent group that names a node. Every parent field counts for the scope.
+capabilities:
+  - cap-structure
+area:
+  - core
+acceptance:
+  - id: follows
+    text: A node that follows another node sits under it.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: puts a node that follows another node under it, and keeps every parent field for the scope
+  - id: unplaced
+    text: A node that reaches no node of its placement kind goes to a warning group.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: lists the nodes that reach no node of the kind they are placed under

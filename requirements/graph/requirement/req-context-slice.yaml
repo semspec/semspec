@@ -1,0 +1,13 @@
+id: req-context-slice
+kind: requirement
+title: Give the slice of a task
+state: draft
+statement: A command writes the scope, the parts and the checks of 1 node as text for an agent.
+capabilities:
+  - cap-slice
+area:
+  - harness
+acceptance:
+  - id: slice
+    text: The command writes the slice of a node within a size limit.
+    status: open

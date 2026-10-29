@@ -1,0 +1,23 @@
+id: req-scope-limits
+kind: requirement
+title: Limit a scope
+statement: A scope can limit the depth and the kinds. It keeps the root.
+capabilities:
+  - cap-scope
+area:
+  - core
+acceptance:
+  - id: limits
+    text: A limit on the depth or the kinds keeps the root.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: limits the depth and the kinds, and keeps the root
+  - id: linked
+    text: A linked node gets its direct neighbours only.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: gives a linked node its direct neighbours only

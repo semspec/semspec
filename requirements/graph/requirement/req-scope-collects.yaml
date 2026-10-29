@@ -1,0 +1,16 @@
+id: req-scope-collects
+kind: requirement
+title: Collect a scope
+statement: A scope holds the nodes below a node, the linked nodes and the checks.
+capabilities:
+  - cap-scope
+area:
+  - core
+acceptance:
+  - id: collect
+    text: The scope of a node holds what is below it, its linked nodes and its checks.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: collects what is below a node, the linked nodes and the checks

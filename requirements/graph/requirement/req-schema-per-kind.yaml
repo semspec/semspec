@@ -1,0 +1,23 @@
+id: req-schema-per-kind
+kind: requirement
+title: Write 1 schema for each kind
+statement: The schema command writes 1 JSON Schema for each kind of the profile.
+capabilities:
+  - cap-schemas
+area:
+  - cli
+acceptance:
+  - id: shape
+    text: Each schema has the title and the description of its kind, and an open shape.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: gives 1 schema for each kind with the title, the description and the open shape
+  - id: yaml-profile
+    text: The command reads a YAML profile and refuses a missing option.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: refuses a missing option and reads a YAML profile

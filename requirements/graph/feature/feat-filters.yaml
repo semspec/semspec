@@ -1,0 +1,6 @@
+id: feat-filters
+kind: feature
+title: Filters and status
+statement: A user filters nodes by field and by status. A status rolls up from the nodes below.
+products:
+  - prd-semspec

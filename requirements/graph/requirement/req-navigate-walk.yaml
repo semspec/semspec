@@ -1,0 +1,13 @@
+id: req-navigate-walk
+kind: requirement
+title: Walk with a tool
+state: draft
+statement: An MCP server returns the neighbours of a node by edge.
+capabilities:
+  - cap-mcp
+area:
+  - harness
+acceptance:
+  - id: walk
+    text: A walk tool returns the neighbours of a node, grouped by edge.
+    status: open

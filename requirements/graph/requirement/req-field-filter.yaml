@@ -1,0 +1,44 @@
+id: req-field-filter
+kind: requirement
+title: Filter by a profile field
+statement: A field filter keeps the nodes that carry a value, the nodes above and below them, their linked nodes and their checks.
+capabilities:
+  - cap-filters
+area:
+  - core
+acceptance:
+  - id: keeps
+    text: Carriers that match stay with the nodes above, below and linked to them.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: keeps the carriers that match, the nodes above and below them, and their linked nodes and checks
+  - id: all-together
+    text: One carrier must match all field filters together.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: needs 1 carrier that matches all field filters together
+  - id: empty
+    text: The value "" selects the carriers with no value.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: selects the carriers with no value by the value ""
+  - id: types
+    text: A filter reads a list field and a text field.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: reads a list field and a text field
+  - id: counts
+    text: A filter counts its values with the other filters applied.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: counts the values of a field with the other filters applied

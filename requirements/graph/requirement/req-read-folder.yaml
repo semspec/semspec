@@ -1,0 +1,30 @@
+id: req-read-folder
+kind: requirement
+title: Read each YAML file as a node
+statement: Semspec reads each YAML file below a graph folder as 1 node or as a list of nodes.
+capabilities:
+  - cap-read-folder
+area:
+  - cli
+acceptance:
+  - id: same-as-json
+    text: A folder gives the same nodes and edges as the JSON graph.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: gives the same nodes and edges as the JSON graph
+  - id: list-files
+    text: A file with a list of nodes gives several nodes. Other files are ignored.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: reads a file with a list of nodes and ignores other files
+  - id: reread
+    text: The server reads the folder again on each request.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: reads the folder again on each request of the server

@@ -350,3 +350,26 @@ describe('the schema command', () => {
     expect(readdirSync(join(dir, 'out')).length).toBe(6);
   });
 });
+
+describe('the requirements of the repository', () => {
+  const root = new URL('../', import.meta.url).pathname;
+  const profilePath = join(root, 'requirements', 'profile.yaml');
+  const graphPath = join(root, 'requirements', 'graph');
+
+  it('has a valid profile and a graph folder that builds with no error', () => {
+    const { graph, profile } = loadInputs(graphPath, profilePath);
+    expect(validateProfile(profile)).toEqual([]);
+    expect(buildModel(graph, profile).nodes.length).toBeGreaterThan(0);
+  });
+  it('points every test reference at an existing test with that exact title', () => {
+    const { graph } = loadInputs(graphPath, profilePath);
+    const refs = (graph.nodes as { acceptance?: { tests?: { file: string; name: string }[] }[] }[]).flatMap((n) => (n.acceptance ?? []).flatMap((a) => a.tests ?? []));
+    expect(refs.length).toBeGreaterThan(0);
+    const sources = new Map<string, string>();
+    for (const { file, name } of refs) {
+      if (!sources.has(file)) sources.set(file, readFileSync(join(root, file), 'utf8'));
+      const source = sources.get(file)!;
+      expect(source.includes(`it('${name}'`) || source.includes(`it("${name}"`), `${file} has a test titled "${name}"`).toBe(true);
+    }
+  });
+});

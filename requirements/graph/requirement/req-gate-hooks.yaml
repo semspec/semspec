@@ -1,0 +1,19 @@
+id: req-gate-hooks
+kind: requirement
+title: Run the gate in the workflow
+state: draft
+statement: The check runs as an agent hook, a pre-commit hook and a CI step.
+capabilities:
+  - cap-gate
+area:
+  - harness
+acceptance:
+  - id: agent-hook
+    text: An agent hook runs the check after a change.
+    status: open
+  - id: pre-commit
+    text: A pre-commit hook runs the check.
+    status: open
+  - id: ci
+    text: A CI step runs the check.
+    status: open

@@ -1,0 +1,23 @@
+id: req-profile-only
+kind: requirement
+title: Use only the profile
+statement: The model uses only the kinds, edges and fields of the profile.
+capabilities:
+  - cap-structure
+area:
+  - core
+acceptance:
+  - id: own-kinds
+    text: A model has only kinds of its own profile.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: uses only kinds of its own profile
+  - id: defaults
+    text: A profile with 1 kind and no optional key builds a model.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: builds a model from a profile with 1 kind and no optional part

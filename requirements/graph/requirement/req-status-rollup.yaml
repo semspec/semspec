@@ -1,0 +1,44 @@
+id: req-status-rollup
+kind: requirement
+title: Roll up the status
+statement: A node with no status of its own gets the roll-up of the nodes below it.
+capabilities:
+  - cap-status
+area:
+  - core
+acceptance:
+  - id: own
+    text: A node shows its own value. With no status below, it shows none.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: takes the own value of a node, and gives no value when no node below has a status
+  - id: tones
+    text: All good gives good. All bad gives bad. A mix gives warn.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: rolls up good when all is good, bad when all is bad, and warn for a mix
+  - id: once
+    text: A node under 2 parents counts once.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: counts a node under 2 parents once
+  - id: muted
+    text: A node with a muted lifecycle does not count.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: leaves out a node with a muted lifecycle
+  - id: detail
+    text: A part node keeps the detail field.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: keeps the detail field on a part node

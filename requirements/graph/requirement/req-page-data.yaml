@@ -1,0 +1,37 @@
+id: req-page-data
+kind: requirement
+title: Embed the whole graph
+statement: The page data holds every node and every edge of the graph, and no other edge.
+capabilities:
+  - cap-html
+area:
+  - cli
+acceptance:
+  - id: complete
+    text: The data has every node and every edge of the graph.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: has every node and every edge of the graph
+  - id: no-extra
+    text: The data has no edge that the graph does not name.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: has no edge that the graph does not name
+  - id: detects-drop
+    text: The check fails when a node is dropped.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: fails the check when a node is dropped
+  - id: colours
+    text: The page sets 1 colour variable for each kind from the profile.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: sets 1 colour variable for each kind from the profile

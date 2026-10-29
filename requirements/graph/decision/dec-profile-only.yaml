@@ -1,0 +1,10 @@
+id: dec-profile-only
+kind: decision
+title: The tool knows no project
+statement: Every node kind, edge, field, colour, label and citation format comes from a profile.
+rationale: One tool then serves any project and any vocabulary. A hard-coded term fails a test, because the fixtures use 2 profiles.
+governs:
+  - req-profile-only
+  - req-titles
+  - req-schema-fields
+  - req-deliverables

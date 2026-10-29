@@ -1,0 +1,7 @@
+id: cap-mcp
+kind: capability
+title: MCP server
+state: draft
+statement: An MCP server gives agents search and walk tools.
+features:
+  - feat-navigate

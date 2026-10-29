@@ -22,7 +22,9 @@
     "build:cli": "node scripts/build-cli.mjs",
     "build": "npm run build:app && npm run build:cli",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "requirements": "node bin/semspec.js serve --graph requirements/graph --profile requirements/profile.yaml",
+    "requirements:build": "node bin/semspec.js build --graph requirements/graph --profile requirements/profile.yaml --out dist/requirements.html"
   },
   "dependencies": {
     "ajv": "8.20.0",

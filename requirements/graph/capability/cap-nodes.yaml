@@ -1,0 +1,6 @@
+id: cap-nodes
+kind: capability
+title: Build nodes
+statement: Semspec builds the nodes, the parts and the checks.
+features:
+  - feat-model

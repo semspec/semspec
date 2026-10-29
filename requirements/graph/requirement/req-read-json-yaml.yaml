@@ -1,0 +1,23 @@
+id: req-read-json-yaml
+kind: requirement
+title: Read JSON and YAML files
+statement: Semspec reads a graph from a JSON file or from a YAML file.
+capabilities:
+  - cap-read-files
+area:
+  - cli
+acceptance:
+  - id: json-file
+    text: The build command makes a page from a JSON graph.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: builds the same page as the page function
+  - id: yaml-file
+    text: A YAML file with the whole graph gives the same nodes as the JSON graph.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: reads a YAML profile and a YAML file with the whole graph

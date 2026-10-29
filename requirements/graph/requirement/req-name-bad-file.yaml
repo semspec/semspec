@@ -1,0 +1,30 @@
+id: req-name-bad-file
+kind: requirement
+title: Name the file of a bad node
+statement: A message about an invalid YAML node names its file.
+capabilities:
+  - cap-read-folder
+area:
+  - cli
+acceptance:
+  - id: kind-or-id
+    text: A node with an unknown kind or no id is reported with its file.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: names the file of a node with an unknown kind or no id
+  - id: duplicate
+    text: A duplicate id is reported with its file.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: names the file of a duplicate id
+  - id: not-yaml
+    text: A file that is not YAML, or not a mapping or a list of mappings, is reported with its file.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: names the file when it is not a mapping or a list of mappings, or not YAML

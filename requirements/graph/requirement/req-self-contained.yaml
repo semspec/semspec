@@ -1,0 +1,16 @@
+id: req-self-contained
+kind: requirement
+title: Make the page self-contained
+statement: The HTML file holds the data, the script and the style. It makes no network request.
+capabilities:
+  - cap-html
+area:
+  - cli
+acceptance:
+  - id: no-external
+    text: The page has no external script, style or request.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: "is self-contained: no external script, style or request"

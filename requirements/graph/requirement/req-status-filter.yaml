@@ -1,0 +1,23 @@
+id: req-status-filter
+kind: requirement
+title: Filter by status
+statement: A status filter selects the nodes by status value.
+capabilities:
+  - cap-status
+area:
+  - core
+acceptance:
+  - id: filter
+    text: The filter keeps the nodes with the chosen value.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: filters by the status value
+  - id: with-fields
+    text: The roll-up counts only the nodes that match, with the status filter and the field filters.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: rolls up only the nodes that match, and works with the status filter

@@ -1,0 +1,40 @@
+id: req-titles
+kind: requirement
+title: Give each node a title
+statement: A node with no title gets a title from its id, in sentence case.
+capabilities:
+  - cap-nodes
+area:
+  - core
+acceptance:
+  - id: sentence
+    text: The title is a sentence made from the id.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: derives a sentence from an id
+  - id: casing
+    text: A word keeps the casing that the texts of the graph give it.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: keeps the casing that the statements give a word
+  - id: given
+    text: A given title shows as it is.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: shows a given title as it is
+  - id: citation
+    text: A citation kind builds its title from its parts. A check gets its title from its name.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: builds the title of a citation kind from its parts
+      - type: unit
+        file: test/core.test.ts
+        name: turns a check name into a sentence

@@ -1,0 +1,6 @@
+id: feat-model
+kind: feature
+title: Model building
+statement: Semspec builds nodes and edges from the graph and the profile.
+products:
+  - prd-semspec

@@ -1,0 +1,16 @@
+id: req-verify-conformance
+kind: requirement
+title: Feed results into the status
+state: draft
+statement: A conformance result sets the status of the condition it checks.
+capabilities:
+  - cap-formal
+area:
+  - harness
+acceptance:
+  - id: itf
+    text: Model traces and runtime traces use the ITF format.
+    status: open
+  - id: status
+    text: A conformance run sets the status of its conditions.
+    status: open

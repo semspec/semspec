@@ -1,0 +1,6 @@
+id: cap-exclude
+kind: capability
+title: Skip paths of a folder
+statement: The option --exclude skips paths of a graph folder.
+features:
+  - feat-graph-input

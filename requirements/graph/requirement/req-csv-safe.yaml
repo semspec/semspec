@@ -1,0 +1,16 @@
+id: req-csv-safe
+kind: requirement
+title: Export safe CSV
+statement: The CSV export quotes cells and neutralises a formula.
+capabilities:
+  - cap-csv
+area:
+  - core
+acceptance:
+  - id: quote
+    text: A cell is quoted. A cell that starts like a formula is neutralised.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: quotes cells and neutralises a formula

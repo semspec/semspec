@@ -1,0 +1,6 @@
+id: cap-html
+kind: capability
+title: HTML page
+statement: Semspec writes or serves 1 HTML page.
+features:
+  - feat-export

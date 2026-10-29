@@ -1,0 +1,44 @@
+id: req-exclude-use
+kind: requirement
+title: Apply exclude patterns
+statement: Semspec skips an excluded path in every command that reads a graph folder.
+capabilities:
+  - cap-exclude
+area:
+  - cli
+acceptance:
+  - id: no-walk
+    text: Semspec does not read into an excluded folder.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: does not walk an excluded folder
+  - id: needed
+    text: Without the option, a folder with other YAML files fails.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: fails without the option
+  - id: repeat
+    text: The option can repeat. The parser keeps all values.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: keeps all values of a repeated flag and the last value in flags
+  - id: build-serve
+    text: The build command and the server keep the exclusions.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: keeps the exclusions for the build command and the server
+  - id: file-warning
+    text: Semspec warns once when the graph is a file and the option is set.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: warns once and has no effect when the graph is a file

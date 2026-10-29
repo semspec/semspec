@@ -1,0 +1,19 @@
+id: req-cards-table
+kind: requirement
+title: List nodes in Cards and Table
+statement: Cards and the Table list the nodes of the scope. The Table has a column for each field filter and pins its header.
+capabilities:
+  - cap-cards-table
+area:
+  - app
+acceptance:
+  - id: chips
+    text: A card shows the chips that the profile names for its kind.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: shows the chips that the profile names for each kind
+  - id: table
+    text: The Table shows the columns, filters and pinned header.
+    status: partial

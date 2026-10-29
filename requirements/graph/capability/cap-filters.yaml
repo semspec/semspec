@@ -1,0 +1,6 @@
+id: cap-filters
+kind: capability
+title: Filter nodes
+statement: Filters select nodes by field.
+features:
+  - feat-filters

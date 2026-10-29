@@ -1,0 +1,9 @@
+id: dec-yaml-writing
+kind: decision
+title: YAML is the writing format
+statement: People and agents write requirements as YAML. RDF is only an export.
+rationale: YAML is easy to diff, review and edit in an editor. A graph store would add a service and a second source of truth.
+governs:
+  - req-read-json-yaml
+  - req-read-folder
+  - req-schema-per-kind

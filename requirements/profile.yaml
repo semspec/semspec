@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The Semspec Authors
+project: Semspec requirements
+source: { nodes: nodes, id: id, kind: kind }
+fields:
+  title: [title]
+  idPrefixPattern: "^[a-z]+-"
+  statement: [statement]
+lifecycle:
+  field: state
+  fallback: active
+  states:
+    draft: {}
+    retired: { muted: true }
+kinds:
+  - { id: product, label: Product, plural: products, prefix: prd-, role: hierarchy, color: { light: "#5f3dc4", dark: "#b197fc" }, chips: [lifecycle, members] }
+  - { id: feature, label: Feature, plural: features, prefix: feat-, role: hierarchy, parents: [[products]], color: { light: "#1971c2", dark: "#74c0fc" }, chips: [lifecycle, members] }
+  - { id: capability, label: Capability, plural: capabilities, prefix: cap-, role: hierarchy, parents: [[features]], color: { light: "#0b7285", dark: "#66d9e8" }, chips: [lifecycle, members] }
+  - { id: requirement, label: Requirement, plural: requirements, prefix: req-, role: hierarchy, parents: [[capabilities]], color: { light: "#d9480f", dark: "#ffa94d" }, chips: [lifecycle, coverage] }
+  - { id: condition, label: Condition, plural: conditions, role: part, color: { light: "#c2255c", dark: "#f783ac" }, chips: [verified, verifyTypes] }
+  - { id: decision, label: Decision, plural: decisions, prefix: dec-, role: linked, color: { light: "#495057", dark: "#adb5bd" }, chips: [lifecycle] }
+  - { id: test, label: Test, plural: tests, role: check, color: { light: "#2b8a3e", dark: "#69db7c" }, chips: [checkType] }
+edges:
+  products: { labels: [In product, Contains], down: true }
+  features: { labels: [In feature, Contains], down: true }
+  capabilities: { labels: [In capability, Contains], down: true }
+  condition: { labels: [Condition of, Has condition], down: true }
+  governs: { labels: [Governs, Governed by] }
+  tested: { labels: [Tested by, Tests] }
+links: [governs]
+linkedScopeEdges: [governs]
+parts:
+  - { kind: condition, owner: requirement, field: acceptance, id: id, text: text, edge: condition, sectionTitle: Acceptance }
+checks:
+  kind: test
+  field: tests
+  edge: tested
+  typeField: type
+  types:
+    unit: { key: [file, name], title: [name] }
+  sectionTitle: Tests
+  noneText: No test.
+status:
+  label: Status
+  field: status
+  values:
+    - { value: verified, label: Verified, tone: good }
+    - { value: partial, label: Partial, tone: warn }
+    - { value: open, label: Open, tone: bad }
+fieldFilters:
+  - field: area
+    label: Area
+    values: { core: Core library, cli: Command line, app: Browser app, harness: Harness }
+facets: { groupKind: feature, groupLabel: Feature }
+entry: { kind: feature, childKind: capability, title: Pick a feature to see its capabilities, countLabel: capabilities }
+groups: { hierarchy: Requirement tree }
+details:
+  properties:
+    - { label: State, field: state }
+  statementTitle: { condition: Acceptance condition, default: Statement }
+  textSections:
+    - { title: Rationale, field: rationale }

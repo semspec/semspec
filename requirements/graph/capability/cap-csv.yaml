@@ -1,0 +1,6 @@
+id: cap-csv
+kind: capability
+title: CSV export
+statement: The Table exports to CSV.
+features:
+  - feat-export

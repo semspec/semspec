@@ -1,0 +1,16 @@
+id: req-deliverables
+kind: requirement
+title: State what a task must deliver
+state: draft
+statement: The profile states for each kind which parts, checks and status a task must deliver.
+capabilities:
+  - cap-deliverables
+area:
+  - harness
+acceptance:
+  - id: profile-key
+    text: The profile schema has a key for the deliverables of a kind.
+    status: open
+  - id: report
+    text: A command lists the nodes that miss a deliverable.
+    status: open

@@ -1,0 +1,6 @@
+id: cap-tree-graph
+kind: capability
+title: Tree and Graph view
+statement: The tree and the Graph view show the hierarchy and the links.
+features:
+  - feat-views

@@ -1,0 +1,7 @@
+id: feat-verify
+kind: feature
+title: Verify
+state: draft
+statement: Formal models and traces feed conformance results back into the status.
+products:
+  - prd-semspec

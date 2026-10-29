@@ -1,0 +1,7 @@
+id: feat-gates
+kind: feature
+title: Gates
+state: draft
+statement: A change that breaks the graph is blocked.
+products:
+  - prd-semspec

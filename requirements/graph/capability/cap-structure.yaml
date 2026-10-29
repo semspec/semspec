@@ -1,0 +1,6 @@
+id: cap-structure
+kind: capability
+title: Place nodes
+statement: Semspec places each node in the hierarchy.
+features:
+  - feat-model

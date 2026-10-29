@@ -111,6 +111,16 @@ A kind has 1 of 4 roles.
 
 A kind can set `placedUnder`. A node of that kind that reaches no node of the named kind goes to a warning group in the tree.
 
+## The requirements of Semspec
+
+The repository keeps its own requirements as a Semspec graph in `requirements/`. `requirements/profile.yaml` is the profile. `requirements/graph/` holds 1 YAML file for each node, in a folder for each kind. Each acceptance condition names the tests in `test/` that prove it. A test in `test/build.test.ts` fails when a named test does not exist.
+
+```
+npm run build                 # once, to build the command line tool
+npm run requirements          # serves the graph on http://127.0.0.1:4173
+npm run requirements:build    # writes dist/requirements.html
+```
+
 ## Develop
 
 ```

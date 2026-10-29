@@ -1,0 +1,23 @@
+id: req-walk-badge
+kind: requirement
+title: Count hidden neighbours
+statement: The badge of a node counts its neighbours that the canvas hides.
+capabilities:
+  - cap-walk
+area:
+  - core
+acceptance:
+  - id: badge
+    text: The badge is the neighbours minus the nodes on the canvas.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: counts the badge as the neighbours minus the nodes on the canvas
+  - id: by-kind
+    text: The hidden neighbours are counted by edge kind and by node kind.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: counts the hidden neighbours by edge kind and by node kind

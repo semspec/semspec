@@ -1,0 +1,16 @@
+id: req-build-html
+kind: requirement
+title: Write 1 HTML file
+statement: The build command writes 1 HTML file.
+capabilities:
+  - cap-html
+area:
+  - cli
+acceptance:
+  - id: write
+    text: The command writes the file and exits with 0.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: writes 1 HTML file with the build command

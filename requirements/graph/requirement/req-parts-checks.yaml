@@ -1,0 +1,16 @@
+id: req-parts-checks
+kind: requirement
+title: Make nodes of parts and checks
+statement: Each part and each check becomes a node. 2 checks with the same type and key share 1 node.
+capabilities:
+  - cap-nodes
+area:
+  - core
+acceptance:
+  - id: edges
+    text: Every node and every edge of the graph is in the page data.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: has every node and every edge of the graph

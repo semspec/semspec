@@ -1,0 +1,6 @@
+id: cap-status
+kind: capability
+title: Status and roll-up
+statement: A status shows on each node and rolls up.
+features:
+  - feat-filters

@@ -1,0 +1,30 @@
+id: req-validate-graph
+kind: requirement
+title: Refuse an invalid graph
+statement: Semspec refuses a graph with a duplicate id, an unknown kind or a field that is not a list.
+capabilities:
+  - cap-validate
+area:
+  - core
+acceptance:
+  - id: errors
+    text: Each of the 3 faults gives an error.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: refuse a graph with a duplicate id, an unknown kind or a field that is not a list
+  - id: dangling
+    text: A link to a node that is not in the graph gives a warning, not an error.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: warn about a link to a node that is not in the graph
+  - id: cli-stop
+    text: The command line tool stops on a missing option or an invalid profile.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: refuses a missing option and an invalid profile

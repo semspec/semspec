@@ -1,0 +1,23 @@
+id: req-walk-reversible
+kind: requirement
+title: Expand and collapse
+statement: An expand followed by a collapse gives the same node set.
+capabilities:
+  - cap-walk
+area:
+  - core
+acceptance:
+  - id: roundtrip
+    text: The node set after an expand and a collapse is the same.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: returns the same node set after an expand and a collapse
+  - id: by-kind
+    text: An expand by node kind works. A collapse hides a node with what only it added.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: expands by node kind, and hides a node with what only it introduced

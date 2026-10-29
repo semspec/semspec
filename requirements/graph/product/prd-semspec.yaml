@@ -1,0 +1,4 @@
+id: prd-semspec
+kind: product
+title: Semspec
+statement: Semspec turns requirements that a project keeps as YAML or JSON into a typed, linked graph that people and agents can explore.

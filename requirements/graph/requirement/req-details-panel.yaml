@@ -1,0 +1,12 @@
+id: req-details-panel
+kind: requirement
+title: Show the details of a node
+statement: The details panel shows the sections that the profile names for the kind of the node.
+capabilities:
+  - cap-cards-table
+area:
+  - app
+acceptance:
+  - id: sections
+    text: The panel shows properties, text sections, checks and citations.
+    status: partial

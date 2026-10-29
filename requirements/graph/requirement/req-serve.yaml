@@ -1,0 +1,23 @@
+id: req-serve
+kind: requirement
+title: Serve the page
+statement: The serve command serves the page on a local port and reads the inputs again on each request.
+capabilities:
+  - cap-html
+area:
+  - cli
+acceptance:
+  - id: port
+    text: The server answers on a local port. An unknown path gives 404.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: serves the page on a local port with the serve command
+  - id: reread
+    text: An edit of the folder shows on the next request.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: reads the folder again on each request of the server

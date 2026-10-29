@@ -1,0 +1,15 @@
+id: req-graph-view
+kind: requirement
+title: Draw the Graph view
+statement: The Graph view draws the scope with a layout. A toggle colours the nodes by status.
+capabilities:
+  - cap-tree-graph
+area:
+  - app
+acceptance:
+  - id: layout
+    text: The root of the scope sits at the left edge. The canvas fits the layout.
+    status: partial
+  - id: colour
+    text: The status mode colours each node by its status tone.
+    status: partial

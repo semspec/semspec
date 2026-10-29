@@ -1,0 +1,44 @@
+id: req-exclude-patterns
+kind: requirement
+title: Match exclude patterns
+statement: A pattern of --exclude matches a path relative to the graph folder.
+capabilities:
+  - cap-exclude
+area:
+  - cli
+acceptance:
+  - id: plain-name
+    text: A plain name matches a folder or a file of that name at any depth.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: match a plain name at any depth
+  - id: star
+    text: A * matches characters inside 1 path segment.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: match * inside 1 path segment
+  - id: double-star
+    text: A ** matches across segments. A trailing /** matches the folder itself.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: match ** across segments, and the folder itself for a trailing /**
+  - id: question
+    text: A ? matches 1 character except /.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: match ? as 1 character except /
+  - id: literal
+    text: Other characters match as text.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: treat other characters as text

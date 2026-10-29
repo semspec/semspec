@@ -1,0 +1,23 @@
+id: req-filter-on-scope
+kind: requirement
+title: Filter on top of a scope
+statement: Filters apply on top of a scope. A facet counts its options with its own filter ignored.
+capabilities:
+  - cap-filters
+area:
+  - core
+acceptance:
+  - id: on-scope
+    text: A filter applies inside the scope.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: applies on top of a scope
+  - id: facet-count
+    text: A facet counts with the other filters applied and its own ignored.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: counts a facet with the other filters applied and its own ignored

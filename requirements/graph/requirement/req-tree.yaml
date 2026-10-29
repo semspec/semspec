@@ -1,0 +1,19 @@
+id: req-tree
+kind: requirement
+title: Show the hierarchy tree
+statement: The tree shows each node under its parent and groups the nodes that the profile marks as unplaced.
+capabilities:
+  - cap-tree-graph
+area:
+  - app
+acceptance:
+  - id: logic
+    text: The placement of the nodes follows the profile.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: puts a node that follows another node under it, and keeps every parent field for the scope
+  - id: ui
+    text: The tree selects a node as the scope.
+    status: partial
