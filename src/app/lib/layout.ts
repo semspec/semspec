@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // Layout of the canvas: a layered layout from dagre, and a placement of new nodes next to the
 // node they come from, so a walk keeps its orientation.
 import * as dagre from '@dagrejs/dagre';

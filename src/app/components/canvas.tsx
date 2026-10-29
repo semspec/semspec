@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // The canvas of the Graph view and the Cards view. Both use React Flow and the same walk state.
 // The Graph view draws small pill nodes with a hover summary. The Cards view draws cards.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -21,10 +22,9 @@ import {
 } from '@xyflow/react';
 import { ChevronsRight, ChevronsLeft, EyeOff, LayoutGrid, Maximize2, Undo2, Waypoints, Network } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { CountBadge, KindDot, NodeSummaryView, kindColor } from '@/components/kind';
-import { Core, type Kind, type Summary, type VEdge } from '@/lib/core';
+import { CountBadge, KindDot, NodeSummaryView, StatusDot, kindColor, statusShare, toneColor } from '@/components/kind';
+import { Core, type Kind, type NodeStatus, type Summary, type VEdge } from '@/lib/core';
 import { SIZE, layered, placeNear, type Mode, type Pos } from '@/lib/layout';
 import type { Viewer } from '@/lib/use-viewer';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,8 @@ interface NodeData extends Record<string, unknown> {
   badge: number;
   selected: boolean;
   dim: boolean;
+  // Set when the canvas colours the nodes by status.
+  status?: NodeStatus;
 }
 
 const hidden = 'size-1! min-h-0! min-w-0! border-0! bg-transparent!';
@@ -51,46 +53,42 @@ function Handles() {
   );
 }
 
-// A plain node of the Graph view. A hover shows the summary of the node.
+// A plain node of the Graph view. With a status, the border takes the colour of the status and
+// the pill shows the share of good nodes.
 function PillNode({ data }: NodeProps<Node<NodeData>>) {
-  const { summary, badge, selected, dim } = data;
+  const { summary, badge, selected, dim, status } = data;
   return (
-    <HoverCard>
-      <HoverCardTrigger
-        delay={400}
-        closeDelay={80}
-        render={
-          <div
-            className={cn(
-              'relative flex h-8 w-[230px] items-center gap-2 rounded-full border bg-card px-3 text-[13px] shadow-xs transition-opacity',
-              selected && 'ring-2 ring-ring',
-              dim && 'opacity-25',
-              summary.muted && 'opacity-60',
-            )}
-            style={{ borderColor: `color-mix(in oklab, ${kindColor(summary.kind)} 55%, var(--border))` }}
-          />
-        }
-      >
-        <KindDot kind={summary.kind} className="size-2.5" />
-        <span className={cn('min-w-0 flex-1 truncate', summary.muted && 'line-through')}>{summary.title}</span>
-        <CountBadge count={badge} className="absolute -top-2 -right-1" />
-        <Handles />
-      </HoverCardTrigger>
-      <HoverCardContent side="right" className="w-64 p-0">
-        <NodeSummaryView summary={summary} count={badge} className="border-0" />
-      </HoverCardContent>
-    </HoverCard>
+    <div
+      className={cn(
+        'relative flex h-8 w-[230px] items-center gap-2 rounded-full border bg-card px-3 text-[13px] shadow-xs transition-opacity',
+        selected && 'ring-2 ring-ring',
+        dim && 'opacity-25',
+        summary.muted && 'opacity-60',
+      )}
+      style={status ? { borderColor: toneColor(status.tone), borderWidth: 2 } : { borderColor: `color-mix(in oklab, ${kindColor(summary.kind)} 55%, var(--border))` }}
+    >
+      <KindDot kind={summary.kind} className="size-2.5" />
+      <span className={cn('min-w-0 flex-1 truncate', summary.muted && 'line-through')}>{summary.title}</span>
+      {!!status?.total && (
+        <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
+          <StatusDot tone={status.tone} />
+          {statusShare(status, true)}
+        </span>
+      )}
+      <CountBadge count={badge} className="absolute -top-2 -right-1" />
+      <Handles />
+    </div>
   );
 }
 
 // A card of the Cards view. Far from the canvas it collapses to a dot with a short label.
 function CardNode({ data }: NodeProps<Node<NodeData>>) {
-  const { summary, badge, selected, dim } = data;
+  const { summary, badge, selected, dim, status } = data;
   const far = useStore((s) => s.transform[2] < 0.5);
   if (far) {
     return (
       <div className={cn('relative flex h-[120px] w-[232px] items-center gap-3 transition-opacity', dim && 'opacity-25')}>
-        <span className="size-9 shrink-0 rounded-full" style={{ background: kindColor(summary.kind), outline: selected ? '3px solid var(--ring)' : undefined }} />
+        <span className="size-9 shrink-0 rounded-full" style={{ background: status ? toneColor(status.tone) : kindColor(summary.kind), outline: selected ? '3px solid var(--ring)' : undefined }} />
         <span className="truncate text-2xl font-medium">{summary.title.slice(0, 18)}</span>
         <CountBadge count={badge} className="absolute top-8 left-6 h-6 min-w-6 text-sm" />
         <Handles />
@@ -99,7 +97,7 @@ function CardNode({ data }: NodeProps<Node<NodeData>>) {
   }
   return (
     <div className={cn('relative w-[232px] rounded-lg transition-opacity', selected && 'ring-2 ring-ring', dim && 'opacity-25')}>
-      <NodeSummaryView summary={summary} count={badge} />
+      <NodeSummaryView summary={summary} count={badge} status={status} />
       <Handles />
     </div>
   );
@@ -171,10 +169,11 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
             badge: Core.badgeCount(index, v.canvasSet, id),
             selected: id === selected,
             dim: !!neighbours && id !== selected && !neighbours.has(id),
+            status: v.statusColour ? Core.statusOf(index, id, v.filters.fields) : undefined,
           },
         };
       }),
-    [ids, index, mode, positions, selected, neighbours, v.canvasSet],
+    [ids, index, mode, positions, selected, neighbours, v.canvasSet, v.statusColour, v.filters.fields],
   );
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<NodeData>>(derived);
   useEffect(() => setNodes(derived), [derived, setNodes]);
@@ -185,16 +184,21 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       edges.map((e: VEdge, i) => {
         const touches = e.s === hovered || e.t === hovered || e.s === selected || e.t === selected;
         const dim = !!neighbours && !touches;
+        // A `down` edge points from the specific node on the right to the general node on the left.
+        // React Flow draws it from the general node, so the line leaves a right side and enters a left side.
+        // The arrow stays at the general node.
+        const down = Core.DOWN_EDGES.has(e.k);
+        const marker = { type: MarkerType.ArrowClosed, width: 12, height: 12, color: 'var(--muted-foreground)' };
         return {
           id: `e${i}`,
-          source: e.s,
-          target: e.t,
+          source: down ? e.t : e.s,
+          target: down ? e.s : e.t,
           label: showAll || touches ? Core.EDGE_LABEL[e.k]?.[0] ?? e.k : undefined,
           labelStyle: { fontSize: 11, fill: 'var(--muted-foreground)' },
           labelBgStyle: { fill: 'var(--background)', fillOpacity: 0.85 },
           labelBgPadding: [4, 2],
           style: { stroke: 'var(--muted-foreground)', strokeOpacity: dim ? 0.12 : touches ? 0.9 : 0.45, strokeWidth: touches ? 1.6 : 1.1 },
-          markerEnd: { type: MarkerType.ArrowClosed, width: 12, height: 12, color: 'var(--muted-foreground)' },
+          ...(down ? { markerStart: marker } : { markerEnd: marker }),
         };
       }),
     [edges, hovered, selected, neighbours, showAll],

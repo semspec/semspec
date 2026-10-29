@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // Tests of the inputs, the page and the command line tool. The page is built for 2 profiles.
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { stringify } from 'yaml';
 import { buildModel, type Graph, type Profile } from '@core/index';
-import { pageFor, run, startServer } from '../src/cli/index';
+import { loadInputs, pageFor, parseArgs, run, startServer } from '../src/cli/index';
+import { excludeMatcher } from '../src/cli/yaml';
 import { validateGraph, validateProfile } from '../src/cli/validate';
 import { renderPage } from '../src/cli/page';
 
@@ -90,7 +93,7 @@ describe.each(['product', 'safety'])('the page of the %s fixture', (name) => {
   it('sets 1 colour variable for each kind from the profile', async () => {
     const html = await renderPage(buildModel(graph, profile));
     for (const k of profile.kinds) expect(html).toContain(`--kind-${k.id}:${k.color.light};`);
-    expect(html).toContain(`Requirement Explorer – ${profile.project}`);
+    expect(html).toContain(`Semspec – ${profile.project}`);
   });
 });
 
@@ -154,5 +157,196 @@ describe('the command line tool', () => {
   it('builds the same page as the page function', async () => {
     const { html } = await pageFor(path('product', 'graph.json'), path('product', 'profile.json'));
     expect(pageData(html).profile.project).toBe('Shop product');
+  });
+});
+
+const folder = (name: string) => path(name, 'yaml');
+const byId = <T extends { id: string }>(list: T[]) => [...list].sort((a, b) => (a.id < b.id ? -1 : 1));
+const edgeKeys = (m: { edges: { s: string; t: string; k: string }[] }) => m.edges.map((e) => `${e.s}|${e.t}|${e.k}`).sort();
+const tmp = () => mkdtempSync(join(tmpdir(), 're-'));
+
+describe.each(['product', 'safety'])('the YAML input of the %s fixture', (name) => {
+  const profile = json<Profile>(name, 'profile.json');
+  const graph = json<Graph>(name, 'graph.json');
+  const nodes = graph[profile.source.nodes] as Record<string, string>[];
+
+  it('gives the same nodes and edges as the JSON graph', () => {
+    const fromYaml = buildModel(loadInputs(folder(name), path(name, 'profile.json')).graph, profile);
+    const fromJson = buildModel(graph, profile);
+    expect(byId(fromYaml.nodes)).toEqual(byId(fromJson.nodes));
+    expect(edgeKeys(fromYaml)).toEqual(edgeKeys(fromJson));
+    expect(fromYaml.nodes.length).toBeGreaterThanOrEqual(nodes.length);
+  });
+  it('reads a YAML profile and a YAML file with the whole graph', () => {
+    const dir = tmp();
+    writeFileSync(join(dir, 'profile.yaml'), stringify(profile));
+    writeFileSync(join(dir, 'graph.yml'), stringify(graph));
+    const read = loadInputs(join(dir, 'graph.yml'), join(dir, 'profile.yaml'));
+    expect(read.profile).toEqual(profile);
+    expect(buildModel(read.graph, read.profile).nodes.length).toBe(buildModel(graph, profile).nodes.length);
+  });
+  it('reads a file with a list of nodes and ignores other files', () => {
+    const dir = tmp();
+    mkdirSync(join(dir, 'a', 'b'), { recursive: true });
+    writeFileSync(join(dir, 'a', 'list.yaml'), stringify(nodes.slice(0, 2)));
+    writeFileSync(join(dir, 'a', 'b', 'rest.yml'), stringify(nodes.slice(2)));
+    writeFileSync(join(dir, 'a', 'notes.txt'), 'not YAML: [');
+    const read = loadInputs(dir, path(name, 'profile.json')).graph[profile.source.nodes] as Record<string, string>[];
+    expect(byId(read.map((n) => ({ ...n, id: n[profile.source.id] })))).toEqual(byId(nodes.map((n) => ({ ...n, id: n[profile.source.id] }))));
+  });
+  it('names the file of a node with an unknown kind or no id', () => {
+    const dir = tmp();
+    writeFileSync(join(dir, 'bad-kind.yaml'), stringify({ [profile.source.id]: 'x', [profile.source.kind]: 'nothing' }));
+    writeFileSync(join(dir, 'no-id.yaml'), stringify([{ [profile.source.kind]: profile.kinds[0].id }]));
+    let message = '';
+    try {
+      loadInputs(dir, path(name, 'profile.json'));
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toContain(`File "${join(dir, 'bad-kind.yaml')}" has the unknown kind "nothing"`);
+    expect(message).toContain(`File "${join(dir, 'no-id.yaml')}", node 0 has no "${profile.source.id}"`);
+  });
+  it('names the file of a duplicate id', () => {
+    const dir = tmp();
+    writeFileSync(join(dir, 'one.yaml'), stringify(nodes[0]));
+    writeFileSync(join(dir, 'two.yaml'), stringify(nodes[0]));
+    expect(() => loadInputs(dir, path(name, 'profile.json'))).toThrow(/not unique \(File ".*two\.yaml"\)/);
+  });
+  it('names the file when it is not a mapping or a list of mappings, or not YAML', () => {
+    const dir = tmp();
+    writeFileSync(join(dir, 'text.yaml'), 'just a text');
+    expect(() => loadInputs(dir, path(name, 'profile.json'))).toThrow(/text\.yaml" must hold a mapping or a list of mappings/);
+    writeFileSync(join(dir, 'text.yaml'), 'a: [1, 2');
+    expect(() => loadInputs(dir, path(name, 'profile.json'))).toThrow(/Cannot read the graph file ".*text\.yaml"/);
+  });
+  it('reads the folder again on each request of the server', async () => {
+    const dir = tmp();
+    writeFileSync(join(dir, 'a.yaml'), stringify(nodes[0]));
+    const server = await startServer(dir, path(name, 'profile.json'), 0, '127.0.0.1');
+    try {
+      const before = pageData(await (await fetch(server.url)).text()).nodes.length;
+      writeFileSync(join(dir, 'b.yaml'), stringify(nodes[1]));
+      expect(pageData(await (await fetch(server.url)).text()).nodes.length).toBeGreaterThan(before);
+    } finally {
+      await server.close();
+    }
+  });
+});
+
+describe('the argument parser', () => {
+  it('keeps all values of a repeated flag and the last value in flags', () => {
+    const { command, flags, lists } = parseArgs(['build', '--graph', 'g', '--exclude', 'a', '--exclude', 'b/**', '--out', 'o']);
+    expect(command).toBe('build');
+    expect(lists.exclude).toEqual(['a', 'b/**']);
+    expect(flags).toEqual({ graph: 'g', exclude: 'b/**', out: 'o' });
+    expect(lists.graph).toEqual(['g']);
+  });
+});
+
+describe('the exclude patterns', () => {
+  const matches = (pattern: string, rel: string) => excludeMatcher(pattern)(rel);
+  it('match a plain name at any depth', () => {
+    expect(matches('schema', 'schema')).toBe(true);
+    expect(matches('schema', 'a/schema/x.yaml')).toBe(true);
+    expect(matches('schema', 'a/schema.yaml')).toBe(false);
+    expect(matches('schema', 'schemas')).toBe(false);
+  });
+  it('match * inside 1 path segment', () => {
+    expect(matches('gen-*', 'gen-1')).toBe(true);
+    expect(matches('gen-*', 'a/gen-1')).toBe(false);
+    expect(matches('a/*.yaml', 'a/x.yaml')).toBe(true);
+    expect(matches('a/*.yaml', 'a/b/x.yaml')).toBe(false);
+  });
+  it('match ** across segments, and the folder itself for a trailing /**', () => {
+    expect(matches('generated/**', 'generated')).toBe(true);
+    expect(matches('generated/**', 'generated/a/b.yaml')).toBe(true);
+    expect(matches('generated/**', 'other/generated')).toBe(false);
+    expect(matches('**/draft.yaml', 'draft.yaml')).toBe(true);
+    expect(matches('**/draft.yaml', 'a/b/draft.yaml')).toBe(true);
+    expect(matches('a/**/z', 'a/b/c/z')).toBe(true);
+  });
+  it('match ? as 1 character except /', () => {
+    expect(matches('v?/x', 'v1/x')).toBe(true);
+    expect(matches('v?/x', 'v10/x')).toBe(false);
+    expect(matches('a?b', 'a/b')).toBe(false);
+  });
+  it('treat other characters as text', () => {
+    expect(matches('a.b/*', 'a.b/x')).toBe(true);
+    expect(matches('a.b/*', 'aXb/x')).toBe(false);
+  });
+});
+
+describe.each(['product', 'safety'])('--exclude on the YAML folder of the %s fixture', (name) => {
+  const profilePath = path(name, 'profile.json');
+  const count = (dir: string, exclude: string[] = []) => buildModel(loadInputs(dir, profilePath, exclude).graph, json<Profile>(name, 'profile.json')).nodes.length;
+  const base = count(folder(name));
+  // A copy of the fixture folder with a non-node YAML file at 3 places.
+  const extra = () => {
+    const dir = join(tmp(), 'g');
+    cpSync(folder(name), dir, { recursive: true });
+    mkdirSync(join(dir, 'schema'), { recursive: true });
+    mkdirSync(join(dir, 'generated', 'deep'), { recursive: true });
+    mkdirSync(join(dir, 'v1', 'schema'), { recursive: true });
+    for (const file of ['schema/types.yaml', 'generated/deep/out.yaml', 'v1/schema/more.yaml']) writeFileSync(join(dir, file), 'title: not a node\n');
+    return dir;
+  };
+  it('fails without the option', () => {
+    expect(() => loadInputs(extra(), profilePath)).toThrow(/not valid/);
+  });
+  it.each([
+    [['schema', 'generated']],
+    [['schema', 'generated/**']],
+    [['schema', 'gen*']],
+    [['schema', 'g?nerated']],
+    [['**/schema', 'generated']],
+    [['schema', '**/out.yaml']],
+  ])('passes with %j', (exclude) => {
+    const dir = extra();
+    expect(count(dir, exclude)).toBe(base);
+  });
+  it('does not walk an excluded folder', () => {
+    const dir = extra();
+    writeFileSync(join(dir, 'generated', 'deep', 'broken.yaml'), 'a: [1, 2');
+    expect(() => loadInputs(dir, profilePath, ['schema'])).toThrow(/Cannot read the graph file/);
+    expect(count(dir, ['schema', 'generated'])).toBe(base);
+  });
+  it('keeps the exclusions for the build command and the server', async () => {
+    const dir = extra();
+    const out = join(tmp(), 'o.html');
+    const args = ['build', '--graph', dir, '--profile', profilePath, '--out', out];
+    expect(await run(args)).toBe(1);
+    expect(await run([...args, '--exclude', 'schema', '--exclude', 'generated/**'])).toBe(0);
+    expect(pageData(readFileSync(out, 'utf8')).nodes.length).toBe(base);
+    const server = await startServer(dir, profilePath, 0, '127.0.0.1', ['schema', 'generated']);
+    try {
+      expect((await fetch(server.url)).status).toBe(200);
+      expect((await fetch(server.url)).status).toBe(200);
+    } finally {
+      await server.close();
+    }
+  });
+  it('warns once and has no effect when the graph is a file', () => {
+    const { warnings } = loadInputs(path(name, 'graph.json'), profilePath, ['schema']);
+    expect(warnings.filter((w) => w.includes('--exclude'))).toHaveLength(1);
+    expect(loadInputs(path(name, 'graph.json'), profilePath).warnings.some((w) => w.includes('--exclude'))).toBe(false);
+  });
+});
+
+describe('the schema command', () => {
+  it.each(['product', 'safety'])('writes 1 schema file for each kind of the %s fixture', async (name) => {
+    const profile = json<Profile>(name, 'profile.json');
+    const out = join(tmp(), 'schemas');
+    expect(await run(['schema', '--profile', path(name, 'profile.json'), '--out', out])).toBe(0);
+    expect(readdirSync(out).sort()).toEqual(profile.kinds.map((k) => `${k.id}.schema.json`).sort());
+    const first = JSON.parse(readFileSync(join(out, `${profile.kinds[0].id}.schema.json`), 'utf8'));
+    expect(first.title).toBe(profile.kinds[0].label);
+  });
+  it('refuses a missing option and reads a YAML profile', async () => {
+    expect(await run(['schema', '--profile', path('product', 'profile.json')])).toBe(1);
+    const dir = tmp();
+    writeFileSync(join(dir, 'p.yaml'), stringify(json<Profile>('safety', 'profile.json')));
+    expect(await run(['schema', '--profile', join(dir, 'p.yaml'), '--out', join(dir, 'out')])).toBe(0);
+    expect(readdirSync(join(dir, 'out')).length).toBe(6);
   });
 });

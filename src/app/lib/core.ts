@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // The app reads the pure logic through this module. It binds the profile of the page, so a
 // component asks for a label or a role and does not name a kind.
 import * as C from '@core/index';
-import type { Chip, Filters, Groups, Index, Model, Profile, Summary, VEdge, VNode, Walk } from '@core/index';
+import type { Chip, FieldFilterSpec, Filters, Groups, Index, Model, NodeStatus, Profile, StatusTone, Summary, VEdge, VNode, Walk } from '@core/index';
 
-export type { Chip, Filters, Groups, Index, Model, Profile, Summary, VEdge, VNode, Walk };
+export type { Chip, FieldFilterSpec, Filters, Groups, Index, Model, NodeStatus, Profile, StatusTone, Summary, VEdge, VNode, Walk };
 export type Kind = string;
 
 let profile: Profile;
@@ -59,6 +60,7 @@ export const Core = {
   walkCollapse: C.walkCollapse,
   walkHide: C.walkHide,
   summaryOf: C.summaryOf,
+  statusOf: C.statusOf,
   toCsv: C.toCsv,
   getPath: C.getPath,
   kindSpec: (id: string) => C.kindOf(profile, id),

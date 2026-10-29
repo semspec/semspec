@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // Vite config of the app. The build writes 1 script and 1 style sheet. The CLI puts both into
 // 1 HTML file, together with the graph data.
 import { fileURLToPath } from 'node:url';
@@ -15,7 +16,7 @@ export default defineConfig({
   resolve: { alias: { '@': here('./src/app'), '@core': here('./src/core') }, dedupe: ['react', 'react-dom'] },
   define: { 'process.env.NODE_ENV': JSON.stringify('production') },
   build: {
-    lib: { entry: 'src/app/main.tsx', formats: ['iife'], name: 'RequirementExplorer', fileName: () => 'viewer.js', cssFileName: 'viewer' },
+    lib: { entry: 'src/app/main.tsx', formats: ['iife'], name: 'Semspec', fileName: () => 'viewer.js', cssFileName: 'viewer' },
     outDir: 'dist/app',
     cssCodeSplit: false,
     minify: true,

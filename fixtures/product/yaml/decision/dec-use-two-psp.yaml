@@ -1,0 +1,5 @@
+id: dec-use-two-psp
+kind: decision
+summary: Two PSPs share the load.
+notes:
+  - ref: story-pay-by-card

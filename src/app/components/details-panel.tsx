@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // The details of the selected node, and the neighbours panel for the walk.
 // The profile says which sections a node has and which fields they read.
 import type { ReactNode } from 'react';
@@ -6,7 +7,7 @@ import { ChevronsLeft, EyeOff, Network, Target, Undo2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { ChipView, KindBadge, KindDot, NodeSummaryView } from '@/components/kind';
+import { ChipView, KindBadge, KindDot, NodeSummaryView, StatusCounts, StatusDot } from '@/components/kind';
 import { Core, type VEdge } from '@/lib/core';
 import type { Viewer } from '@/lib/use-viewer';
 import { cn } from '@/lib/utils';
@@ -176,6 +177,29 @@ export function DetailsPanel({ v }: { v: Viewer }) {
   const isCheck = n.kind === P.checks?.kind;
   const ownParts = (P.parts ?? []).filter((p) => p.owner === n.kind);
   const ownChecks = (d[P.checks?.field ?? ''] as Record<string, any>[] | undefined) ?? [];
+  const S = P.status;
+  const status = Core.statusOf(index, n.id, v.filters.fields);
+  // The status value of a part node and the list of its detail field.
+  const partStatus = (c: typeof n) => {
+    const value = S?.values.find((x) => x.value === c.status);
+    const detail = S?.detail ? ((c.d[S.detail.field] as unknown[] | undefined) ?? []) : [];
+    if (!value && !detail.length) return null;
+    return (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+        {value && (
+          <span className="inline-flex items-center gap-1">
+            <StatusDot tone={value.tone} />
+            {value.label}
+          </span>
+        )}
+        {detail.length > 0 && (
+          <span className="text-muted-foreground">
+            {S!.detail!.label}: {detail.join(', ')}
+          </span>
+        )}
+      </div>
+    );
+  };
 
   const groups = (edges: VEdge[], dir: 0 | 1) => {
     const g = new Map<string, VEdge[]>();
@@ -218,6 +242,11 @@ export function DetailsPanel({ v }: { v: Viewer }) {
               {formatProp(Core.getPath(d, p.field), p.format)}
             </Prop>
           ))}
+          {S && status.total > 0 && (
+            <Prop label={S.label}>
+              <StatusCounts status={status} />
+            </Prop>
+          )}
           <Prop label="Parent">{n.parents.length ? <span className="flex flex-col">{n.parents.map((p) => <NodeButton key={p} v={v} id={p} />)}</span> : ''}</Prop>
         </dl>
         {sup && (
@@ -275,6 +304,7 @@ export function DetailsPanel({ v }: { v: Viewer }) {
               {parts.map((c) => (
                 <div key={c.id} className={cn('flex flex-col gap-1.5 rounded-md border px-2.5 py-2', !(c.d.checks ?? []).length && 'border-l-2 border-l-warn')}>
                   <Text>{c.statement}</Text>
+                  {partStatus(c)}
                   {(c.d.checks ?? []).length ? <CheckList list={c.d.checks} /> : <span className="text-xs text-warn">{P.checks?.noneText ?? 'No check.'}</span>}
                 </div>
               ))}

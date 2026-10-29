@@ -1,26 +1,50 @@
 // SPDX-License-Identifier: Apache-2.0
-// The filter bar: search with a result count, 4 multi-select filters with counts, the depth,
+// Copyright 2026 The Semspec Authors
+// The filter bar: search with a result count, multi-select filters with counts, the depth,
 // and the active filters as removable chips with "Clear all". Only 1 popover is open at a time.
 import { useMemo, useState } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Command, CommandEmpty, CommandInput, CommandItem, CommandList, CommandShortcut } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from '@/components/ui/command';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { KindDot } from '@/components/kind';
-import { Core, type Filters, type Kind } from '@/lib/core';
+import { KindDot, StatusDot } from '@/components/kind';
+import { Core, type Filters, type Kind, type StatusTone } from '@/lib/core';
 import { EMPTY_FILTERS, type Viewer } from '@/lib/use-viewer';
 
-type FacetKey = 'kinds' | 'lifecycles' | 'deliveries' | 'modules';
+// A built-in facet, or "field:" and the field of a field filter of the profile.
+type FacetKey = 'kinds' | 'lifecycles' | 'deliveries' | 'modules' | 'statuses' | `field:${string}`;
 interface Option {
   value: string;
   label: string;
   hint?: string;
   count: number;
   kind?: Kind;
+  tone?: StatusTone | null;
+  group?: string;
+}
+
+const fieldOf = (key: FacetKey) => (key.startsWith('field:') ? key.slice(6) : null);
+
+// The selected values of a facet.
+function selectedOf(filters: Filters, key: FacetKey): string[] {
+  const field = fieldOf(key);
+  return field ? filters.fields?.[field] ?? [] : filters[key as Exclude<FacetKey, `field:${string}`>];
+}
+
+function withSelected(filters: Filters, key: FacetKey, list: string[]): Filters {
+  const field = fieldOf(key);
+  return field ? { ...filters, fields: { ...filters.fields, [field]: list } } : { ...filters, [key]: list };
+}
+
+// Options in groups, in the order of their first option. An option with no group is in the group ''.
+function grouped(list: Option[]): [string, Option[]][] {
+  const out = new Map<string, Option[]>();
+  list.forEach((o) => out.set(o.group ?? '', [...(out.get(o.group ?? '') ?? []), o]));
+  return Array.from(out.entries());
 }
 
 const BASE_FACETS: { key: FacetKey; label: string }[] = [
@@ -28,13 +52,23 @@ const BASE_FACETS: { key: FacetKey; label: string }[] = [
   { key: 'lifecycles', label: 'Lifecycle' },
   { key: 'deliveries', label: 'Delivery' },
   { key: 'modules', label: 'Group' },
+  { key: 'statuses', label: 'Status' },
 ];
 
 export function FilterBar({ v }: { v: Viewer }) {
   const { index, filters } = v;
   // The group facet is named by the profile. A profile with no group kind has no group facet.
   const group = v.model.profile.facets;
-  const FACETS = BASE_FACETS.filter((f) => f.key !== 'modules' || group).map((f) => (f.key === 'modules' && group ? { ...f, label: group.groupLabel } : f));
+  // The status facet is named by the profile too.
+  const status = v.model.profile.status;
+  // The profile can add a filter for any list field or text field.
+  const fieldFilters = v.model.profile.fieldFilters ?? [];
+  const FACETS: { key: FacetKey; label: string }[] = [
+    ...BASE_FACETS.filter((f) => (f.key !== 'modules' || group) && (f.key !== 'statuses' || status)).map((f) =>
+      f.key === 'modules' && group ? { ...f, label: group.groupLabel } : f.key === 'statuses' && status ? { ...f, label: status.label } : f,
+    ),
+    ...fieldFilters.map((f) => ({ key: `field:${f.field}` as FacetKey, label: f.label })),
+  ];
   const [openFacet, setOpenFacet] = useState<FacetKey | null>(null);
   const enabled = v.baseIds.length > 0;
 
@@ -47,7 +81,7 @@ export function FilterBar({ v }: { v: Viewer }) {
     modules.forEach((m) => titleCount.set(m.title, (titleCount.get(m.title) ?? 0) + 1));
     FACETS.forEach(({ key }) => {
       const counts = Core.facetCounts(index, v.baseIds, filters, key);
-      const selected = filters[key];
+      const selected = selectedOf(filters, key);
       const values = new Set<string>([...counts.keys(), ...selected]);
       let list: Option[];
       if (key === 'kinds') {
@@ -60,6 +94,19 @@ export function FilterBar({ v }: { v: Viewer }) {
             return { value: id, label: m.title, hint: (titleCount.get(m.title) ?? 0) > 1 ? id : undefined, count: counts.get(id) ?? 0 };
           })
           .sort((a, b) => a.label.localeCompare(b.label) || a.value.localeCompare(b.value));
+      } else if (key === 'statuses') {
+        // The values in the order of the profile, then the nodes with no status.
+        list = [...status!.values.map((x) => ({ value: x.value, label: x.label, tone: x.tone })), { value: '', label: 'None', tone: null }]
+          .filter((x) => values.has(x.value))
+          .map((x) => ({ ...x, count: counts.get(x.value) ?? 0 }));
+      } else if (fieldOf(key)) {
+        // The values in alphabetical order, in groups when the profile names a separator. "None" comes last.
+        const spec = fieldFilters.find((f) => f.field === fieldOf(key))!;
+        const label = (val: string) => (val ? spec.values?.[val] ?? val : 'None');
+        const groupOf = (val: string) => (spec.groupBy && val ? val.split(spec.groupBy)[0] : undefined);
+        list = Array.from(values)
+          .sort((a, b) => (!a ? 1 : !b ? -1 : (groupOf(a) ?? '').localeCompare(groupOf(b) ?? '') || label(a).localeCompare(label(b))))
+          .map((val) => ({ value: val, label: label(val), hint: spec.values?.[val] ? val : undefined, count: counts.get(val) ?? 0, group: groupOf(val) }));
       } else {
         list = Array.from(values)
           .sort()
@@ -71,20 +118,20 @@ export function FilterBar({ v }: { v: Viewer }) {
   }, [index, v.baseIds, v.model, filters]);
 
   const toggle = (key: FacetKey, value: string) => {
-    const list = filters[key];
-    v.setFilters({ ...filters, [key]: list.includes(value) ? list.filter((x) => x !== value) : [...list, value] });
+    const list = selectedOf(filters, key);
+    v.setFilters(withSelected(filters, key, list.includes(value) ? list.filter((x) => x !== value) : [...list, value]));
   };
 
   const chips: { key: FacetKey | 'q'; value: string; label: string }[] = [];
   FACETS.forEach(({ key, label }) =>
-    filters[key].forEach((val) => {
+    selectedOf(filters, key).forEach((val) => {
       const o = options[key].find((x) => x.value === val);
       chips.push({ key, value: val, label: `${label}: ${o?.label ?? val}` });
     }),
   );
   if (filters.q.trim()) chips.push({ key: 'q', value: filters.q, label: `Search: ${filters.q}` });
   const removeChip = (c: (typeof chips)[number]) =>
-    c.key === 'q' ? v.setFilters({ ...filters, q: '' }) : v.setFilters({ ...filters, [c.key]: filters[c.key].filter((x) => x !== c.value) });
+    c.key === 'q' ? v.setFilters({ ...filters, q: '' }) : v.setFilters(withSelected(filters, c.key, selectedOf(filters, c.key).filter((x) => x !== c.value)));
 
   const searching = filters.q.trim().length > 0;
   const rootScope = v.scope && v.scope.type === 'node' && Core.HIERARCHY_KINDS.includes(index.byId.get(v.scope.id)!.kind);
@@ -111,7 +158,8 @@ export function FilterBar({ v }: { v: Viewer }) {
         </InputGroup>
         {FACETS.map(({ key, label }) => {
           const list = options[key];
-          const n = filters[key].length;
+          const selected = selectedOf(filters, key);
+          const n = selected.length;
           return (
             <Popover key={key} open={openFacet === key} onOpenChange={(o) => setOpenFacet(o ? key : null)}>
               <PopoverTrigger render={<Button variant="outline" size="default" disabled={!enabled} aria-label={`Filter by ${label.toLowerCase()}`} />}>
@@ -124,15 +172,20 @@ export function FilterBar({ v }: { v: Viewer }) {
                   {list.length > 8 && <CommandInput placeholder={`Find a ${label.toLowerCase()}`} />}
                   <CommandList>
                     <CommandEmpty>Nothing found.</CommandEmpty>
-                    {list.map((o) => (
-                      <CommandItem key={o.value} value={`${o.label} ${o.hint ?? ''} ${o.value}`} onSelect={() => toggle(key, o.value)} className="gap-2 whitespace-nowrap data-[checked=true]:opacity-100">
-                        <Checkbox checked={filters[key].includes(o.value)} tabIndex={-1} aria-hidden className="pointer-events-none" />
-                        {o.kind && <KindDot kind={o.kind} />}
-                        <span>{o.label}</span>
-                        {o.hint && <span className="font-mono text-[10px] text-muted-foreground">{o.hint}</span>}
-                        {/* The shortcut slot hides the check icon of CommandItem, so the count is the only right-aligned element. */}
-                        <CommandShortcut className="min-w-8 pl-3 text-right tracking-normal tabular-nums">{o.count}</CommandShortcut>
-                      </CommandItem>
+                    {grouped(list).map(([g, opts]) => (
+                      <CommandGroup key={g} heading={g || undefined}>
+                        {opts.map((o) => (
+                          <CommandItem key={o.value} value={`${o.label} ${o.hint ?? ''} ${o.value}`} onSelect={() => toggle(key, o.value)} className="gap-2 whitespace-nowrap data-[checked=true]:opacity-100">
+                            <Checkbox checked={selected.includes(o.value)} tabIndex={-1} aria-hidden className="pointer-events-none" />
+                            {o.kind && <KindDot kind={o.kind} />}
+                            {o.tone !== undefined && <StatusDot tone={o.tone} />}
+                            <span>{o.label}</span>
+                            {o.hint && <span className="font-mono text-[10px] text-muted-foreground">{o.hint}</span>}
+                            {/* The shortcut slot hides the check icon of CommandItem, so the count is the only right-aligned element. */}
+                            <CommandShortcut className="min-w-8 pl-3 text-right tracking-normal tabular-nums">{o.count}</CommandShortcut>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
                     ))}
                   </CommandList>
                 </Command>

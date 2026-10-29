@@ -1,0 +1,8 @@
+id: std-card-data
+kind: standard
+body: card-data-standard
+bodyTitle: Card Data Standard
+clause: "3"
+item: a
+quote: A merchant shall not store card data.
+url: https://example.org/standard

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // Readable titles. A node with no title gets one from its id, in sentence case. The casing of
 // each word comes from the statements of the graph.
 import type { CheckTypeSpec, KindSpec, Profile } from './types';

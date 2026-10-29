@@ -50,6 +50,17 @@
     "sectionTitle": "Evidence",
     "noneText": "No evidence."
   },
+  "status": {
+    "label": "Assurance",
+    "field": "assurance",
+    "values": [
+      { "value": "assured", "label": "Assured", "tone": "good" },
+      { "value": "partly", "label": "Partly assured", "tone": "warn" },
+      { "value": "gap", "label": "Gap", "tone": "bad" }
+    ],
+    "detail": { "field": "gaps", "label": "Gaps" }
+  },
+  "fieldFilters": [{ "field": "parts", "label": "Hardware part", "groupBy": "." }],
   "facets": { "groupKind": "goal", "groupLabel": "Goal" },
   "entry": { "kind": "goal", "childKind": "subgoal", "title": "Pick a goal to see its argument", "countLabel": "subgoals" },
   "groups": { "hierarchy": "Argument tree" },

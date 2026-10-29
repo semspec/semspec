@@ -1,0 +1,9 @@
+id: story-pay-by-card-3ds
+kind: story
+summary: The buyer confirms a payment in a 3DS step.
+priority: medium
+follows:
+  - story-pay-by-card
+tests:
+  - type: manual
+    plan: plan-7

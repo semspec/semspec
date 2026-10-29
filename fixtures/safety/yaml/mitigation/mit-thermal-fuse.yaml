@@ -1,0 +1,16 @@
+key: mit-thermal-fuse
+type: mitigation
+description: A thermal fuse cuts the supply at 90 C.
+integrity: high
+assurance: gap
+parts:
+  - psu.fuse
+  - psu.relay
+subgoals:
+  - sg-stop-heater
+addresses:
+  - hz-overheat
+evidence:
+  - form: analysis
+    doc: FMEA-3
+    section: "4.2"

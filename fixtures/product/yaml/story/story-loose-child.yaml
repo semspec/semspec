@@ -1,0 +1,7 @@
+id: story-loose-child
+kind: story
+summary: A dropped follow-up.
+result: fail
+status: dropped
+follows:
+  - story-loose

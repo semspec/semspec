@@ -1,0 +1,9 @@
+id: dec-use-psp
+kind: decision
+name: Use an external PSP
+summary: A payment service provider takes the card data.
+decidedOn: 2026-03-01
+notes:
+  - ref: epic-checkout
+    text: governs the epic
+replacedBy: dec-use-two-psp

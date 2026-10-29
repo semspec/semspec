@@ -1,0 +1,6 @@
+id: epic-checkout
+kind: epic
+name: Checkout
+summary: The buyer pays for a basket.
+products:
+  - prd-shop

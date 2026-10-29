@@ -1,0 +1,26 @@
+id: story-pay-by-card
+kind: story
+summary: The buyer pays by card. A card with 3DS asks for a second step. The PSP charges the card.
+priority: high
+release: r1
+teams:
+  - payments
+  - web
+epics:
+  - epic-checkout
+complies:
+  - std-card-data
+scenarios:
+  - key: declined
+    text: A declined card shows a message.
+    result: pass
+    tests:
+      - type: unit
+        file: tests/pay.test.ts
+        name: showsDeclineMessage
+  - key: charged
+    text: A valid card is charged once.
+    result: fail
+    openBrowsers:
+      - Safari
+      - Firefox

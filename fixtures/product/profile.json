@@ -71,6 +71,17 @@
     "sectionTitle": "Tests",
     "noneText": "No test."
   },
+  "status": {
+    "label": "Result",
+    "field": "result",
+    "values": [
+      { "value": "pass", "label": "Pass", "tone": "good" },
+      { "value": "partial", "label": "Partial", "tone": "warn" },
+      { "value": "fail", "label": "Fail", "tone": "bad" }
+    ],
+    "detail": { "field": "openBrowsers", "label": "Open on" }
+  },
+  "fieldFilters": [{ "field": "teams", "label": "Team", "values": { "web": "Web shop" } }, { "field": "priority", "label": "Priority" }],
   "facets": { "groupKind": "epic", "groupLabel": "Epic" },
   "entry": { "kind": "epic", "childKind": "story", "title": "Pick an epic to see what it contains", "countLabel": "stories" },
   "groups": { "hierarchy": "Product tree" },

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // The state of the viewer: scope, filters, view, selection and the walk on the canvas.
 // The rules live in the core module. This hook only holds the state and calls them.
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -8,7 +9,7 @@ export type View = 'graph' | 'cards' | 'table';
 export type Scope = { type: 'node'; id: string } | { type: 'all' } | null;
 export type Panel = 'details' | 'expand';
 
-export const EMPTY_FILTERS: Filters = { q: '', kinds: [], lifecycles: [], deliveries: [], modules: [] };
+export const EMPTY_FILTERS: Filters = { q: '', kinds: [], lifecycles: [], deliveries: [], modules: [], statuses: [], fields: {} };
 
 // The tree group that holds a node. A reveal opens it.
 function groupOf(index: Index, id: string): string {
@@ -37,6 +38,8 @@ export function useViewer(model: Model) {
   const [history, setHistory] = useState<(Walk | null)[]>([]);
   const [layoutTick, setLayoutTick] = useState(0);
   const [dock, setDock] = useState(false);
+  // The canvas colours each node by its status. It is off by default.
+  const [statusColour, setStatusColour] = useState(false);
   const [panel, setPanel] = useState<Panel>('details');
   const [open, setOpen] = useState<Set<string>>(() => new Set(['g:hier']));
 
@@ -206,6 +209,8 @@ export function useViewer(model: Model) {
     relayout,
     dock,
     setDock,
+    statusColour: statusColour && !!model.profile.status,
+    setStatusColour,
     panel,
     setPanel,
     open,

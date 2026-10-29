@@ -1,0 +1,8 @@
+key: mit-watchdog
+type: mitigation
+description: A watchdog resets the controller.
+parts:
+  - mcu.watchdog
+integrity: medium
+goals:
+  - g-safe-operation

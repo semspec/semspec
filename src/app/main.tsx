@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 import { createRoot } from 'react-dom/client';
 import '@xyflow/react/dist/style.css';
 import './index.css';

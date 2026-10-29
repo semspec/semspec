@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // The types of the 2 inputs, the profile and the graph, and of the model that the page reads.
 
 export type Role = 'hierarchy' | 'part' | 'linked' | 'check';
@@ -67,6 +68,29 @@ export interface CheckSpec {
   noneText?: string;
 }
 
+// A status that a node carries in 1 field, for example the result of a review. A node with no
+// status of its own gets the status of the nodes below it. Each value has a tone: `good`, `warn`
+// or `bad`. The profile names exactly 1 value of each tone.
+export interface StatusSpec {
+  label: string;
+  field: string;
+  values: { value: string; label: string; tone: StatusTone }[];
+  // A list field of a node with a status. The details panel shows it next to the status.
+  detail?: { field: string; label: string };
+}
+
+export type StatusTone = 'good' | 'warn' | 'bad';
+
+// A filter on a list field or a text field of a node.
+export interface FieldFilterSpec {
+  field: string;
+  label: string;
+  // A label for a value. A value with no label shows as it is.
+  values?: Record<string, string>;
+  // The picker groups the values by the text before the first separator.
+  groupBy?: string;
+}
+
 export interface PropertySpec {
   label: string;
   field: string;
@@ -110,6 +134,8 @@ export interface Profile {
   linkedScopeEdges?: string[];
   parts?: PartSpec[];
   checks?: CheckSpec;
+  status?: StatusSpec;
+  fieldFilters?: FieldFilterSpec[];
   facets?: { groupKind: string; groupLabel: string };
   entry?: { kind: string; childKind: string; title: string; countLabel: string };
   groups?: { hierarchy: string };
@@ -133,6 +159,8 @@ export interface VNode {
   parents: string[];
   up: string[];
   cov?: { parts: number; verified: number };
+  // The status value of the node itself, when the profile has a status and the node names a known value.
+  status?: string;
   // The fields of the graph node that the details panel reads.
   d: Record<string, any>;
 }
@@ -164,6 +192,9 @@ export interface Index {
   inc: Map<string, VEdge[]>;
   model: Model;
   moduleCache: Map<string, Set<string>>;
+  statusCache: Map<string, Set<string>>;
+  carrierCache: Map<string, Set<string>>;
+  fieldCache: Map<string, Map<string, boolean>>;
   unplaced: Set<string>;
 }
 
@@ -173,6 +204,9 @@ export interface Filters {
   lifecycles: string[];
   deliveries: string[];
   modules: string[];
+  statuses: string[];
+  // The selected values of each field filter, by field. '' selects the nodes without a value.
+  fields?: Record<string, string[]>;
 }
 
 export interface Walk {
@@ -193,6 +227,16 @@ export interface Summary {
   id: string;
   muted: boolean;
   chips: Chip[];
+}
+
+// The status of a node: its own value, or the roll-up of the nodes below it.
+// `counts` holds the number of nodes with a status of their own, for each value.
+// `value` is null when no node with a status is below the node.
+export interface NodeStatus {
+  value: string | null;
+  tone: StatusTone | null;
+  counts: Record<string, number>;
+  total: number;
 }
 
 export interface Groups {

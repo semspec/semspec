@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // Turns a graph and a profile into the model of the page: nodes, edges, tree parents and scope
 // parents. 2 parent lists exist on purpose.
 //   parents: where the tree shows the node. The first group of parent fields that names a node wins.
@@ -46,6 +47,11 @@ export function buildModel(graph: Graph, input: Profile): Model {
     const by = P.lifecycle.byKind!;
     return Object.prototype.hasOwnProperty.call(by, n[kindKey]) ? by[n[kindKey]] : P.lifecycle.fallback;
   };
+  // The status value of a graph item, when it names a value of the profile.
+  const statusValue = (item: Record<string, any>): string | undefined => {
+    const v = P.status ? item[P.status.field] : undefined;
+    return P.status?.values.some((x) => x.value === v) ? String(v) : undefined;
+  };
   const blank = { lifecycle: '', delivery: '', level: '', statement: '', parents: [] as string[], up: [] as string[] };
 
   for (const n of graphNodes) {
@@ -68,6 +74,7 @@ export function buildModel(graph: Graph, input: Profile): Model {
       parents: [],
       up: [],
       d: raw,
+      status: statusValue(n),
     });
   }
 
@@ -96,7 +103,16 @@ export function buildModel(graph: Graph, input: Profile): Model {
           statement: a[part.text] ?? '',
           parents: [n[idKey]],
           up: [n[idKey]],
-          d: { id: base ?? '', text: a[part.text], setup: part.setup ? a[part.setup] : undefined, scope: part.scope ? a[part.scope] : undefined, checks: list },
+          d: {
+            id: base ?? '',
+            text: a[part.text],
+            setup: part.setup ? a[part.setup] : undefined,
+            scope: part.scope ? a[part.scope] : undefined,
+            checks: list,
+            ...(P.status ? { [P.status.field]: a[P.status.field] } : {}),
+            ...(P.status?.detail ? { [P.status.detail.field]: a[P.status.detail.field] } : {}),
+          },
+          status: statusValue(a),
         });
         addEdge(cid, n[idKey], part.edge);
         if (list.length) verified++;
@@ -189,5 +205,5 @@ export function buildIndex(model: Model): Index {
     out.get(e.s)?.push(e);
     inc.get(e.t)?.push(e);
   }
-  return { profile: model.profile, byId, children, scopeChildren, out, inc, model, moduleCache: new Map(), unplaced: new Set(model.unplaced) };
+  return { profile: model.profile, byId, children, scopeChildren, out, inc, model, moduleCache: new Map(), statusCache: new Map(), carrierCache: new Map(), fieldCache: new Map(), unplaced: new Set(model.unplaced) };
 }

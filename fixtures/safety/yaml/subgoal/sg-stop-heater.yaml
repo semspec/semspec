@@ -1,0 +1,5 @@
+key: sg-stop-heater
+type: subgoal
+claim: The heater stops after a detected overheat.
+goals:
+  - g-safe-operation

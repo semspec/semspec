@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-import { Info, Network, Table2, TriangleAlert, X } from 'lucide-react';
+// Copyright 2026 The Semspec Authors
+import { Info, Network, Palette, Table2, TriangleAlert, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Toggle } from '@/components/ui/toggle';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Canvas } from '@/components/canvas';
 import { DetailsPanel, ExpandPanel } from '@/components/details-panel';
@@ -59,8 +61,12 @@ function ScopeControl({ v }: { v: Viewer }) {
   );
 }
 
+// The number of start nodes that the welcome page shows when the profile names no entry kind.
+const FALLBACK_STARTS = 8;
+
 // The start page. The profile names the kind to start from. Without it, the start page lists
 // the nodes with the most children.
+
 function Welcome({ v }: { v: Viewer }) {
   const entry = v.model.profile.entry;
   const kind = entry?.kind;
@@ -68,17 +74,19 @@ function Welcome({ v }: { v: Viewer }) {
   const starts = v.model.nodes
     .filter((n) => (kind ? n.kind === kind : Core.kindSpec(n.kind)?.role === 'hierarchy'))
     .map((n) => ({ n, count: (v.index.scopeChildren.get(n.id) ?? []).filter((c) => !childKind || v.index.byId.get(c)!.kind === childKind).length }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 8);
+    .sort((a, b) => b.count - a.count);
+  // A profile with an entry kind lists every node of that kind. The fallback lists the largest hierarchy nodes only.
+  const shown = kind ? starts : starts.slice(0, FALLBACK_STARTS);
+  const left = starts.length - shown.length;
   return (
     <div className="flex h-full items-center justify-center overflow-auto p-8" data-testid="welcome">
       <div className="flex w-full max-w-xl flex-col gap-4">
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold">{entry?.title ?? 'Pick a node to see what it contains'}</h2>
-          <p className="text-sm text-muted-foreground">Select a node in the tree, or start with one of the largest. The scope shows the node, everything below it, and the linked nodes that connect to it.</p>
+          <p className="text-sm text-muted-foreground">{kind ? 'Select a node in the tree, or start with one below.' : 'Select a node in the tree, or start with one of the largest.'} The scope shows the node, everything below it, and the linked nodes that connect to it.</p>
         </div>
         <div className="grid gap-1.5">
-          {starts.map(({ n, count }) => (
+          {shown.map(({ n, count }) => (
             <button
               key={n.id}
               type="button"
@@ -93,6 +101,7 @@ function Welcome({ v }: { v: Viewer }) {
             </button>
           ))}
         </div>
+        {left > 0 && <p className="text-xs text-muted-foreground">{left} more in the tree.</p>}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {v.model.stats.unplacedLive > 0 && (
             <span className="inline-flex items-center gap-1.5 text-warn">
@@ -138,7 +147,7 @@ export function App({ model }: { model: Model }) {
               <Network className="size-4" />
             </span>
             <div className="leading-tight">
-              <div className="text-sm font-semibold">Requirement Explorer</div>
+              <div className="text-sm font-semibold">Semspec</div>
               <div className="text-[11px] text-muted-foreground tabular-nums">
                 {model.profile.project} · {model.nodes.length} nodes · {model.edges.length} edges
               </div>
@@ -146,6 +155,11 @@ export function App({ model }: { model: Model }) {
           </div>
           <ScopeControl v={v} />
           <div className="ml-auto flex items-center gap-3">
+            {model.profile.status && (
+              <Toggle variant="outline" size="sm" pressed={v.statusColour} onPressedChange={v.setStatusColour} aria-label={`Colour the nodes by ${model.profile.status.label.toLowerCase()}`}>
+                <Palette /> {model.profile.status.label}
+              </Toggle>
+            )}
             <Tabs value={v.view} onValueChange={(val) => v.setView(val as View)}>
               <TabsList aria-label="View">
                 <TabsTrigger value="graph">Graph</TabsTrigger>

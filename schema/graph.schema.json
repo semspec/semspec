@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://requirement-explorer.invalid/schema/graph.schema.json",
+  "$id": "https://semspec.dev/schema/graph.schema.json",
   "title": "Requirement graph",
-  "description": "The graph that Requirement Explorer reads. The keys `nodes`, `id` and `kind` are the defaults. A profile can name other keys in its `source` object. The profile gives meaning to every other field of a node.",
+  "description": "The graph that Semspec reads. The keys `nodes`, `id` and `kind` are the defaults. A profile can name other keys in its `source` object. The profile gives meaning to every other field of a node.",
   "type": "object",
   "required": ["nodes"],
   "properties": {

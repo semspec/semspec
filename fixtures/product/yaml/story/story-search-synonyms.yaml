@@ -1,0 +1,8 @@
+id: story-search-synonyms
+kind: story
+summary: The search knows synonyms.
+teams: search
+priority: medium
+epics:
+  - epic-search
+status: active

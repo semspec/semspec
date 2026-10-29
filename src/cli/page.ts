@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // Builds the 1-file page: the bundled app, its style, the colours of the kinds and the model.
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -63,7 +64,7 @@ export async function renderPage(model: Model): Promise<string> {
     '<head>',
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    `<title>Requirement Explorer – ${escapeHtml(model.profile.project)}</title>`,
+    `<title>Semspec – ${escapeHtml(model.profile.project)}</title>`,
     `<script>${THEME_SCRIPT}</script>`,
     `<style>${inlineStyle(css)}</style>`,
     `<style>${inlineStyle(kindColorCss(model))}</style>`,

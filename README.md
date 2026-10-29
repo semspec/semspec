@@ -1,24 +1,63 @@
-# Requirement Explorer
+# Semspec
 
-Requirement Explorer shows a requirement graph in a browser. It has a hierarchy tree, a scope by any node, a walk of the graph by expansion, Graph, Cards and Table views, and a details panel.
+Semspec shows a requirement graph in a browser. It has a hierarchy tree, a scope by any node, a walk of the graph by expansion, Graph, Cards and Table views, and a details panel.
 
 The tool reads 2 JSON files. The graph holds the nodes. The profile says what the fields of the nodes mean. The same tool shows any graph that a profile describes.
 
 ## Use
 
 ```
-requirement-explorer serve --graph graph.json --profile profile.json [--port 4173] [--host 127.0.0.1]
-requirement-explorer build --graph graph.json --profile profile.json --out explorer.html
+semspec serve --graph <graph> --profile <profile> [--port 4173] [--host 127.0.0.1] [--exclude <pattern>]...
+semspec build --graph <graph> --profile <profile> --out explorer.html [--exclude <pattern>]...
+semspec schema --profile <profile> --out <dir>
 ```
 
-- `serve` starts a server on localhost. It reads both files again on each page load.
+- `serve` starts a server on localhost. It reads both inputs again on each page load.
 - `build` writes 1 HTML file. The file has the data, the script and the style inline. It opens from disk and makes no network request.
+- `schema` writes 1 JSON Schema for each kind of the profile. See "The schemas of the kinds".
 
-Both commands check the 2 files first and stop with a message when a file is not valid.
+`<graph>` is a JSON file, a YAML file or a folder of YAML files. `<profile>` is a JSON file or a YAML file (`.yaml` or `.yml`).
+
+`--exclude` skips paths of a graph folder. It can repeat. See "The YAML folder".
+
+`serve` and `build` check the 2 inputs first and stop with a message when an input is not valid. A message about a YAML node names its file.
+
+## The YAML folder
+
+A folder can hold the graph, with 1 file for each node. The folder can have sub-folders, for example 1 for each kind:
+
+```
+requirements/
+  epic/epic-checkout.yaml
+  story/story-pay-by-card.yaml
+```
+
+- Semspec reads every `*.yaml` and `*.yml` file below the folder, in sorted order of the path.
+- A file that holds a mapping is 1 node. A file that holds a list of mappings is several nodes.
+- The graph is `{ "<source.nodes>": [ ...the nodes... ] }`. The profile names the key in `source.nodes`.
+- A single YAML file can also hold a whole graph, in the same shape as a JSON graph.
+- `serve` reads the folder again on each page load, so an edit shows on reload.
+
+A graph folder can sit next to folders that hold YAML but no nodes, for example `schema/` or `generated/`. Skip them with `--exclude`:
+
+```
+semspec build --graph requirements --profile profile.yaml --out explorer.html --exclude schema --exclude 'generated/**'
+```
+
+- A pattern matches a path relative to the graph folder, with `/` as separator.
+- `*` matches any characters except `/`. `**` matches any characters, including `/`. `?` matches 1 character except `/`.
+- A pattern with no `/` and no wildcard, such as `schema`, matches a folder or a file of that name at any depth.
+- Semspec does not read into an excluded folder.
+- `--exclude` has no effect when `--graph` is a file. Semspec prints 1 warning.
+- Quote a pattern with `*` or `?`, so the shell does not expand it.
+
+## The schemas of the kinds
+
+`semspec schema --profile profile.json --out schemas` writes `schemas/<kind id>.schema.json` for each kind. Each file is a JSON Schema (draft 2020-12) that holds only what the profile knows: the id with the prefix of the kind, the kind, the title, statement and lifecycle fields, the parent and link fields, the refs, the parts, the checks and the status. The schema allows other fields. An editor can use the schemas to check the YAML files.
 
 ## The graph
 
-The graph is a JSON object with a list of nodes. See `schema/graph.schema.json`.
+The graph is an object with a list of nodes. See `schema/graph.schema.json`.
 
 ```json
 { "nodes": [ { "id": "epic-checkout", "kind": "epic", "products": ["prd-shop"] } ] }
@@ -47,6 +86,8 @@ The profile is a JSON object. See `schema/profile.schema.json` and the 2 example
 | `linkedScopeEdges` | The edges that pull a linked node into the scope of a node. |
 | `parts` | Which kinds own parts, in which field, and the fields of a part. |
 | `checks` | The check field, the check kind, the check types and their identity. |
+| `status` | A status field with 3 values, 1 for each tone: good, warn and bad. A node with no status of its own gets the roll-up of the nodes below it: all good is good, all bad is bad, and a mix is warn. A node with a muted lifecycle does not count. A toggle colours the canvas by status, and a filter selects the status values. |
+| `fieldFilters` | Filters on a list field or a text field: the field, a label, labels for values, and a separator that groups the values in the picker. A node without the field takes the values of the nodes above or below it. The table has a column for each field. |
 | `facets`, `entry`, `groups` | The group facet, the start page and the names of tree groups. |
 | `details` | The sections of the details panel: properties, text sections, option lists, source lists, object lists and citations. |
 

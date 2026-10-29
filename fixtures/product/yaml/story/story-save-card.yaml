@@ -1,0 +1,12 @@
+id: story-save-card
+kind: story
+summary: The buyer saves a card.
+result: pass
+teams:
+  - payments
+priority: low
+release: r2
+epics:
+  - epic-checkout
+follows:
+  - story-pay-by-card

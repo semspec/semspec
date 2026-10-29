@@ -1,0 +1,6 @@
+id: epic-search
+kind: epic
+summary: The buyer finds an item.
+products:
+  - prd-shop
+status: active

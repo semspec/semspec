@@ -1,0 +1,5 @@
+key: hz-overheat
+type: hazard
+label: Overheat of the housing
+description: The housing gets hotter than 90 C.
+severity: critical

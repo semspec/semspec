@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // Helpers that read a profile. The core knows no kind and no field. It asks the profile.
 import type { CheckSpec, KindSpec, Profile, Role } from './types';
 

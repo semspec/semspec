@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // What a reader does with a model: scope by a node, filter, walk by expansion, summarise, export.
-import type { Chip, Filters, Groups, Index, Summary, VEdge, VNode, Walk } from './types';
+import type { Chip, Filters, Groups, Index, NodeStatus, Summary, VEdge, VNode, Walk } from './types';
 import { getPath, isMuted, kindLabel, kindOf, kindPlural, linkedKinds, treeKinds } from './profile';
 
 // ---------- scope ----------
@@ -90,22 +91,164 @@ export function groupsOf(index: Index, id: string): Set<string> {
   return result;
 }
 
+// ---------- field filters ----------
+// A field filter reads a list field or a text field of a node. A carrier kind is a kind with at
+// least 1 node that has the field. A node of another kind takes the values of its relatives:
+//   below a carrier: the nearest carriers above it, through the scope parents;
+//   above carriers:  every carrier below it, through the scope children;
+//   a linked node or a check: the relatives of its tree neighbours.
+// A carrier also takes the values of the carriers below it, so a parent shows what its children have.
+
+type Active = [string, string[]][];
+
+function carrierKinds(index: Index, field: string): Set<string> {
+  const cached = index.carrierCache.get(field);
+  if (cached) return cached;
+  const kinds = new Set<string>();
+  index.model.nodes.forEach((n) => n.d[field] !== undefined && kinds.add(n.kind));
+  index.carrierCache.set(field, kinds);
+  return kinds;
+}
+
+// The values of a carrier. A carrier with no value has the value ''.
+function ownValues(n: VNode, field: string): string[] {
+  const v = n.d[field];
+  const list = Array.isArray(v) ? v.map(String) : v === undefined || v === null || v === '' ? [] : [String(v)];
+  return list.length ? list : [''];
+}
+
+function carriersAbove(index: Index, id: string, field: string, seen = new Set<string>()): string[] {
+  const n = index.byId.get(id);
+  if (!n || seen.has(id)) return [];
+  seen.add(id);
+  if (carrierKinds(index, field).has(n.kind)) return [id];
+  return n.up.flatMap((p) => carriersAbove(index, p, field, seen));
+}
+
+function carriersBelow(index: Index, id: string, field: string, out = new Set<string>(), seen = new Set<string>()): Set<string> {
+  const n = index.byId.get(id);
+  if (!n || seen.has(id)) return out;
+  seen.add(id);
+  if (carrierKinds(index, field).has(n.kind)) out.add(id);
+  (index.scopeChildren.get(id) ?? []).forEach((c) => carriersBelow(index, c, field, out, seen));
+  return out;
+}
+
+function treeNeighbours(index: Index, id: string): string[] {
+  const tree = treeKinds(index.profile);
+  return Array.from(neighbourIds(index, id)).filter((o) => tree.includes(index.byId.get(o)!.kind));
+}
+
+// The values of a field for a node, taken from the node or from its relatives.
+export function fieldValues(index: Index, field: string, id: string): Set<string> {
+  const n = index.byId.get(id);
+  const out = new Set<string>();
+  if (!n) return out;
+  const relatives = (x: string) => [...carriersAbove(index, x, field), ...carriersBelow(index, x, field)];
+  let list = relatives(id);
+  if (!list.length && !treeKinds(index.profile).includes(n.kind)) list = treeNeighbours(index, id).flatMap(relatives);
+  list.forEach((c) => ownValues(index.byId.get(c)!, field).forEach((v) => out.add(v)));
+  return out;
+}
+
+const activeOf = (fields: Filters['fields'], skip?: string): Active =>
+  Object.entries(fields ?? {}).filter(([field, sel]) => sel.length && `field:${field}` !== skip);
+
+// A node matches when the carriers above it match all filters together, or when a node below it
+// matches. A linked node or a check matches when a tree neighbour matches.
+function matchFields(index: Index, id: string, active: Active): boolean {
+  if (!active.length) return true;
+  const key = JSON.stringify(active);
+  let memo = index.fieldCache.get(key);
+  if (!memo) index.fieldCache.set(key, (memo = new Map()));
+  const ok = (c: string, field: string, sel: string[]) => ownValues(index.byId.get(c)!, field).some((v) => sel.includes(v));
+  const tree = treeKinds(index.profile);
+  const visit = (x: string, seen: Set<string>): boolean => {
+    if (memo!.has(x)) return memo!.get(x)!;
+    const n = index.byId.get(x);
+    if (!n || seen.has(x)) return false;
+    seen.add(x);
+    let decided = true;
+    let result = true;
+    for (const [field, sel] of active) {
+      const above = carriersAbove(index, x, field);
+      if (!above.length) decided = false;
+      else if (!above.some((c) => ok(c, field, sel))) {
+        result = false;
+        break;
+      }
+    }
+    result = decided && result;
+    if (!result) {
+      const next = tree.includes(n.kind) ? index.scopeChildren.get(x) ?? [] : decided ? [] : treeNeighbours(index, x);
+      result = next.some((c) => visit(c, seen));
+    }
+    seen.delete(x);
+    memo!.set(x, result);
+    return result;
+  };
+  return visit(id, new Set());
+}
+
+// ---------- status ----------
+
+// The nodes with a status of their own at or below a node, through the scope parents. A node
+// with a muted lifecycle and what is only below it do not count. A set counts a node under
+// 2 parents once.
+function statusLeaves(index: Index, id: string, seen: Set<string>): Set<string> {
+  const cached = index.statusCache.get(id);
+  if (cached) return cached;
+  const result = new Set<string>();
+  const n = index.byId.get(id);
+  if (!n || seen.has(id) || isMuted(index.profile, n.lifecycle)) return result;
+  seen.add(id);
+  if (n.status) result.add(id);
+  else for (const c of index.scopeChildren.get(id) ?? []) statusLeaves(index, c, seen).forEach((l) => result.add(l));
+  seen.delete(id);
+  index.statusCache.set(id, result);
+  return result;
+}
+
+// The status of a node. All good is good, all bad is bad, and a mix is the warn value.
+// A node with no status below it has no value. With field filters, only the nodes that match count.
+export function statusOf(index: Index, id: string, fields?: Filters['fields']): NodeStatus {
+  const spec = index.profile.status;
+  const counts: Record<string, number> = {};
+  if (!spec) return { value: null, tone: null, counts, total: 0 };
+  spec.values.forEach((v) => (counts[v.value] = 0));
+  const active = activeOf(fields);
+  const leaves = new Set(Array.from(statusLeaves(index, id, new Set())).filter((l) => matchFields(index, l, active)));
+  leaves.forEach((l) => counts[index.byId.get(l)!.status!]++);
+  const total = leaves.size;
+  const byTone = (tone: string) => spec.values.find((v) => v.tone === tone)?.value ?? null;
+  if (!total) return { value: null, tone: null, counts, total };
+  for (const tone of ['good', 'bad'] as const) {
+    const value = byTone(tone);
+    if (value && counts[value] === total) return { value, tone, counts, total };
+  }
+  return { value: byTone('warn'), tone: 'warn', counts, total };
+}
+
 // ---------- filters ----------
 
-type FacetKey = 'kinds' | 'lifecycles' | 'deliveries' | 'modules';
+type FacetKey = 'kinds' | 'lifecycles' | 'deliveries' | 'modules' | 'statuses';
 const NODE_FIELD = { kinds: 'kind', lifecycles: 'lifecycle', deliveries: 'delivery' } as const;
-const FACET_KEYS: FacetKey[] = ['kinds', 'lifecycles', 'deliveries', 'modules'];
+const FACET_KEYS: FacetKey[] = ['kinds', 'lifecycles', 'deliveries', 'modules', 'statuses'];
 
-function facetValues(index: Index, n: VNode, key: FacetKey): string[] {
+function facetValues(index: Index, n: VNode, key: string, f: Filters, skip?: string): string[] {
+  if (key.startsWith('field:')) return Array.from(fieldValues(index, key.slice(6), n.id));
   if (key === 'modules') return Array.from(groupsOf(index, n.id));
-  return [(n[NODE_FIELD[key]] as string) || ''];
+  if (key === 'statuses') return [statusOf(index, n.id, Object.fromEntries(activeOf(f.fields, skip))).value ?? ''];
+  return [(n[NODE_FIELD[key as keyof typeof NODE_FIELD]] as string) || ''];
 }
 
 // Filters on top of a scope. Each facet is a list. An empty list allows everything.
-// `skip` names a facet to leave out.
+// The values of 1 facet are OR. The facets are AND. `skip` names a facet to leave out.
+// The key of a field filter is "field:" and the field.
 export function applyFilters(index: Index, ids: Iterable<string>, f: Filters, skip?: string): string[] {
   const q = (f.q || '').trim().toLowerCase();
   const result: string[] = [];
+  const active = activeOf(f.fields, skip);
   for (const id of ids) {
     const n = index.byId.get(id);
     if (!n) continue;
@@ -113,12 +256,12 @@ export function applyFilters(index: Index, ids: Iterable<string>, f: Filters, sk
     for (const key of FACET_KEYS) {
       const list = f[key];
       if (key === skip || !list?.length) continue;
-      if (!facetValues(index, n, key).some((v) => list.includes(v))) {
+      if (!facetValues(index, n, key, f, skip).some((v) => list.includes(v))) {
         ok = false;
         break;
       }
     }
-    if (!ok) continue;
+    if (!ok || !matchFields(index, id, active)) continue;
     if (q && `${n.id}\n${n.title}\n${n.sub}\n${n.statement}`.toLowerCase().indexOf(q) < 0) continue;
     result.push(id);
   }
@@ -129,7 +272,7 @@ export function applyFilters(index: Index, ids: Iterable<string>, f: Filters, sk
 export function facetCounts(index: Index, ids: Iterable<string>, f: Filters, key: string): Map<string, number> {
   const counts = new Map<string, number>();
   for (const id of applyFilters(index, ids, f, key)) {
-    for (const v of facetValues(index, index.byId.get(id)!, key as FacetKey)) counts.set(v, (counts.get(v) ?? 0) + 1);
+    for (const v of facetValues(index, index.byId.get(id)!, key, f, key)) counts.set(v, (counts.get(v) ?? 0) + 1);
   }
   return counts;
 }

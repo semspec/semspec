@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // The hierarchy tree. Each linked kind has its own group. A node with no place has its group too.
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, Search, TriangleAlert } from 'lucide-react';

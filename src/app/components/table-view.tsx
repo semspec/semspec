@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 The Semspec Authors
 // The table of the nodes on the canvas: sort, filter by column, resize, page and export.
 // It uses TanStack Table, the pattern of the shadcn Data Table.
 import { useMemo, useState } from 'react';
@@ -18,8 +19,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { KindBadge } from '@/components/kind';
-import { Core, type VNode } from '@/lib/core';
+import { KindBadge, StatusDot, statusShare } from '@/components/kind';
+import { Core, type FieldFilterSpec, type Filters, type VNode } from '@/lib/core';
 import type { Viewer } from '@/lib/use-viewer';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +40,64 @@ function Coverage({ n }: { n: VNode }) {
       </span>
     </span>
   );
+}
+
+// The status column sorts by the share of good nodes. A node with no status sorts last.
+// With field filters, only the nodes that match count.
+function statusColumn(index: Viewer['index'], fields: Filters['fields']): ColumnDef<VNode> {
+  const good = index.profile.status!.values[0].value;
+  return {
+    id: 'status',
+    header: index.profile.status!.label,
+    size: 104,
+    accessorFn: (n) => {
+      const st = Core.statusOf(index, n.id, fields);
+      return st.total ? st.counts[good] / st.total : undefined;
+    },
+    cell: ({ row }) => {
+      const st = Core.statusOf(index, row.original.id, fields);
+      if (!st.total) return <span className="text-muted-foreground">–</span>;
+      return (
+        <span className="inline-flex items-center gap-1.5 tabular-nums">
+          <StatusDot tone={st.tone} />
+          {statusShare(st, true)}
+        </span>
+      );
+    },
+    // The filter reads the text "12/30".
+    filterFn: (row, _id, value: string) => {
+      const st = Core.statusOf(index, row.original.id, fields);
+      return (st.total ? statusShare(st, true) : '').includes(value);
+    },
+  };
+}
+
+// The values of a field filter on the node itself, with their labels.
+function fieldText(spec: FieldFilterSpec, n: VNode): string {
+  const v = n.d[spec.field];
+  const list = Array.isArray(v) ? v.map(String) : v === undefined || v === null || v === '' ? [] : [String(v)];
+  return list.map((x) => spec.values?.[x] ?? x).join(', ');
+}
+
+// A column for a field filter of the profile. It shows the values of the node itself.
+function fieldColumn(spec: FieldFilterSpec): ColumnDef<VNode> {
+  const text = (n: VNode) => fieldText(spec, n);
+  return {
+    id: `field:${spec.field}`,
+    header: spec.label,
+    size: 140,
+    accessorFn: (n) => text(n) || undefined,
+    cell: ({ row }) => {
+      const t = text(row.original);
+      return t ? (
+        <span className="block truncate" title={t}>
+          {t}
+        </span>
+      ) : (
+        <span className="text-muted-foreground">–</span>
+      );
+    },
+  };
 }
 
 export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean }) {
@@ -101,9 +160,11 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
           return (c ? `${c.verified} of ${c.parts}` : '').includes(value);
         },
       },
+      ...(index.profile.fieldFilters ?? []).map(fieldColumn),
+      ...(index.profile.status ? [statusColumn(index, v.filters.fields)] : []),
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [index],
+    [index, v.filters.fields],
   );
 
   const table = useReactTable({
@@ -142,6 +203,11 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
       { label: 'Parent', text: parentTitle },
       { label: 'Parts', text: (n: VNode) => n.cov?.parts ?? '' },
       { label: 'Parts with a check', text: (n: VNode) => n.cov?.verified ?? '' },
+      ...(index.profile.fieldFilters ?? []).map((spec) => ({ label: spec.label, text: (n: VNode) => fieldText(spec, n) })),
+      ...(index.profile.status?.values ?? []).map((x) => ({
+        label: `${index.profile.status!.label}: ${x.label}`,
+        text: (n: VNode) => Core.statusOf(index, n.id, v.filters.fields).counts[x.value] ?? '',
+      })),
     ];
     const blob = new Blob(['﻿' + Core.toCsv(cols, all)], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');

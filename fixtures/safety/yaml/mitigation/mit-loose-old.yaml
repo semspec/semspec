@@ -1,0 +1,5 @@
+key: mit-loose-old
+type: mitigation
+description: An old mitigation.
+state: retired
+goals: []

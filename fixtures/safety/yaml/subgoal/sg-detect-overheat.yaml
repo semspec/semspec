@@ -1,0 +1,17 @@
+key: sg-detect-overheat
+type: subgoal
+claim: An overheat is detected within 2 s.
+goals:
+  - g-safe-operation
+arguments:
+  - name: sensor-redundant
+    text: 2 sensors vote on the temperature.
+    assurance: assured
+    evidence:
+      - form: report
+        doc: FTA-12
+  - name: sensor-drift
+    text: A sensor drift is caught.
+    assurance: gap
+    gaps:
+      - cold start
