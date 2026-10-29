@@ -101,7 +101,7 @@ const Row = memo(function Row(props: {
     >
       {isScope && <span className="absolute inset-y-0 left-0 w-0.5 bg-primary" />}
       {Array.from({ length: depth }).map((_, i) => (
-        <span key={i} aria-hidden className="h-full w-4 shrink-0 border-l border-border/70 first:ml-2" />
+        <span key={i} aria-hidden className={cn('h-full w-4 shrink-0 border-l border-border/70', i === 0 && 'ml-2')} />
       ))}
       <button type="button" aria-label={open ? `Collapse ${n.title}` : `Expand ${n.title}`} tabIndex={-1} onClick={props.onToggle} className={cn('flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent', !hasKids && 'invisible')}>
         <ChevronRight className={cn('size-3.5 transition-transform', open && 'rotate-90')} />
