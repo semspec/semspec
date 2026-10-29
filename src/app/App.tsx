@@ -79,8 +79,8 @@ function Welcome({ v }: { v: Viewer }) {
   const shown = kind ? starts : starts.slice(0, FALLBACK_STARTS);
   const left = starts.length - shown.length;
   return (
-    <div className="flex h-full items-center justify-center overflow-auto p-8" data-testid="welcome">
-      <div className="flex w-full max-w-xl flex-col gap-4">
+    <div className="flex h-full overflow-auto p-8" data-testid="welcome">
+      <div className="m-auto flex w-full max-w-xl flex-col gap-4">
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold">{entry?.title ?? 'Pick a node to see what it contains'}</h2>
           <p className="text-sm text-muted-foreground">{kind ? 'Select a node in the tree, or start with one below.' : 'Select a node in the tree, or start with one of the largest.'} The scope shows the node, everything below it, and the linked nodes that connect to it.</p>
