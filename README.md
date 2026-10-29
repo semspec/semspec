@@ -1,8 +1,19 @@
 # Semspec
 
-Semspec shows a requirement graph in a browser. It has a hierarchy tree, a scope by any node, a walk of the graph by expansion, Graph, Cards and Table views, and a details panel.
+AI-native requirements engineering harness.
 
-The tool reads 2 JSON files. The graph holds the nodes. The profile says what the fields of the nodes mean. The same tool shows any graph that a profile describes.
+Semspec turns requirements that a project keeps as YAML or JSON into a typed, linked graph. It shows how each requirement traces to its parts, its checks and its status. A profile defines the kinds, the edges and the fields, so the same tool works for any project and any vocabulary.
+
+What Semspec does today:
+
+- It reads a folder of YAML files (1 file for each node), a YAML file or a JSON file. `--exclude` skips other folders.
+- A profile defines kinds, edges, parts and checks. It also defines a status with a roll-up from the nodes below (good, warn, bad), and filters on any list field.
+- You explore the graph with a hierarchy tree, a scope by any node, a walk of the graph by expansion, and Graph, Cards and Table views with a details panel.
+- A status colour mode colours the graph by status. Filters select nodes by status and by profile fields. The table exports to CSV.
+- `semspec schema` writes a JSON Schema for each kind, so editors and agents can check the YAML files.
+- `serve` runs a live local page. `build` writes 1 self-contained HTML file.
+
+The tool knows no project. Every kind, edge, field, colour and label comes from the profile.
 
 ## Use
 
@@ -72,7 +83,7 @@ The graph is an object with a list of nodes. See `schema/graph.schema.json`.
 
 ## The profile
 
-The profile is a JSON object. See `schema/profile.schema.json` and the 2 examples in `fixtures/`.
+The profile is a JSON or YAML object. See `schema/profile.schema.json` and the 2 examples in `fixtures/`.
 
 | Key | Meaning |
 |---|---|

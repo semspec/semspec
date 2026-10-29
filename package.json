@@ -1,7 +1,7 @@
 {
   "name": "semspec",
   "version": "0.1.0",
-  "description": "A schema-driven explorer for requirement graphs: a hierarchy tree, a scope by any node, a walk by expansion, Graph, Cards and Table views.",
+  "description": "AI-native requirements engineering harness.",
   "license": "Apache-2.0",
   "author": "The Semspec Authors",
   "type": "module",
