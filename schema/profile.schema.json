@@ -15,7 +15,8 @@
       "properties": {
         "nodes": { "type": "string", "description": "The key of the list of nodes in the graph." },
         "id": { "type": "string", "description": "The key of the id of a node." },
-        "kind": { "type": "string", "description": "The key of the kind of a node." }
+        "kind": { "type": "string", "description": "The key of the kind of a node." },
+        "defaultKind": { "type": "string", "description": "The kind of a node that has no value in the kind key. It must be a kind of the profile." }
       }
     },
     "fields": {
@@ -94,13 +95,13 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["owner", "field", "kind", "id", "edge"],
+        "required": ["owner", "field", "kind", "edge"],
         "additionalProperties": false,
         "properties": {
           "owner": { "type": "string", "description": "The kind of the node that holds the object." },
           "field": { "type": "string", "description": "A dotted path to the object in the owner." },
           "kind": { "type": "string", "description": "The kind that each distinct object becomes." },
-          "id": { "type": "string", "description": "The key of the id inside the object." },
+          "id": { "type": "string", "description": "The key of the id inside the object. An object needs it. A string or a number in the field is the id itself." },
           "edge": { "type": "string", "description": "The name of the edge from the owner to the new node. The edge is a parent field of the owner." }
         }
       }

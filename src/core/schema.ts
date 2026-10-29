@@ -65,7 +65,7 @@ export function kindSchemas(profile: Profile): Record<string, JsonSchema> {
       description: `A node of the kind "${kind.label}".`,
       type: 'object',
       properties,
-      required: [idKey, kindKey],
+      required: kind.id === profile.source.defaultKind ? [idKey] : [idKey, kindKey],
       additionalProperties: true,
     };
   }

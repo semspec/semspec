@@ -1,0 +1,11 @@
+id: chord
+term: Chord
+definition: Three or more notes played together.
+owner: grp-harmony
+relations:
+  - to: scale
+    relation: is built from
+source:
+  - title: Harmony Primer
+    page: "30"
+  - title: Chord Handbook

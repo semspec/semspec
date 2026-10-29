@@ -1,0 +1,23 @@
+id: req-embedded-edge-name
+kind: requirement
+title: Refuse an embedded edge name that clashes
+statement: The edge name of an embedded entry differs from the field and from the other link and parent fields.
+capabilities:
+  - cap-validate
+area:
+  - core
+acceptance:
+  - id: same-as-field
+    text: An edge name that equals the field, or the first segment of a dotted field, gives an error.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: refuse an edge name that equals the field, or the first segment of a dotted field
+  - id: same-as-link
+    text: An edge name that is also a link field, or a field that is also another link or parent field of the owner kind, gives an error.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: refuse an edge name or a field that is also another link or parent field

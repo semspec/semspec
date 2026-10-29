@@ -6,14 +6,14 @@
 //   up:      every parent field of the kind. The scope and the group facet follow this list.
 // Edge direction follows the graph: from the specific node to the general node.
 import type { Graph, Index, Model, Profile, RawNode, VEdge, VNode } from './types';
-import { allLinkFields, embeddedObjects, firstOf, getPath, isMuted, kindOf, normalise, omitPath } from './profile';
+import { allLinkFields, embeddedObjects, firstOf, getPath, isMuted, kindOf, normalise, omitPath, withDefaultKind } from './profile';
 import { checkKey, checkTitle, citationTitle, deriveTitle, snippet, wordCasing } from './titles';
 
 export function buildModel(graph: Graph, input: Profile): Model {
   const P = normalise(input);
   const checks = P.checks!;
   const { id: idKey, kind: kindKey } = P.source;
-  const graphNodes = ((graph[P.source.nodes] as RawNode[]) ?? []) as Record<string, any>[];
+  const graphNodes = withDefaultKind(P.source, ((graph[P.source.nodes] as RawNode[]) ?? []) as Record<string, any>[]);
   const linkFields = allLinkFields(P);
   const nodes: VNode[] = [];
   const edges: VEdge[] = [];
@@ -80,12 +80,12 @@ export function buildModel(graph: Graph, input: Profile): Model {
     });
   }
 
-  // An embedded object is a node of its own. A node of the graph with the same id wins, and the
+  // An embedded object, string or number is a node of its own. A node of the graph with the same id wins, and the
   // owner then only gets the edge. The tree and the scope read the edge as a parent field.
   const embeddedParents = new Map<string, Map<string, string[]>>();
   for (const e of P.embedded!) {
     for (const { id, object, owners } of embeddedObjects(e, graphNodes, idKey, kindKey)) {
-      const { [e.id]: _id, ...fields } = object;
+      const fields = e.id ? (({ [e.id]: _id, ...rest }) => rest)(object) : object;
       addNode({
         id,
         kind: e.kind,

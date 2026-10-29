@@ -1,0 +1,7 @@
+id: tempo
+term: Tempo
+definition: The speed of the beat.
+owner: grp-rhythm
+relations:
+  - to: beat
+    relation: sets the speed of

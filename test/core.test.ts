@@ -36,10 +36,13 @@ const load = (name: string) => ({
 });
 const product = load('product');
 const safety = load('safety');
+const glossary = load('glossary');
 const pModel = buildModel(product.graph, product.profile);
 const pIndex = buildIndex(pModel);
 const sModel = buildModel(safety.graph, safety.profile);
 const sIndex = buildIndex(sModel);
+const gModel = buildModel(glossary.graph, glossary.profile);
+const gIndex = buildIndex(gModel);
 const sorted = (s: Iterable<string>) => Array.from(s).sort();
 const title = (m: typeof pModel, id: string) => m.nodes.find((n) => n.id === id)!.title;
 
@@ -484,5 +487,117 @@ describe('embedded nodes', () => {
   it('reaches an owner from a walk over the new node', () => {
     const w = walkExpand(pIndex, walkStart(['card-data-standard']), 'card-data-standard');
     expect(sorted(w.added)).toEqual(['std-card-data', 'std-card-storage']);
+  });
+});
+
+// The profile of the glossary fixture has a default kind and a plain id as the embedded value.
+describe('the default kind', () => {
+  const FIXTURES = [
+    { name: 'product', ...product },
+    { name: 'safety', ...safety },
+    { name: 'glossary', ...glossary },
+  ];
+  // The kind that most nodes of the graph have.
+  const commonKind = (graph: Graph, profile: Profile) => {
+    const counts = new Map<string, number>();
+    for (const n of graph[profile.source.nodes] as Record<string, string>[]) {
+      const k = n[profile.source.kind] ?? profile.source.defaultKind!;
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  };
+
+  it('gives a node with no kind the default kind', () => {
+    for (const f of FIXTURES) {
+      const kind = commonKind(f.graph, f.profile);
+      const key = f.profile.source.kind;
+      const stripped = structuredClone(f.graph) as Record<string, any>;
+      for (const n of stripped[f.profile.source.nodes]) if (n[key] === kind) delete n[key];
+      const profile: Profile = { ...f.profile, source: { ...f.profile.source, defaultKind: kind } };
+      const model = buildModel(stripped, profile);
+      const expected = buildModel(f.graph, f.profile);
+      expect(model.nodes, f.name).toEqual(expected.nodes);
+      expect(model.edges, f.name).toEqual(expected.edges);
+    }
+    expect(gModel.nodes.filter((n) => n.kind === 'term').map((n) => n.id).sort()).toEqual(['beat', 'chord', 'fermata', 'scale', 'tempo']);
+  });
+  it('treats an empty kind as no kind, and keeps a kind that is set', () => {
+    for (const f of FIXTURES) {
+      const kind = commonKind(f.graph, f.profile);
+      const other = f.profile.kinds.find((k) => k.id !== kind && k.role === 'hierarchy')!.id;
+      const graph = structuredClone(f.graph) as Record<string, any>;
+      const key = f.profile.source.kind;
+      const list = graph[f.profile.source.nodes] as Record<string, any>[];
+      const first = list.find((n) => (n[key] ?? f.profile.source.defaultKind) === kind)!;
+      first[key] = '';
+      const model = buildModel(graph, { ...f.profile, source: { ...f.profile.source, defaultKind: other } });
+      expect(model.nodes.find((n) => n.id === first[f.profile.source.id])!.kind, f.name).toBe(other);
+    }
+  });
+});
+
+describe('a plain id as an embedded value', () => {
+  // Replaces the embedded object of each owner with its id.
+  const plain = (c: (typeof EMBEDDED)[number], value: (id: string) => string | number = (id) => id) => {
+    const profile = c.name === 'product' ? product.profile : safety.profile;
+    const e = profile.embedded![0];
+    const graph = structuredClone(c.graph) as Record<string, any>;
+    for (const n of graph[profile.source.nodes] as Record<string, any>[]) {
+      const object = n[e.field];
+      if (n[profile.source.kind] === e.owner && object?.[e.id!]) n[e.field] = value(object[e.id!]);
+    }
+    return { profile, model: buildModel(graph, profile) };
+  };
+
+  it('makes a node with the id and no other field, and derives the title from the id', () => {
+    for (const c of EMBEDDED) {
+      const { profile, model } = plain(c);
+      const nodes = model.nodes.filter((n) => n.kind === c.kind);
+      expect(nodes.map((n) => n.id).sort(), c.name).toEqual(Object.keys(c.owners).sort());
+      // The node of the graph with the same id keeps its own fields.
+      for (const n of nodes.filter((x) => x.id !== c.wins)) {
+        expect(n.d, `${c.name} ${n.id}`).toEqual({});
+        expect(n.title, `${c.name} ${n.id}`).toBe(deriveTitle(n.id, wordCasing([]), profile.fields.idPrefixPattern));
+      }
+    }
+    expect(title(gModel, 'grp-harmony')).toBe('Harmony');
+    expect(title(gModel, 'grp-rhythm')).toBe('Rhythm');
+    expect(gModel.nodes.find((n) => n.id === 'grp-harmony')!.d).toEqual({});
+  });
+  it('keeps the edges and the parents of the owners', () => {
+    for (const c of EMBEDDED) {
+      const { model } = plain(c);
+      const index = buildIndex(model);
+      for (const [id, owners] of Object.entries(c.owners)) {
+        for (const o of owners) expect(index.byId.get(o)!.parents, `${c.name} ${o}`).toEqual([id]);
+        expect(model.edges.filter((e) => e.t === id && e.k === c.edge).map((e) => e.s).sort(), `${c.name} ${id}`).toEqual([...owners].sort());
+      }
+    }
+  });
+  it('reads a number as an id, and skips an empty value', () => {
+    for (const c of EMBEDDED) {
+      const { model } = plain(c, () => 42);
+      const nodes = model.nodes.filter((n) => n.kind === c.kind && n.id !== c.wins);
+      expect(nodes.map((n) => n.id), c.name).toEqual(['42']);
+    }
+    const graph = structuredClone(glossary.graph) as Record<string, any>;
+    graph.entries[0].owner = '';
+    delete graph.entries[1].owner;
+    const model = buildModel(graph, glossary.profile);
+    expect(model.nodes.filter((n) => n.kind === 'group').map((n) => n.id).sort()).toEqual(['grp-rhythm']);
+  });
+});
+
+describe('the groups in the scope', () => {
+  it('shows the terms of a group, and the group of a term', () => {
+    expect(sorted(computeScope(gIndex, { id: 'grp-harmony' }).ids)).toEqual(['chord', 'grp-harmony', 'scale']);
+    expect(sorted(computeScope(gIndex, { id: 'grp-rhythm' }).ids)).toEqual(['beat', 'fermata', 'grp-rhythm', 'tempo']);
+    expect(gIndex.byId.get('scale')!.parents).toEqual(['grp-harmony']);
+    expect(gIndex.byId.get('scale')!.up).toEqual(['grp-harmony']);
+    expect(sorted(gIndex.children.get('grp-rhythm')!)).toEqual(['beat', 'fermata', 'tempo']);
+  });
+  it('links the terms through the refs', () => {
+    expect(gModel.edges.filter((e) => e.k === 'relations').map((e) => `${e.s}>${e.t}:${e.n}`).sort()).toEqual(['chord>scale:is built from', 'scale>chord:chords are built from it', 'tempo>beat:sets the speed of']);
+    expect(gModel.unresolved).toEqual([]);
   });
 });

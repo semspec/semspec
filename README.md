@@ -76,7 +76,8 @@ The graph is an object with a list of nodes. See `schema/graph.schema.json`.
 
 - A node has an `id`, a `kind` and any other fields. The profile can rename the 3 keys in its `source` object.
 - A field that the profile names as a parent field or a link field holds a list of node ids.
-- A field that the profile names as an embedded field holds an object. The explorer makes 1 node for each distinct id of such objects, and the owners link to it. A node of the graph with the same id wins.
+- A node with no value in the kind key gets `source.defaultKind`, when the profile sets it.
+- A field that the profile names as an embedded field holds an object, a string or a number. The explorer makes 1 node for each distinct id, and the owners link to it. A string or a number is the id, and the new node has no other field. An object holds its id in the key that `id` names. A node of the graph with the same id wins.
 - A field that the profile names as a part field holds a list of parts. A part is an object. The explorer shows each part as a node of its own.
 - A field that the profile names as the check field holds a list of checks. A check is an object. 2 checks with the same type and key share 1 node.
 - A node with no `title` gets one from its id, in sentence case. The explorer takes the casing of each word from the texts of the graph, so an acronym that the texts write in capitals stays in capitals.
@@ -89,7 +90,7 @@ The profile is a JSON or YAML object. See `schema/profile.schema.json` and the 2
 | Key | Meaning |
 |---|---|
 | `project` | The name of the project. The page shows it as secondary text. |
-| `source` | The keys of the list of nodes, the id and the kind. |
+| `source` | The keys of the list of nodes, the id and the kind. The optional `defaultKind` is the kind of a node with no value in the kind key. |
 | `fields` | The fields for the title, the statement, the level and the delivery state, and a pattern that cuts a prefix from an id. |
 | `lifecycle` | The field of the state, a fallback, a fallback for each kind, and the states that show muted. |
 | `kinds` | The node kinds: id, label, plural, role, colour for the light and the dark theme, parent field groups, a citation rule (with an optional `name` path for the display name of the source) and the chips of a summary. |
@@ -97,7 +98,7 @@ The profile is a JSON or YAML object. See `schema/profile.schema.json` and the 2
 | `links`, `refs`, `supersededBy` | Link fields that are not parent fields. |
 | `linkedScopeEdges` | The edges that pull a linked node into the scope of a node. |
 | `parts` | Which kinds own parts, in which field, and the fields of a part. |
-| `embedded` | Objects in a node that are nodes of their own: the owner kind, the dotted path of the object, the new kind, the key of the id in the object and the edge. The edge is a parent field of the owner. |
+| `embedded` | Objects in a node that are nodes of their own: the owner kind, the dotted path of the object, the new kind, the key of the id in the object (needed only for an object) and the edge. The edge is a parent field of the owner. It differs from the field. |
 | `checks` | The check field, the check kind, the check types and their identity. |
 | `status` | A status field with 3 values, 1 for each tone: good, warn and bad. A node with no status of its own gets the roll-up of the nodes below it: all good is good, all bad is bad, and a mix is warn. A node with a muted lifecycle does not count. A toggle colours the canvas by status, and a filter selects the status values. |
 | `fieldFilters` | Filters on a list field or a text field: the field, a label, labels for values, and a separator that groups the values in the picker. A node without the field takes the values of the nodes above or below it. The table has a column for each field. |

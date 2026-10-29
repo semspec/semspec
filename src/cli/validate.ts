@@ -4,7 +4,7 @@
 // the names that the profile gives.
 import { readFileSync } from 'node:fs';
 import Ajv from 'ajv/dist/2020.js';
-import { embeddedObjects, getPath, type Graph, type Profile } from '../core/index';
+import { embeddedObjects, getPath, parentFields, withDefaultKind, type Graph, type Profile } from '../core/index';
 
 const schemaPath = new URL('../../schema/profile.schema.json', import.meta.url);
 
@@ -29,6 +29,7 @@ function crossCheckProfile(p: Profile): string[] {
     need(`embedded ${x.field} kind`, x.kind);
     need(`embedded ${x.field} owner`, x.owner);
   });
+  need('source defaultKind', p.source.defaultKind);
   need('checks kind', p.checks?.kind);
   need('facets groupKind', p.facets?.groupKind);
   need('entry kind', p.entry?.kind);
@@ -46,6 +47,16 @@ function crossCheckProfile(p: Profile): string[] {
   p.parts?.forEach((x) => needEdge('parts', x.edge));
   p.embedded?.forEach((x) => needEdge('embedded', x.edge));
   needEdge('checks', p.checks?.edge);
+  p.embedded?.forEach((x) => {
+    const head = x.field.split('.')[0];
+    const owner = p.kinds.find((k) => k.id === x.owner);
+    const own = `profile embedded entry for kind "${x.owner}"`;
+    if (x.edge === x.field || x.edge === head) errors.push(`${own} uses the edge name "${x.edge}", which is also its field. Use a different edge name.`);
+    const others = new Set([...(owner ? parentFields(owner) : []), ...(p.links ?? [])]);
+    others.delete(x.edge);
+    if (others.has(head)) errors.push(`${own} uses the field "${x.field}", which is also the link or parent field "${head}" of the kind. Use a different field.`);
+    if (p.links?.includes(x.edge)) errors.push(`${own} uses the edge name "${x.edge}", which is also a link field. Use a different edge name.`);
+  });
   return errors;
 }
 
@@ -54,8 +65,9 @@ function crossCheckProfile(p: Profile): string[] {
 export function validateGraph(graph: Graph, profile: Profile, labels?: string[]): { errors: string[]; warnings: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
-  const list = graph[profile.source.nodes];
-  if (!Array.isArray(list)) return { errors: [`The graph has no list "${profile.source.nodes}"`], warnings };
+  const rawList = graph[profile.source.nodes];
+  if (!Array.isArray(rawList)) return { errors: [`The graph has no list "${profile.source.nodes}"`], warnings };
+  const list: Record<string, unknown>[] = withDefaultKind(profile.source, rawList);
   const kinds = new Set(profile.kinds.map((k) => k.id));
   const ids = new Set<string>();
   const label = (i: number, id: unknown) => labels?.[i] ?? `Node ${String(id ?? i)}`;
@@ -82,9 +94,19 @@ export function validateGraph(graph: Graph, profile: Profile, labels?: string[])
   // 2 objects with the same id must hold the same fields. The model keeps the first one.
   for (const e of profile.embedded ?? []) {
     const nodes = list as Record<string, any>[];
+    // An object needs the id key. A string or a number is the id.
+    nodes.forEach((n, i) => {
+      const value = getPath(n, e.field);
+      if (n[profile.source.kind] !== e.owner || !value || typeof value !== 'object' || Array.isArray(value)) return;
+      const raw = e.id ? (value as Record<string, unknown>)[e.id] : undefined;
+      if (raw !== undefined && raw !== null && raw !== '') return;
+      const reason = e.id ? `has no "${e.id}" key` : 'has no "id" key in its profile entry';
+      errors.push(`${label(i, n[profile.source.id])} holds an object in "${e.field}" that ${reason}, so the explorer makes no ${e.kind} from it`);
+    });
     for (const { id, object, owners } of embeddedObjects(e, nodes, profile.source.id, profile.source.kind)) {
       for (const other of owners.slice(1)) {
-        const second = getPath(nodes.find((n) => n[profile.source.id] === other), e.field) as Record<string, unknown>;
+        const found = getPath(nodes.find((n) => n[profile.source.id] === other), e.field);
+        const second = (found && typeof found === 'object' ? found : {}) as Record<string, unknown>;
         const same = (v: unknown) => (v === undefined || v === null ? '' : JSON.stringify(v));
         for (const key of new Set([...Object.keys(object), ...Object.keys(second)])) {
           if (same(object[key]) !== same(second[key])) warnings.push(`"${owners[0]}" and "${other}" both hold the ${e.kind} "${id}" in "${e.field}", but the field "${key}" differs. The explorer keeps the value of "${owners[0]}".`);

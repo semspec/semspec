@@ -55,6 +55,16 @@ const EDGES: Record<string, [string, string, string][]> = {
     ['hz-fire', 'fire-code', 'origin'],
     ['hz-wire', 'wiring-rules', 'origin'],
   ],
+  glossary: [
+    ['scale', 'grp-harmony', 'inGroup'],
+    ['chord', 'grp-harmony', 'inGroup'],
+    ['tempo', 'grp-rhythm', 'inGroup'],
+    ['beat', 'grp-rhythm', 'inGroup'],
+    ['fermata', 'grp-rhythm', 'inGroup'],
+    ['scale', 'chord', 'relations'],
+    ['chord', 'scale', 'relations'],
+    ['tempo', 'beat', 'relations'],
+  ],
 };
 
 function pageData(html: string) {
@@ -72,7 +82,7 @@ function assertEmbeds(html: string, graph: Graph, profile: Profile, edges: [stri
   for (const [s, t, k] of edges) expect(have.has(`${s}|${t}|${k}`), `edge ${s} -${k}-> ${t} is in the page data`).toBe(true);
 }
 
-describe.each(['product', 'safety'])('the page of the %s fixture', (name) => {
+describe.each(['product', 'safety', 'glossary'])('the page of the %s fixture', (name) => {
   const graph = json<Graph>(name, 'graph.json');
   const profile = json<Profile>(name, 'profile.json');
 
@@ -107,8 +117,8 @@ describe.each(['product', 'safety'])('the page of the %s fixture', (name) => {
 });
 
 describe('the inputs', () => {
-  it('accept both fixtures', () => {
-    for (const name of ['product', 'safety']) {
+  it('accept all fixtures', () => {
+    for (const name of ['product', 'safety', 'glossary']) {
       const profile = json<Profile>(name, 'profile.json');
       expect(validateProfile(profile)).toEqual([]);
       expect(validateGraph(json<Graph>(name, 'graph.json'), profile).errors).toEqual([]);
@@ -174,7 +184,7 @@ const byId = <T extends { id: string }>(list: T[]) => [...list].sort((a, b) => (
 const edgeKeys = (m: { edges: { s: string; t: string; k: string }[] }) => m.edges.map((e) => `${e.s}|${e.t}|${e.k}`).sort();
 const tmp = () => mkdtempSync(join(tmpdir(), 're-'));
 
-describe.each(['product', 'safety'])('the YAML input of the %s fixture', (name) => {
+describe.each(['product', 'safety', 'glossary'])('the YAML input of the %s fixture', (name) => {
   const profile = json<Profile>(name, 'profile.json');
   const graph = json<Graph>(name, 'graph.json');
   const nodes = graph[profile.source.nodes] as Record<string, string>[];
@@ -351,7 +361,6 @@ describe('the embedded nodes', () => {
       expect(check({ kind: 'nothing' }), name).toMatch(/embedded .* kind names the unknown kind "nothing"/);
       expect(check({ owner: 'nothing' }), name).toMatch(/embedded .* owner names the unknown kind "nothing"/);
       expect(check({ edge: 'nothing' }), name).toMatch(/embedded names the edge "nothing", which has no entry in edges/);
-      expect(check({ id: undefined }), name).toMatch(/id/);
     }
   });
   it('warn about 2 objects with the same id and different fields, and name both owners and the field', () => {
@@ -382,6 +391,98 @@ describe('the embedded nodes', () => {
     const graph = json<Graph>('safety', 'graph.json') as any;
     graph.items.find((n: any) => n.key === 'hz-shock').source = { id: 'thermal-code', title: 'Other', short: 'OT' };
     expect(buildModel(graph, profile).nodes.find((n) => n.id === 'thermal-code')!.title).toBe('TC');
+  });
+});
+
+describe('the default kind in the inputs', () => {
+  it('refuses a default kind that is not a kind of the profile', () => {
+    for (const name of ['product', 'safety', 'glossary']) {
+      const profile = json<Profile>(name, 'profile.json');
+      const text = validateProfile({ ...profile, source: { ...profile.source, defaultKind: 'nothing' } }).join('\n');
+      expect(text, name).toMatch(/source defaultKind names the unknown kind "nothing"/);
+      expect(validateProfile({ ...profile, source: { ...profile.source, defaultKind: profile.kinds[0].id } }), name).toEqual([]);
+    }
+  });
+  it('keeps the unknown kind error for a node with no kind when the profile has no default kind', () => {
+    for (const name of ['product', 'safety', 'glossary']) {
+      const profile = json<Profile>(name, 'profile.json');
+      const graph = json<Graph>(name, 'graph.json') as any;
+      const first = graph[profile.source.nodes][0];
+      delete first[profile.source.kind];
+      const { defaultKind, ...source } = profile.source;
+      expect(validateGraph(graph, { ...profile, source }).errors.join('\n'), name).toContain(`has the unknown kind "undefined"`);
+      const fixed = { ...profile, source: { ...source, defaultKind: profile.kinds[0].id } };
+      expect(validateGraph(graph, fixed).errors, name).toEqual([]);
+    }
+  });
+});
+
+describe('the embedded values', () => {
+  const cases = ['product', 'safety', 'glossary'];
+  it('refuse an object with no id key, and name the owner node', () => {
+    for (const name of cases) {
+      const profile = json<Profile>(name, 'profile.json');
+      const graph = json<Graph>(name, 'graph.json') as any;
+      const e = profile.embedded![0];
+      const owner = graph[profile.source.nodes].find((n: any) => (n[profile.source.kind] ?? profile.source.defaultKind) === e.owner && n[e.field] && typeof n[e.field] === 'object');
+      if (!owner) {
+        // The glossary holds plain ids. Make an object with no id key.
+        graph[profile.source.nodes][0][e.field] = { title: 'No id' };
+      } else delete owner[e.field][e.id!];
+      const target = owner ?? graph[profile.source.nodes][0];
+      const text = validateGraph(graph, profile).errors.join('\n');
+      expect(text, name).toContain(`Node ${target[profile.source.id]} holds`);
+      expect(text, name).toContain(`holds an object in "${e.field}"`);
+    }
+  });
+  it('accept a profile entry with no id key, and a plain id in the graph', () => {
+    const profile = json<Profile>('glossary', 'profile.json');
+    expect(profile.embedded![0].id).toBeUndefined();
+    expect(validateProfile(profile)).toEqual([]);
+    expect(validateGraph(json<Graph>('glossary', 'graph.json'), profile)).toEqual({ errors: [], warnings: [] });
+  });
+  it('refuse an edge name that equals the field, or the first segment of a dotted field', () => {
+    for (const name of cases) {
+      const profile = json<Profile>(name, 'profile.json') as any;
+      const entry = profile.embedded[0];
+      const edges = { ...profile.edges, [entry.field]: { labels: ['a', 'b'] }, deep: { labels: ['a', 'b'] } };
+      const same = validateProfile({ ...profile, edges, embedded: [{ ...entry, edge: entry.field }] }).join('\n');
+      expect(same, name).toContain(`profile embedded entry for kind "${entry.owner}" uses the edge name "${entry.field}", which is also its field. Use a different edge name.`);
+      const dotted = validateProfile({ ...profile, edges, embedded: [{ ...entry, field: `${entry.field}.deep`, edge: entry.field }] }).join('\n');
+      expect(dotted, name).toContain(`uses the edge name "${entry.field}", which is also its field`);
+      expect(validateProfile(profile), name).toEqual([]);
+    }
+  });
+  it('refuse an edge name or a field that is also another link or parent field', () => {
+    for (const name of cases) {
+      const profile = json<Profile>(name, 'profile.json') as any;
+      const entry = profile.embedded[0];
+      const owner = profile.kinds.find((k: any) => k.id === entry.owner);
+      const other = Object.keys(profile.edges).find((k) => k !== entry.edge)!;
+      const asLink = validateProfile({ ...profile, links: [...(profile.links ?? []), entry.edge] }).join('\n');
+      expect(asLink, name).toContain(`uses the edge name "${entry.edge}", which is also a link field`);
+      const kinds = profile.kinds.map((k: any) => (k === owner ? { ...k, parents: [...(k.parents ?? []), [other]] } : k));
+      const asField = validateProfile({ ...profile, kinds, embedded: [{ ...entry, field: other }] }).join('\n');
+      expect(asField, name).toContain(`uses the field "${other}", which is also the link or parent field "${other}" of the kind`);
+    }
+  });
+});
+
+describe('the glossary fixture', () => {
+  it('builds with its default kind, its plain-id groups and its sources in the details', async () => {
+    const graph = json<Graph>('glossary', 'graph.json');
+    const profile = json<Profile>('glossary', 'profile.json');
+    const html = await renderPage(buildModel(graph, profile));
+    const data = pageData(html);
+    expect(data.nodes.filter((n: any) => n.kind === 'term')).toHaveLength(5);
+    expect(data.nodes.filter((n: any) => n.kind === 'group').map((n: any) => n.title).sort()).toEqual(['Harmony', 'Rhythm']);
+    expect(data.nodes.find((n: any) => n.id === 'chord').d.source).toHaveLength(2);
+    expect(data.profile.details.sourceSections[0].field).toBe('source');
+  });
+  it('builds from the command line', async () => {
+    const out = join(tmp(), 'glossary.html');
+    expect(await run(['build', '--graph', path('glossary', 'graph.json'), '--profile', path('glossary', 'profile.json'), '--out', out])).toBe(0);
+    expect(readFileSync(out, 'utf8')).toContain('Music glossary');
   });
 });
 

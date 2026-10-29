@@ -15,9 +15,9 @@ acceptance:
         file: test/build.test.ts
         name: refuse a profile with a missing part and an unknown kind
   - id: accept
-    text: Both fixture profiles are valid.
+    text: Each fixture profile is valid.
     status: verified
     tests:
       - type: unit
         file: test/build.test.ts
-        name: accept both fixtures
+        name: accept all fixtures

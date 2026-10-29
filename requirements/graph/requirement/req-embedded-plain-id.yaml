@@ -1,0 +1,44 @@
+id: req-embedded-plain-id
+kind: requirement
+title: Make a node of a plain id
+statement: A string or a number in an embedded field is the id of a node. The profile entry needs the id key only for an object.
+capabilities:
+  - cap-nodes
+  - cap-validate
+area:
+  - core
+acceptance:
+  - id: plain-node
+    text: A string or a number at the field makes a node with that id and no other field. The title comes from the id.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: makes a node with the id and no other field, and derives the title from the id
+      - type: unit
+        file: test/core.test.ts
+        name: reads a number as an id, and skips an empty value
+  - id: plain-parent
+    text: The owners keep the edge and the parent of the new node. A scope on the new node shows the owners.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: keeps the edges and the parents of the owners
+      - type: unit
+        file: test/core.test.ts
+        name: shows the terms of a group, and the group of a term
+  - id: entry
+    text: A profile entry with no id key is valid.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: accept a profile entry with no id key, and a plain id in the graph
+  - id: no-id-key
+    text: An object with no id key gives an error that names the owner node.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: refuse an object with no id key, and name the owner node

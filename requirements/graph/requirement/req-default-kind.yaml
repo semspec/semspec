@@ -1,0 +1,34 @@
+id: req-default-kind
+kind: requirement
+title: Give a node with no kind a default kind
+statement: A profile can name the kind of a node that has no value in the kind key.
+capabilities:
+  - cap-nodes
+  - cap-validate
+area:
+  - core
+acceptance:
+  - id: apply
+    text: A node with no value in the kind key gets `source.defaultKind`. A node with a kind keeps it.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: gives a node with no kind the default kind
+      - type: unit
+        file: test/core.test.ts
+        name: treats an empty kind as no kind, and keeps a kind that is set
+  - id: known-kind
+    text: The profile check refuses a default kind that is not a kind of the profile.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: refuses a default kind that is not a kind of the profile
+  - id: no-default
+    text: Without a default kind, a node with no kind gives the unknown kind error.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: keeps the unknown kind error for a node with no kind when the profile has no default kind

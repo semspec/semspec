@@ -20,6 +20,13 @@ export function normalise(p: Profile): Profile {
   };
 }
 
+// The nodes of the graph, where a node with no value in the kind key gets the default kind.
+export function withDefaultKind(source: Profile['source'], nodes: Record<string, any>[]): Record<string, any>[] {
+  const fallback = source.defaultKind;
+  if (!fallback) return nodes;
+  return nodes.map((n) => (n[source.kind] === undefined || n[source.kind] === null || n[source.kind] === '' ? { ...n, [source.kind]: fallback } : n));
+}
+
 export const kindOf = (p: Profile, id: string): KindSpec | undefined => p.kinds.find((k) => k.id === id);
 export const kindLabel = (p: Profile, id: string) => kindOf(p, id)?.label ?? id;
 export const kindPlural = (p: Profile, id: string) => kindOf(p, id)?.plural ?? id;
@@ -62,20 +69,29 @@ export function getPath(obj: unknown, path: string): unknown {
   return cur;
 }
 
-// The nodes that the objects of `spec` make: the first object of each id, and the owners of the id.
+// The nodes that the values of `spec` make (an object with an id key, a string or a number): the first object of each id, and the owners of the id.
 // The graph node list is read as it is, so the result is the same in the model and in the checks.
 export function embeddedObjects(spec: EmbeddedSpec, nodes: Record<string, any>[], idKey: string, kindKey: string): { id: string; object: Record<string, any>; owners: string[] }[] {
   const found = new Map<string, { id: string; object: Record<string, any>; owners: string[] }>();
   for (const n of nodes) {
     if (n[kindKey] !== spec.owner) continue;
-    const object = getPath(n, spec.field);
-    if (!object || typeof object !== 'object' || Array.isArray(object)) continue;
-    const raw = (object as Record<string, any>)[spec.id];
-    if (raw === undefined || raw === null || raw === '') continue;
-    const id = String(raw);
+    const value = getPath(n, spec.field);
+    let id: string;
+    let object: Record<string, any>;
+    if (typeof value === 'string' || typeof value === 'number') {
+      // A plain id. The new node has no other field.
+      id = String(value);
+      object = {};
+    } else if (value && typeof value === 'object' && !Array.isArray(value) && spec.id) {
+      const raw = (value as Record<string, any>)[spec.id];
+      if (raw === undefined || raw === null || raw === '') continue;
+      id = String(raw);
+      object = value as Record<string, any>;
+    } else continue;
+    if (!id) continue;
     const entry = found.get(id);
     if (entry) entry.owners.push(n[idKey]);
-    else found.set(id, { id, object: object as Record<string, any>, owners: [n[idKey]] });
+    else found.set(id, { id, object, owners: [n[idKey]] });
   }
   return [...found.values()];
 }

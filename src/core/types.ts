@@ -59,8 +59,9 @@ export interface EmbeddedSpec {
   // A dotted path to the object in the owner.
   field: string;
   kind: string;
-  // The key of the id inside the object.
-  id: string;
+  // The key of the id inside the object. An object needs it. A string or a number in `field` is
+  // the id itself, and the new node has no other field.
+  id?: string;
   edge: string;
 }
 
@@ -130,7 +131,8 @@ export interface DetailsSpec {
 export interface Profile {
   // The name of the project, shown as secondary text.
   project: string;
-  source: { nodes: string; id: string; kind: string };
+  // `defaultKind` is the kind of a node with no value in the `kind` key.
+  source: { nodes: string; id: string; kind: string; defaultKind?: string };
   fields: { title: string[]; idPrefixPattern?: string; statement: string[]; level?: string; delivery?: string; decided?: string };
   lifecycle: {
     field: string;

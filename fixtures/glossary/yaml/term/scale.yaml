@@ -1,0 +1,11 @@
+id: scale
+term: Scale
+definition: A set of notes in order of pitch.
+owner: grp-harmony
+relations:
+  - to: chord
+    relation: chords are built from it
+source:
+  - title: Harmony Primer
+    page: "12"
+    url: https://example.org/primer
