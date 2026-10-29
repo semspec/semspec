@@ -101,9 +101,30 @@ The profile is a JSON or YAML object. See `schema/profile.schema.json` and the 2
 | `embedded` | Objects in a node that are nodes of their own: the owner kind, the dotted path of the object, the new kind, the key of the id in the object (needed only for an object) and the edge. The edge is a parent field of the owner. It differs from the field. |
 | `checks` | The check field, the check kind, the check types and their identity. |
 | `status` | A status field with 3 values, 1 for each tone: good, warn and bad. A node with no status of its own gets the roll-up of the nodes below it: all good is good, all bad is bad, and a mix is warn. A node with a muted lifecycle does not count. A toggle colours the canvas by status, and a filter selects the status values. |
-| `fieldFilters` | Filters on a list field or a text field: the field, a label, labels for values, and a separator that groups the values in the picker. A node without the field takes the values of the nodes above or below it. The table has a column for each field. |
+| `fieldFilters` | Filters on a list field or a text field: the field, a label, labels for values, a separator that groups the values in the picker, and an optional `from`. A node without the field takes the values of the nodes above or below it. The table has a column for each field. |
 | `facets`, `entry`, `groups` | The group facet, the start page and the names of tree groups. |
-| `details` | The sections of the details panel: properties, text sections, option lists, source lists, object lists and citations. |
+| `details` | The sections of the details panel: properties, text sections, option lists, source lists, object lists, tagged lists and citations. |
+
+## Tagged lists and the filter by tag
+
+A tagged list is a list of objects. Each object has exactly 1 key, the tag. The value of the tag is an object of inner keys, or an empty object:
+
+```json
+{ "id": "n1", "origin": [ { "a": { "area": "X" } }, { "b": { "type": "Y", "property": "Z" } }, { "c": {} } ] }
+```
+
+`details.taggedLists` shows the list in the details panel:
+
+```json
+{ "title": "Origin", "field": "origin", "labels": { "a.area": "Area of A", "b.type": "Type of B", "b.property": "Property of B", "c": "Note" } }
+```
+
+- Each inner key and value of a tag gives the line `<label>: <value>`. The label is `labels["<tag>.<key>"]`.
+- A tag with no inner key gives the line `labels["<tag>"]`.
+- A missing label falls back to `<tag> <key>` as written, or to the tag.
+- An entry that is not an object with exactly 1 key shows as compact JSON.
+
+A `fieldFilters` entry with `"from": "keys"` takes its values from the keys of the objects in the list. The values above are `a`, `b` and `c`. The `values` labels apply to them, in the picker and in the table column. Without `from`, the values are the items of the field. A node with an empty list or no field has the value `""`, shown as None.
 
 A kind has 1 of 4 roles.
 

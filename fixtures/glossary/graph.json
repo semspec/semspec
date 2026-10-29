@@ -1,9 +1,9 @@
 {
   "entries": [
-    { "id": "scale", "term": "Scale", "definition": "A set of notes in order of pitch.", "owner": "grp-harmony", "relations": [{ "to": "chord", "relation": "chords are built from it" }], "source": [{ "title": "Harmony Primer", "page": "12", "url": "https://example.org/primer" }] },
-    { "id": "chord", "term": "Chord", "definition": "Three or more notes played together.", "owner": "grp-harmony", "relations": [{ "to": "scale", "relation": "is built from" }], "source": [{ "title": "Harmony Primer", "page": "30" }, { "title": "Chord Handbook" }] },
-    { "id": "tempo", "term": "Tempo", "definition": "The speed of the beat.", "owner": "grp-rhythm", "relations": [{ "to": "beat", "relation": "sets the speed of" }] },
-    { "id": "beat", "term": "Beat", "definition": "The steady pulse of a piece.", "owner": "grp-rhythm" },
+    { "id": "scale", "term": "Scale", "definition": "A set of notes in order of pitch.", "owner": "grp-harmony", "relations": [{ "to": "chord", "relation": "chords are built from it" }], "source": [{ "title": "Harmony Primer", "page": "12", "url": "https://example.org/primer" }], "origin": [{ "theory": { "area": "Harmony" } }, { "primer": { "kind": "Book", "chapter": "3" } }] },
+    { "id": "chord", "term": "Chord", "definition": "Three or more notes played together.", "owner": "grp-harmony", "relations": [{ "to": "scale", "relation": "is built from" }], "source": [{ "title": "Harmony Primer", "page": "30" }, { "title": "Chord Handbook" }], "origin": [{ "theory": { "area": "Harmony" } }, { "house": {} }] },
+    { "id": "tempo", "term": "Tempo", "definition": "The speed of the beat.", "owner": "grp-rhythm", "relations": [{ "to": "beat", "relation": "sets the speed of" }], "origin": [{ "primer": { "kind": "Article" } }] },
+    { "id": "beat", "term": "Beat", "definition": "The steady pulse of a piece.", "owner": "grp-rhythm", "origin": [] },
     { "id": "fermata", "term": "Fermata", "definition": "A pause of a note beyond its value.", "owner": "grp-rhythm", "state": "retired" }
   ]
 }

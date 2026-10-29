@@ -9,3 +9,7 @@ source:
   - title: Harmony Primer
     page: "30"
   - title: Chord Handbook
+origin:
+  - theory:
+      area: Harmony
+  - house: {}

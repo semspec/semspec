@@ -9,3 +9,9 @@ source:
   - title: Harmony Primer
     page: "12"
     url: https://example.org/primer
+origin:
+  - theory:
+      area: Harmony
+  - primer:
+      kind: Book
+      chapter: "3"

@@ -104,6 +104,8 @@ export interface FieldFilterSpec {
   values?: Record<string, string>;
   // The picker groups the values by the text before the first separator.
   groupBy?: string;
+  // `keys` takes the values from the keys of the objects in the list field.
+  from?: 'keys';
 }
 
 export interface PropertySpec {
@@ -119,6 +121,8 @@ export interface DetailsSpec {
   optionSections?: { title: string; field: string; primary: string; secondary: string; secondaryPrefix?: string }[];
   sourceSections?: { title: string; field: string; name: string; section?: string; url?: string; retrieved?: string }[];
   objectLists?: { title: string; field: string; badge: string; value: string[]; suffix?: string; suffixSeparator?: string }[];
+  // A list of tagged objects, 1 key each. `labels` maps "<tag>.<key>" and "<tag>" to a label.
+  taggedLists?: { title: string; field: string; labels?: Record<string, string> }[];
   citations?: {
     kind: string;
     title: string;

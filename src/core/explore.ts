@@ -2,6 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // What a reader does with a model: scope by a node, filter, walk by expansion, summarise, export.
 import type { Chip, Filters, Groups, Index, NodeStatus, Summary, VEdge, VNode, Walk } from './types';
+import { filterValues } from './tagged';
 import { getPath, isMuted, kindLabel, kindOf, kindPlural, linkedKinds, treeKinds } from './profile';
 
 // ---------- scope ----------
@@ -111,11 +112,12 @@ function carrierKinds(index: Index, field: string): Set<string> {
 }
 
 // The values of a carrier. A carrier with no value has the value ''.
-function ownValues(n: VNode, field: string): string[] {
-  const v = n.d[field];
-  const list = Array.isArray(v) ? v.map(String) : v === undefined || v === null || v === '' ? [] : [String(v)];
+function ownValues(n: VNode, field: string, from?: 'keys'): string[] {
+  const list = filterValues(n.d[field], from);
   return list.length ? list : [''];
 }
+
+const fromOf = (index: Index, field: string) => index.profile.fieldFilters?.find((f) => f.field === field)?.from;
 
 function carriersAbove(index: Index, id: string, field: string, seen = new Set<string>()): string[] {
   const n = index.byId.get(id);
@@ -147,7 +149,7 @@ export function fieldValues(index: Index, field: string, id: string): Set<string
   const relatives = (x: string) => [...carriersAbove(index, x, field), ...carriersBelow(index, x, field)];
   let list = relatives(id);
   if (!list.length && !treeKinds(index.profile).includes(n.kind)) list = treeNeighbours(index, id).flatMap(relatives);
-  list.forEach((c) => ownValues(index.byId.get(c)!, field).forEach((v) => out.add(v)));
+  list.forEach((c) => ownValues(index.byId.get(c)!, field, fromOf(index, field)).forEach((v) => out.add(v)));
   return out;
 }
 
@@ -161,7 +163,7 @@ function matchFields(index: Index, id: string, active: Active): boolean {
   const key = JSON.stringify(active);
   let memo = index.fieldCache.get(key);
   if (!memo) index.fieldCache.set(key, (memo = new Map()));
-  const ok = (c: string, field: string, sel: string[]) => ownValues(index.byId.get(c)!, field).some((v) => sel.includes(v));
+  const ok = (c: string, field: string, sel: string[]) => ownValues(index.byId.get(c)!, field, fromOf(index, field)).some((v) => sel.includes(v));
   const tree = treeKinds(index.profile);
   const visit = (x: string, seen: Set<string>): boolean => {
     if (memo!.has(x)) return memo!.get(x)!;

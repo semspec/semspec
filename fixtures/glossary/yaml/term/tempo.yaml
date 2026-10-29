@@ -5,3 +5,6 @@ owner: grp-rhythm
 relations:
   - to: beat
     relation: sets the speed of
+origin:
+  - primer:
+      kind: Article

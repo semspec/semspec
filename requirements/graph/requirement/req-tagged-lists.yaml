@@ -1,0 +1,45 @@
+id: req-tagged-lists
+kind: requirement
+title: Show a list of tagged objects in the details
+statement: The details panel shows a list of objects with 1 key each, the tag, as 1 line for each inner key. The profile names the list and the labels.
+capabilities:
+  - cap-cards-table
+area:
+  - core
+  - app
+acceptance:
+  - id: lines
+    text: Each inner key and value gives one line, the label then a colon then the value. The label comes from "<tag>.<key>" in the profile.
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: gives 1 line for each inner key, with the label of "<tag>.<key>"
+  - id: tag-alone
+    text: A tag with no inner key gives the label of the tag alone.
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: gives the label of the tag alone when the tag has no inner key
+  - id: fallback
+    text: A missing label falls back to the tag and the key as written.
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: falls back to the tag and the key as written when a label is missing
+  - id: nothing-hidden
+    text: An entry that is not an object with exactly 1 key shows as compact JSON.
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: shows an entry that is not an object with exactly 1 key as compact JSON
+  - id: details-schema
+    text: The profile schema checks every details option and rejects an unknown option.
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: rejects an unknown details option

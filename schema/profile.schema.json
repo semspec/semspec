@@ -173,7 +173,8 @@
           "field": { "type": "string" },
           "label": { "type": "string" },
           "values": { "type": "object", "additionalProperties": { "type": "string" }, "description": "A label for a value." },
-          "groupBy": { "type": "string", "description": "The picker groups the values by the text before the first separator." }
+          "groupBy": { "type": "string", "description": "The picker groups the values by the text before the first separator." },
+          "from": { "enum": ["keys"], "description": "With `keys`, the values are the keys of the objects in the list field. Without it, the values are the items of the field." }
         }
       }
     },
@@ -191,7 +192,257 @@
       "properties": { "kind": { "type": "string" }, "childKind": { "type": "string" }, "title": { "type": "string" }, "countLabel": { "type": "string" } }
     },
     "groups": { "type": "object", "properties": { "hierarchy": { "type": "string" } }, "additionalProperties": false },
-    "details": { "type": "object", "description": "What the details panel shows. See the README." }
+    "details": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What the details panel shows. See the README.",
+      "properties": {
+        "properties": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "field"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string",
+                "description": "A dotted path in the node."
+              },
+              "format": {
+                "enum": [
+                  "upper",
+                  "list",
+                  "code",
+                  "yesno"
+                ]
+              }
+            }
+          },
+          "description": "Rows of label and value."
+        },
+        "statementTitle": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "The title of the statement section for each kind. The key `default` holds the fallback."
+        },
+        "textSections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "title",
+              "field"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "kinds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "description": "A section with the text of a field, optionally for some kinds only."
+        },
+        "optionSections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "title",
+              "field",
+              "primary",
+              "secondary"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "primary": {
+                "type": "string"
+              },
+              "secondary": {
+                "type": "string"
+              },
+              "secondaryPrefix": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "A list of objects with a main text and a second text."
+        },
+        "sourceSections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "title",
+              "field",
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "section": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "retrieved": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "A list of objects with a name and optional section, URL and retrieval date. Each value is a key of the object."
+        },
+        "objectLists": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "title",
+              "field",
+              "badge",
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "badge": {
+                "type": "string"
+              },
+              "value": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Keys of the object. The first non-empty one is the text."
+              },
+              "suffix": {
+                "type": "string"
+              },
+              "suffixSeparator": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "A list of objects, 1 line each, with a badge."
+        },
+        "taggedLists": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "title",
+              "field"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              },
+              "labels": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "A label for \"<tag>.<key>\" and for \"<tag>\". A missing label falls back to the tag and the key as written."
+              }
+            }
+          },
+          "description": "A list of objects with exactly 1 key, the tag. 1 line for each inner key of a tag."
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "kind",
+              "title",
+              "rows"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "label",
+                    "path"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "template": {
+                      "type": "string",
+                      "description": "Text with {value}."
+                    },
+                    "link": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              },
+              "anchor": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "A citation section for a linked kind."
+        }
+      }
+    }
   },
   "$defs": {
     "chip": {

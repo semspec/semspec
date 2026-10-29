@@ -63,5 +63,7 @@ export const Core = {
   statusOf: C.statusOf,
   toCsv: C.toCsv,
   getPath: C.getPath,
+  taggedLines: C.taggedLines,
+  filterValues: C.filterValues,
   kindSpec: (id: string) => C.kindOf(profile, id),
 };

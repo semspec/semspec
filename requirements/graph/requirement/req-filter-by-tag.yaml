@@ -1,0 +1,38 @@
+id: req-filter-by-tag
+kind: requirement
+title: Filter by the tags of a list
+statement: A field filter with "from" set to "keys" takes its values from the keys of the objects in a list field.
+capabilities:
+  - cap-filters
+area:
+  - core
+  - app
+acceptance:
+  - id: values
+    text: The values of a node are the tags of its list, and the labels of the filter apply to them.
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: has the tags of the fixture as values
+  - id: select
+    text: The filter selects the nodes that carry the tag.
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: selects by tag
+  - id: none
+    text: A node with an empty list or no field has the value "", shown as None.
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: selects an empty list and a missing field by the value ""
+  - id: 2-profiles
+    text: The filter works on the profiles of 2 fixtures.
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: takes the values from the keys

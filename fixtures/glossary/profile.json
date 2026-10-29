@@ -17,9 +17,17 @@
   },
   "refs": { "field": "relations", "target": "to", "note": "relation" },
   "embedded": [{ "owner": "term", "field": "owner", "kind": "group", "edge": "inGroup" }],
+  "fieldFilters": [{ "field": "origin", "label": "Origin", "from": "keys", "values": { "theory": "Theory book", "primer": "Primer", "house": "House note" } }],
   "details": {
     "properties": [{ "label": "State", "field": "state" }],
     "statementTitle": { "default": "Definition" },
-    "sourceSections": [{ "title": "Sources", "field": "source", "name": "title", "section": "page", "url": "url" }]
+    "sourceSections": [{ "title": "Sources", "field": "source", "name": "title", "section": "page", "url": "url" }],
+    "taggedLists": [
+      {
+        "title": "Origin",
+        "field": "origin",
+        "labels": { "theory.area": "Area", "primer.kind": "Primer kind", "primer.chapter": "Primer chapter", "house": "House note" }
+      }
+    ]
   }
 }

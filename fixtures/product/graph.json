@@ -1,7 +1,7 @@
 {
   "nodes": [
     { "id": "prd-shop", "kind": "product", "name": "Shop", "summary": "An online shop." },
-    { "id": "epic-checkout", "kind": "epic", "name": "Checkout", "summary": "The buyer pays for a basket.", "products": ["prd-shop"] },
+    { "id": "epic-checkout", "kind": "epic", "name": "Checkout", "summary": "The buyer pays for a basket.", "products": ["prd-shop"], "basis": [{ "law": { "region": "EU", "article": "12" } }, { "contract": {} }] },
     { "id": "epic-search", "kind": "epic", "summary": "The buyer finds an item.", "products": ["prd-shop"], "status": "active" },
     {
       "id": "story-pay-by-card",
@@ -18,7 +18,7 @@
       ]
     },
     { "id": "story-pay-by-card-3ds", "kind": "story", "summary": "The buyer confirms a payment in a 3DS step.", "priority": "medium", "follows": ["story-pay-by-card"], "tests": [{ "type": "manual", "plan": "plan-7" }] },
-    { "id": "story-save-card", "kind": "story", "summary": "The buyer saves a card.", "result": "pass", "teams": ["payments"], "priority": "low", "release": "r2", "epics": ["epic-checkout"], "follows": ["story-pay-by-card"] },
+    { "id": "story-save-card", "kind": "story", "summary": "The buyer saves a card.", "result": "pass", "teams": ["payments"], "priority": "low", "release": "r2", "basis": [{ "contract": {} }], "epics": ["epic-checkout"], "follows": ["story-pay-by-card"] },
     { "id": "story-search-synonyms", "kind": "story", "summary": "The search knows synonyms.", "teams": "search", "priority": "medium", "epics": ["epic-search"], "status": "active" },
     { "id": "story-loose", "kind": "story", "summary": "A story with no epic." },
     { "id": "story-loose-child", "kind": "story", "summary": "A dropped follow-up.", "result": "fail", "status": "dropped", "follows": ["story-loose"] },

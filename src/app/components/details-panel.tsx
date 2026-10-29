@@ -400,6 +400,25 @@ export function DetailsPanel({ v }: { v: Viewer }) {
           </div>
         ))}
 
+      {(D.taggedLists ?? [])
+        .filter((l) => Array.isArray(d[l.field]) && d[l.field].length)
+        .map((l) => (
+          <div key={l.title}>
+            <Divider />
+            <Section title={l.title} count={d[l.field].length}>
+              <ul className="flex flex-col gap-1">
+                {d[l.field].map((entry: unknown, i: number) => (
+                  <li key={i} className="flex flex-col gap-0.5 text-[13px] break-words">
+                    {Core.taggedLines(entry, l.labels).map((line, j) => (
+                      <span key={j}>{line}</span>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          </div>
+        ))}
+
       {Core.LINKED_KINDS.filter((k) => k !== n.kind).map((kind) => {
         const edges = linked(kind);
         if (!edges.length) return null;

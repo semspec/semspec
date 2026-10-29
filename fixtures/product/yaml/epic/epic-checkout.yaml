@@ -4,3 +4,8 @@ name: Checkout
 summary: The buyer pays for a basket.
 products:
   - prd-shop
+basis:
+  - law:
+      region: EU
+      article: "12"
+  - contract: {}

@@ -57,7 +57,8 @@ export function kindSchemas(profile: Profile): Record<string, JsonSchema> {
     (profile.parts ?? []).filter((p) => p.owner === kind.id).forEach((p) => (properties[p.field] = partProperty(profile, p)));
     Object.assign(properties, checkProperties(profile), statusProperties(profile));
     (profile.fieldFilters ?? []).forEach((f) => {
-      if (!(f.field in properties)) properties[f.field] = { anyOf: [text, list] };
+      if (f.field in properties) return;
+      properties[f.field] = f.from === 'keys' ? { type: 'array', items: { type: 'object', minProperties: 1 } } : { anyOf: [text, list] };
     });
     result[kind.id] = {
       $schema: 'https://json-schema.org/draft/2020-12/schema',

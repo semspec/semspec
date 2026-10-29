@@ -74,9 +74,7 @@ function statusColumn(index: Viewer['index'], fields: Filters['fields']): Column
 
 // The values of a field filter on the node itself, with their labels.
 function fieldText(spec: FieldFilterSpec, n: VNode): string {
-  const v = n.d[spec.field];
-  const list = Array.isArray(v) ? v.map(String) : v === undefined || v === null || v === '' ? [] : [String(v)];
-  return list.map((x) => spec.values?.[x] ?? x).join(', ');
+  return Core.filterValues(n.d[spec.field], spec.from).map((x) => spec.values?.[x] ?? x).join(', ');
 }
 
 // A column for a field filter of the profile. It shows the values of the node itself.

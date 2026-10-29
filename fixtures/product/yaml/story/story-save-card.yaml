@@ -10,3 +10,5 @@ epics:
   - epic-checkout
 follows:
   - story-pay-by-card
+basis:
+  - contract: {}
