@@ -82,7 +82,8 @@ export function citationTitle(kind: KindSpec, node: Record<string, unknown>, cas
   const source = getPath(node, c.source);
   const first = c.parts[0] ? node[c.parts[0].field] : undefined;
   if (!source || !first) return null;
-  const name = String(source)
+  const given = c.name ? getPath(node, c.name) : undefined;
+  const name = given !== undefined && given !== null && given !== '' ? String(given) : String(source)
     .split('-')
     .map((w) => casing?.get(w.toLowerCase()) ?? upperFirst(w.toLowerCase()))
     .join(' ');

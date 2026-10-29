@@ -18,6 +18,8 @@ export type ChipTone = 'life' | 'muted' | 'count' | 'level' | 'good' | 'warn' | 
 
 export interface CitationSpec {
   source: string;
+  // A dotted path to the display name of the source. A value at the path is the name as written.
+  name?: string;
   subtitle?: string;
   parts: { field: string; prefix?: string; wrap?: string }[];
 }
@@ -48,6 +50,18 @@ export interface PartSpec {
   scope?: string;
   edge: string;
   sectionTitle?: string;
+}
+
+// An object in a node of the owner kind that is a node of its own. 1 node of `kind` is made for
+// each distinct value of `id`. The owner gets `edge` to the new node, and `edge` is a parent field.
+export interface EmbeddedSpec {
+  owner: string;
+  // A dotted path to the object in the owner.
+  field: string;
+  kind: string;
+  // The key of the id inside the object.
+  id: string;
+  edge: string;
 }
 
 export interface CheckTypeSpec {
@@ -133,6 +147,7 @@ export interface Profile {
   supersededBy?: string;
   linkedScopeEdges?: string[];
   parts?: PartSpec[];
+  embedded?: EmbeddedSpec[];
   checks?: CheckSpec;
   status?: StatusSpec;
   fieldFilters?: FieldFilterSpec[];

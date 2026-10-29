@@ -1,0 +1,9 @@
+key: hz-shock
+type: hazard
+description: A user touches a live part.
+severity: high
+clause: "2"
+source:
+  id: thermal-code
+  title: Thermal Code
+  short: TC

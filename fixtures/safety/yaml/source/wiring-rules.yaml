@@ -1,0 +1,4 @@
+key: wiring-rules
+type: source
+label: Wiring Rules
+claim: A source that is a node of the graph.

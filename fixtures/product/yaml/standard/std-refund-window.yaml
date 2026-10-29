@@ -1,0 +1,8 @@
+id: std-refund-window
+kind: standard
+body:
+  id: refund-law
+  title: Refund Law
+  short: ""
+clause: "7"
+quote: A buyer may return an item within 14 days.

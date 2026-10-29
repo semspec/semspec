@@ -1,0 +1,68 @@
+id: req-embedded-nodes
+kind: requirement
+title: Make nodes of embedded objects
+statement: An object in a node can be a node of its own. Many owners can hold the same object, and the node groups them in the tree and the scope.
+capabilities:
+  - cap-nodes
+area:
+  - core
+acceptance:
+  - id: one-node
+    text: Each distinct id in the embedded objects makes 1 node. The first object gives the fields and the title.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: makes 1 node for each distinct id, with the title from the fields of the first object
+  - id: edge
+    text: Each owner gets an edge to the new node.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: adds an edge from each owner to the new node
+  - id: parent
+    text: The new node is a tree parent and a scope parent of its owners. A scope on the new node shows the owners.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: makes the new node a tree parent and a scope parent of its owners
+  - id: graph-wins
+    text: A node of the graph with the same id wins. The owners only get the edge.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: keeps the graph node when it has the same id as an object, and adds the edges only
+  - id: details
+    text: The details of the owner do not show the object a second time.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: removes the object from the details of the owner
+  - id: conflict
+    text: Two objects with the same id and different fields give a warning that names both owners and the field. The model keeps the first object.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: warn about 2 objects with the same id and different fields, and name both owners and the field
+      - type: unit
+        file: test/build.test.ts
+        name: keeps the first object when 2 objects with the same id differ
+  - id: profile
+    text: The profile check refuses an embedded entry with an unknown kind, owner or edge.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: refuse a profile whose embedded entry names an unknown kind, owner or edge
+  - id: citation-name
+    text: A citation kind can name a path to a display name. The title uses the name as written, and falls back to the title from the source when the name is empty.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: uses the display name of a citation as written, and falls back when it is empty

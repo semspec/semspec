@@ -2,7 +2,7 @@
   "project": "Shop product",
   "source": { "nodes": "nodes", "id": "id", "kind": "kind" },
   "fields": {
-    "title": ["name"],
+    "title": ["name", "short", "title"],
     "idPrefixPattern": "^[a-z]+-",
     "statement": ["summary", "quote"],
     "level": "priority",
@@ -38,16 +38,19 @@
       "plural": "standards",
       "prefix": "std-",
       "role": "linked",
+      "parents": [["issuedBy"]],
       "color": { "light": "#9c36b5", "dark": "#da77f2" },
-      "citation": { "source": "body", "subtitle": "bodyTitle", "parts": [{ "field": "clause", "prefix": "Clause " }, { "field": "item", "wrap": "()" }] },
-      "chips": [{ "field": "body" }, { "field": "clause", "template": "Clause {value}" }]
+      "citation": { "source": "body.id", "name": "body.short", "subtitle": "body.title", "parts": [{ "field": "clause", "prefix": "Clause " }, { "field": "item", "wrap": "()" }] },
+      "chips": [{ "field": "clause", "template": "Clause {value}" }]
     },
+    { "id": "body", "label": "Body", "plural": "bodies", "role": "linked", "color": { "light": "#0b7285", "dark": "#66d9e8" }, "chips": [] },
     { "id": "test", "label": "Test", "plural": "tests", "role": "check", "color": { "light": "#6c757d", "dark": "#ced4da" }, "chips": ["checkType"] }
   ],
   "edges": {
     "products": { "labels": ["In product", "Contains"], "down": true },
     "epics": { "labels": ["In epic", "Contains"], "down": true },
     "follows": { "labels": ["Follows", "Followed by"], "down": true },
+    "issuedBy": { "labels": ["Issued by", "Issues"], "down": true },
     "complies": { "labels": ["Complies with", "Complied with by"] },
     "notes": { "labels": ["Notes", "Noted by"] },
     "replacedBy": { "labels": ["Replaced by", "Replaces"] },
@@ -59,13 +62,14 @@
   "supersededBy": "replacedBy",
   "linkedScopeEdges": ["complies", "notes"],
   "parts": [{ "kind": "scenario", "owner": "story", "field": "scenarios", "id": "key", "text": "text", "edge": "scenario", "sectionTitle": "Scenarios" }],
+  "embedded": [{ "owner": "standard", "field": "body", "kind": "body", "id": "id", "edge": "issuedBy" }],
   "checks": {
     "kind": "test",
     "field": "tests",
     "edge": "tested",
     "typeField": "type",
     "types": {
-      "unit": { "key": ["file", "name"], "title": ["name"] },
+      "unit": { "key": ["file", "name"], "title": ["name", "short", "title"] },
       "manual": { "key": ["plan"], "title": ["plan"], "titlePrefix": "manual" }
     },
     "sectionTitle": "Tests",
@@ -99,7 +103,6 @@
         "kind": "standard",
         "title": "Citation",
         "rows": [
-          { "label": "Body", "path": "bodyTitle" },
           { "label": "Link", "path": "url", "link": true }
         ],
         "anchor": "clause",

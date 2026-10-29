@@ -1,0 +1,8 @@
+key: hz-wire
+type: hazard
+label: Loose wire
+description: A wire comes loose.
+severity: low
+source:
+  id: wiring-rules
+  title: Title From The Hazard

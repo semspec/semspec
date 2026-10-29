@@ -1,0 +1,8 @@
+id: std-privacy-notice
+kind: standard
+body:
+  id: privacy-rules
+  title: Privacy Rules
+  short: PR
+clause: "2"
+quote: A shop shall show a privacy notice.

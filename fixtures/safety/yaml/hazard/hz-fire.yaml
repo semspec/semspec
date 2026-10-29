@@ -1,0 +1,9 @@
+key: hz-fire
+type: hazard
+description: A cable catches fire.
+severity: high
+clause: "5"
+source:
+  id: fire-code
+  title: Fire Code
+  short: ""

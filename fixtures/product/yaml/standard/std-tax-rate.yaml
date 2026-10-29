@@ -1,0 +1,7 @@
+id: std-tax-rate
+kind: standard
+body:
+  id: tax-code
+  title: Tax Code From The Standard
+clause: "9"
+quote: A shop shall show the tax rate.

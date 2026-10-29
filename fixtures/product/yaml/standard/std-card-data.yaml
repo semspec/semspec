@@ -1,7 +1,8 @@
 id: std-card-data
 kind: standard
-body: card-data-standard
-bodyTitle: Card Data Standard
+body:
+  id: card-data-standard
+  title: Card Data Standard
 clause: "3"
 item: a
 quote: A merchant shall not store card data.

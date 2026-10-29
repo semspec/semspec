@@ -34,6 +34,11 @@ const EDGES: Record<string, [string, string, string][]> = {
     ['story-pay-by-card#charged', 'story-pay-by-card', 'scenario'],
     ['story-pay-by-card#declined', 'unit:tests/pay.test.ts#showsDeclineMessage', 'tested'],
     ['story-pay-by-card-3ds', 'manual:plan-7', 'tested'],
+    ['std-card-data', 'card-data-standard', 'issuedBy'],
+    ['std-card-storage', 'card-data-standard', 'issuedBy'],
+    ['std-privacy-notice', 'privacy-rules', 'issuedBy'],
+    ['std-refund-window', 'refund-law', 'issuedBy'],
+    ['std-tax-rate', 'tax-code', 'issuedBy'],
   ],
   safety: [
     ['sg-detect-overheat', 'g-safe-operation', 'goals'],
@@ -45,6 +50,10 @@ const EDGES: Record<string, [string, string, string][]> = {
     ['sg-detect-overheat#sensor-drift', 'sg-detect-overheat', 'argument'],
     ['sg-detect-overheat#sensor-redundant', 'report:FTA-12', 'evidence'],
     ['mit-thermal-fuse', 'analysis:FMEA-3#4.2', 'evidence'],
+    ['hz-overheat', 'thermal-code', 'origin'],
+    ['hz-shock', 'thermal-code', 'origin'],
+    ['hz-fire', 'fire-code', 'origin'],
+    ['hz-wire', 'wiring-rules', 'origin'],
   ],
 };
 
@@ -333,6 +342,49 @@ describe.each(['product', 'safety'])('--exclude on the YAML folder of the %s fix
   });
 });
 
+describe('the embedded nodes', () => {
+  it('refuse a profile whose embedded entry names an unknown kind, owner or edge', () => {
+    for (const name of ['product', 'safety']) {
+      const profile = json<Profile>(name, 'profile.json') as any;
+      const entry = profile.embedded[0];
+      const check = (patch: object) => validateProfile({ ...profile, embedded: [{ ...entry, ...patch }] }).join('\n');
+      expect(check({ kind: 'nothing' }), name).toMatch(/embedded .* kind names the unknown kind "nothing"/);
+      expect(check({ owner: 'nothing' }), name).toMatch(/embedded .* owner names the unknown kind "nothing"/);
+      expect(check({ edge: 'nothing' }), name).toMatch(/embedded names the edge "nothing", which has no entry in edges/);
+      expect(check({ id: undefined }), name).toMatch(/id/);
+    }
+  });
+  it('warn about 2 objects with the same id and different fields, and name both owners and the field', () => {
+    const cases: [string, string, string, string][] = [
+      ['product', 'std-card-data', 'std-card-storage', 'title'],
+      ['safety', 'hz-overheat', 'hz-shock', 'title'],
+    ];
+    for (const [name, a, b, field] of cases) {
+      const profile = json<Profile>(name, 'profile.json');
+      const graph = json<Graph>(name, 'graph.json') as any;
+      const list = graph[profile.source.nodes] as Record<string, any>[];
+      const e = profile.embedded![0];
+      const second = list.find((n) => n[profile.source.id] === b)!;
+      second[e.field] = { ...second[e.field], [field]: 'Changed' };
+      const text = validateGraph(graph, profile).warnings.join('\n');
+      expect(text, name).toContain(`"${a}"`);
+      expect(text, name).toContain(`"${b}"`);
+      expect(text, name).toContain(`the field "${field}" differs`);
+    }
+  });
+  it('gives no warning when the objects with the same id are equal', () => {
+    for (const name of ['product', 'safety']) {
+      expect(validateGraph(json<Graph>(name, 'graph.json'), json<Profile>(name, 'profile.json')).warnings, name).toEqual([]);
+    }
+  });
+  it('keeps the first object when 2 objects with the same id differ', () => {
+    const profile = json<Profile>('safety', 'profile.json');
+    const graph = json<Graph>('safety', 'graph.json') as any;
+    graph.items.find((n: any) => n.key === 'hz-shock').source = { id: 'thermal-code', title: 'Other', short: 'OT' };
+    expect(buildModel(graph, profile).nodes.find((n) => n.id === 'thermal-code')!.title).toBe('TC');
+  });
+});
+
 describe('the schema command', () => {
   it.each(['product', 'safety'])('writes 1 schema file for each kind of the %s fixture', async (name) => {
     const profile = json<Profile>(name, 'profile.json');
@@ -347,7 +399,7 @@ describe('the schema command', () => {
     const dir = tmp();
     writeFileSync(join(dir, 'p.yaml'), stringify(json<Profile>('safety', 'profile.json')));
     expect(await run(['schema', '--profile', join(dir, 'p.yaml'), '--out', join(dir, 'out')])).toBe(0);
-    expect(readdirSync(join(dir, 'out')).length).toBe(6);
+    expect(readdirSync(join(dir, 'out')).length).toBe(7);
   });
 });
 

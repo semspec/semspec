@@ -4,7 +4,7 @@
 // the names that the profile gives.
 import { readFileSync } from 'node:fs';
 import Ajv from 'ajv/dist/2020.js';
-import type { Graph, Profile } from '../core/index';
+import { embeddedObjects, getPath, type Graph, type Profile } from '../core/index';
 
 const schemaPath = new URL('../../schema/profile.schema.json', import.meta.url);
 
@@ -25,6 +25,10 @@ function crossCheckProfile(p: Profile): string[] {
     need(`part ${x.field} kind`, x.kind);
     need(`part ${x.field} owner`, x.owner);
   });
+  p.embedded?.forEach((x) => {
+    need(`embedded ${x.field} kind`, x.kind);
+    need(`embedded ${x.field} owner`, x.owner);
+  });
   need('checks kind', p.checks?.kind);
   need('facets groupKind', p.facets?.groupKind);
   need('entry kind', p.entry?.kind);
@@ -40,6 +44,7 @@ function crossCheckProfile(p: Profile): string[] {
   needEdge('supersededBy', p.supersededBy);
   needEdge('refs', p.refs?.field);
   p.parts?.forEach((x) => needEdge('parts', x.edge));
+  p.embedded?.forEach((x) => needEdge('embedded', x.edge));
   needEdge('checks', p.checks?.edge);
   return errors;
 }
@@ -74,6 +79,19 @@ export function validateGraph(graph: Graph, profile: Profile, labels?: string[])
       else v.forEach((t) => !ids.has(String(t)) && missing++);
     });
   });
+  // 2 objects with the same id must hold the same fields. The model keeps the first one.
+  for (const e of profile.embedded ?? []) {
+    const nodes = list as Record<string, any>[];
+    for (const { id, object, owners } of embeddedObjects(e, nodes, profile.source.id, profile.source.kind)) {
+      for (const other of owners.slice(1)) {
+        const second = getPath(nodes.find((n) => n[profile.source.id] === other), e.field) as Record<string, unknown>;
+        const same = (v: unknown) => (v === undefined || v === null ? '' : JSON.stringify(v));
+        for (const key of new Set([...Object.keys(object), ...Object.keys(second)])) {
+          if (same(object[key]) !== same(second[key])) warnings.push(`"${owners[0]}" and "${other}" both hold the ${e.kind} "${id}" in "${e.field}", but the field "${key}" differs. The explorer keeps the value of "${owners[0]}".`);
+        }
+      }
+    }
+  }
   if (missing) warnings.push(`${missing} link(s) name a node that is not in the graph. The explorer skips them.`);
   return { errors, warnings };
 }

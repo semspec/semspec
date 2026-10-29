@@ -1,0 +1,7 @@
+id: std-card-storage
+kind: standard
+body:
+  id: card-data-standard
+  title: Card Data Standard
+clause: "5"
+quote: A merchant shall encrypt stored card data.

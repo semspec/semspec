@@ -2,7 +2,7 @@
   "project": "Heater safety case",
   "source": { "nodes": "items", "id": "key", "kind": "type" },
   "fields": {
-    "title": ["label"],
+    "title": ["label", "short", "title"],
     "idPrefixPattern": "^[a-z]+-",
     "statement": ["claim", "description"],
     "level": "integrity",
@@ -25,12 +25,14 @@
       "chips": [{ "field": "integrity", "format": "upper", "tone": "level" }, "lifecycle"]
     },
     { "id": "argument", "label": "Argument", "plural": "arguments", "role": "part", "color": { "light": "#c2255c", "dark": "#f783ac" }, "chips": ["verified"] },
-    { "id": "hazard", "label": "Hazard", "plural": "hazards", "prefix": "hz-", "role": "linked", "color": { "light": "#e03131", "dark": "#ff8787" }, "chips": [{ "field": "severity" }] },
+    { "id": "hazard", "label": "Hazard", "plural": "hazards", "prefix": "hz-", "role": "linked", "parents": [["origin"]], "citation": { "source": "source.id", "name": "source.short", "subtitle": "source.title", "parts": [{ "field": "clause", "prefix": "Cl. " }] }, "color": { "light": "#e03131", "dark": "#ff8787" }, "chips": [{ "field": "severity" }] },
+    { "id": "source", "label": "Source", "plural": "sources", "role": "linked", "color": { "light": "#862e9c", "dark": "#e599f7" }, "chips": [] },
     { "id": "evidence", "label": "Evidence", "plural": "evidence", "role": "check", "color": { "light": "#6c757d", "dark": "#ced4da" }, "chips": ["checkType"] }
   ],
   "edges": {
     "goals": { "labels": ["Supports goal", "Supported by"], "down": true },
     "subgoals": { "labels": ["Supports subgoal", "Supported by"], "down": true },
+    "origin": { "labels": ["Comes from", "Source of"], "down": true },
     "addresses": { "labels": ["Addresses", "Addressed by"] },
     "argument": { "labels": ["Argument of", "Has argument"], "down": true },
     "evidence": { "labels": ["Backed by", "Backs"] }
@@ -38,6 +40,7 @@
   "links": ["addresses"],
   "linkedScopeEdges": ["addresses"],
   "parts": [{ "kind": "argument", "owner": "subgoal", "field": "arguments", "id": "name", "text": "text", "edge": "argument", "sectionTitle": "Arguments" }],
+  "embedded": [{ "owner": "hazard", "field": "source", "kind": "source", "id": "id", "edge": "origin" }],
   "checks": {
     "kind": "evidence",
     "field": "evidence",

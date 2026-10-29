@@ -37,7 +37,9 @@ function buildGroups(v: Viewer): Group[] {
   const roots = treeKinds.filter((k) => !Core.kindSpec(k)?.parents?.length).flatMap(ofKind);
   groups.push({ key: 'g:hier', label: P.groups?.hierarchy ?? 'Tree', ids: sortIds(index, roots), count: roots.length });
   Core.LINKED_KINDS.forEach((k) => {
-    const ids = ofKind(k);
+    // A linked node with a parent shows below its parent, so the group lists the roots only.
+    const ids = ofKind(k).filter((id) => !index.byId.get(id)!.parents.length);
+    if (!ids.length) return;
     groups.push({ key: `g:${k}`, label: capitalise(Core.KIND_PLURAL[k]), ids: sortIds(index, ids), count: ids.length });
   });
   treeKinds.forEach((k) => {

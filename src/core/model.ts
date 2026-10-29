@@ -6,7 +6,7 @@
 //   up:      every parent field of the kind. The scope and the group facet follow this list.
 // Edge direction follows the graph: from the specific node to the general node.
 import type { Graph, Index, Model, Profile, RawNode, VEdge, VNode } from './types';
-import { allLinkFields, firstOf, getPath, isMuted, kindOf, normalise } from './profile';
+import { allLinkFields, embeddedObjects, firstOf, getPath, isMuted, kindOf, normalise, omitPath } from './profile';
 import { checkKey, checkTitle, citationTitle, deriveTitle, snippet, wordCasing } from './titles';
 
 export function buildModel(graph: Graph, input: Profile): Model {
@@ -62,6 +62,8 @@ export function buildModel(graph: Graph, input: Profile): Model {
     const raw: Record<string, any> = {};
     for (const key of Object.keys(n)) if (key !== idKey && key !== kindKey) raw[key] = n[key];
     for (const part of P.parts!) delete raw[part.field];
+    let d = raw;
+    for (const e of P.embedded!) if (n[kindKey] === e.owner) d = omitPath(d, e.field);
     addNode({
       id: n[idKey],
       kind: n[kindKey],
@@ -73,9 +75,38 @@ export function buildModel(graph: Graph, input: Profile): Model {
       statement: firstOf(n, P.fields.statement),
       parents: [],
       up: [],
-      d: raw,
+      d,
       status: statusValue(n),
     });
+  }
+
+  // An embedded object is a node of its own. A node of the graph with the same id wins, and the
+  // owner then only gets the edge. The tree and the scope read the edge as a parent field.
+  const embeddedParents = new Map<string, Map<string, string[]>>();
+  for (const e of P.embedded!) {
+    for (const { id, object, owners } of embeddedObjects(e, graphNodes, idKey, kindKey)) {
+      const { [e.id]: _id, ...fields } = object;
+      addNode({
+        id,
+        kind: e.kind,
+        title: firstOf(object, P.fields.title) || deriveTitle(id, casing, P.fields.idPrefixPattern),
+        sub: '',
+        lifecycle: lifecycleOf({ ...object, [kindKey]: e.kind }),
+        delivery: P.fields.delivery ? String(object[P.fields.delivery] ?? '') : '',
+        level: P.fields.level ? String(object[P.fields.level] ?? '') : '',
+        statement: firstOf(object, P.fields.statement),
+        parents: [],
+        up: [],
+        d: fields,
+        status: statusValue(object),
+      });
+      for (const owner of owners) {
+        addEdge(owner, id, e.edge);
+        const byEdge = embeddedParents.get(owner) ?? new Map<string, string[]>();
+        byEdge.set(e.edge, [...(byEdge.get(e.edge) ?? []), id]);
+        embeddedParents.set(owner, byEdge);
+      }
+    }
   }
 
   const addCheck = (v: Record<string, any>, ownerNodeId: string, ownerId: string) => {
@@ -136,6 +167,7 @@ export function buildModel(graph: Graph, input: Profile): Model {
   }
 
   const existing = (list: unknown) => ((list as string[]) ?? []).filter((p) => byId.has(p));
+  const targets = (n: Record<string, any>, field: string) => existing([...((n[field] as string[]) ?? []), ...(embeddedParents.get(n[idKey])?.get(field) ?? [])]);
   for (const n of graphNodes) {
     const node = byId.get(n[idKey])!;
     let tree: string[] = [];
@@ -143,8 +175,8 @@ export function buildModel(graph: Graph, input: Profile): Model {
     for (const group of kindOf(P, n[kindKey])?.parents ?? []) {
       let found: string[] = [];
       for (const f of group) {
-        found = found.concat(existing(n[f]));
-        up = up.concat(existing(n[f]));
+        found = found.concat(targets(n, f));
+        up = up.concat(targets(n, f));
       }
       if (!tree.length) tree = found;
     }

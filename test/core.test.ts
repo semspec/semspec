@@ -68,6 +68,12 @@ describe('titles', () => {
     expect(n.title).toBe('Card Data Standard Clause 3(a)');
     expect(n.sub).toBe('Card Data Standard');
   });
+  it('uses the display name of a citation as written, and falls back when it is empty', () => {
+    expect(title(pModel, 'std-privacy-notice')).toBe('PR Clause 2');
+    expect(title(pModel, 'std-refund-window')).toBe('Refund Law Clause 7');
+    expect(title(sModel, 'hz-shock')).toBe('TC Cl. 2');
+    expect(title(sModel, 'hz-fire')).toBe('Fire Code Cl. 5');
+  });
   it('turns a check name into a sentence', () => {
     expect(humanise('aValidBasketIsCharged', new Map([['basket', 'Basket']]))).toBe('A valid Basket is charged');
     expect(title(pModel, 'unit:tests/pay.test.ts#showsDeclineMessage')).toBe('Shows decline message');
@@ -130,7 +136,7 @@ describe('scope', () => {
     expect(sorted(computeScope(pIndex, { id: 'epic-checkout', kinds: ['story'] }).ids)).toEqual(sorted(['epic-checkout', 'story-pay-by-card', 'story-pay-by-card-3ds', 'story-save-card']));
   });
   it('gives a linked node its direct neighbours only', () => {
-    expect(sorted(computeScope(pIndex, { id: 'std-card-data' }).ids)).toEqual(['std-card-data', 'story-pay-by-card']);
+    expect(sorted(computeScope(pIndex, { id: 'std-card-data' }).ids)).toEqual(['card-data-standard', 'std-card-data', 'story-pay-by-card']);
   });
 });
 
@@ -393,5 +399,90 @@ describe('kind schemas', () => {
     expect(story({ id: 'story-x', kind: 'story', result: 'maybe' })).toBe(false);
     expect(story({ id: 'story-x', kind: 'story', scenarios: [{ key: 'a', result: 'maybe' }] })).toBe(false);
     expect(story({ id: 'story-x', kind: 'story', tests: [{ type: 'nothing' }] })).toBe(false);
+  });
+});
+
+// For each fixture: the owners of each embedded node, the field of the first object, the title,
+// and the graph node that wins over an object with the same id.
+const EMBEDDED = [
+  {
+    name: 'product',
+    graph: product.graph,
+    model: pModel,
+    index: pIndex,
+    kind: 'body',
+    edge: 'issuedBy',
+    field: 'body',
+    owners: { 'card-data-standard': ['std-card-data', 'std-card-storage'], 'privacy-rules': ['std-privacy-notice'], 'refund-law': ['std-refund-window'], 'tax-code': ['std-tax-rate'] } as Record<string, string[]>,
+    titles: { 'card-data-standard': 'Card Data Standard', 'privacy-rules': 'PR', 'refund-law': 'Refund Law', 'tax-code': 'Tax Code Office' } as Record<string, string>,
+    wins: 'tax-code',
+    loser: 'Tax Code From The Standard',
+  },
+  {
+    name: 'safety',
+    graph: safety.graph,
+    model: sModel,
+    index: sIndex,
+    kind: 'source',
+    edge: 'origin',
+    field: 'source',
+    owners: { 'thermal-code': ['hz-overheat', 'hz-shock'], 'fire-code': ['hz-fire'], 'wiring-rules': ['hz-wire'] } as Record<string, string[]>,
+    titles: { 'thermal-code': 'TC', 'fire-code': 'Fire Code', 'wiring-rules': 'Wiring Rules' } as Record<string, string>,
+    wins: 'wiring-rules',
+    loser: 'Title From The Hazard',
+  },
+];
+
+describe('embedded nodes', () => {
+  it('makes 1 node for each distinct id, with the title from the fields of the first object', () => {
+    for (const c of EMBEDDED) {
+      const nodes = c.model.nodes.filter((n) => n.kind === c.kind);
+      expect(nodes.map((n) => n.id).sort(), c.name).toEqual(Object.keys(c.owners).sort());
+      for (const [id, t] of Object.entries(c.titles)) expect(title(c.model, id), `${c.name} ${id}`).toBe(t);
+    }
+    expect(pModel.nodes.find((n) => n.id === 'card-data-standard')!.d).toEqual({ title: 'Card Data Standard' });
+  });
+  it('adds an edge from each owner to the new node', () => {
+    for (const c of EMBEDDED) {
+      const edges = c.model.edges.filter((e) => e.k === c.edge).map((e) => `${e.s}>${e.t}`).sort();
+      const expected = Object.entries(c.owners).flatMap(([id, owners]) => owners.map((o) => `${o}>${id}`)).sort();
+      expect(edges, c.name).toEqual(expected);
+    }
+  });
+  it('makes the new node a tree parent and a scope parent of its owners', () => {
+    for (const c of EMBEDDED) {
+      for (const [id, owners] of Object.entries(c.owners)) {
+        for (const o of owners) {
+          const n = c.index.byId.get(o)!;
+          expect(n.parents, `${c.name} ${o}`).toEqual([id]);
+          expect(n.up, `${c.name} ${o}`).toEqual([id]);
+        }
+        expect(sorted(c.index.children.get(id)!), `${c.name} ${id}`).toEqual(sorted(owners));
+        expect(sorted(computeScope(c.index, { id }).ids), `${c.name} ${id}`).toEqual(sorted([id, ...owners]));
+      }
+    }
+  });
+  it('keeps the graph node when it has the same id as an object, and adds the edges only', () => {
+    for (const c of EMBEDDED) {
+      const nodes = c.model.nodes.filter((n) => n.id === c.wins);
+      expect(nodes.length, c.name).toBe(1);
+      expect(nodes[0].title, c.name).not.toBe(c.loser);
+      expect(JSON.stringify(nodes[0].d), c.name).not.toContain(c.loser);
+      expect(c.model.edges.filter((e) => e.t === c.wins && e.k === c.edge).length, c.name).toBe(c.owners[c.wins].length);
+    }
+    expect(title(pModel, 'tax-code')).toBe('Tax Code Office');
+    expect(title(sModel, 'wiring-rules')).toBe('Wiring Rules');
+  });
+  it('removes the object from the details of the owner', () => {
+    for (const c of EMBEDDED) {
+      for (const owners of Object.values(c.owners)) for (const o of owners) expect(c.index.byId.get(o)!.d, `${c.name} ${o}`).not.toHaveProperty(c.field);
+    }
+    // The input graph keeps the object.
+    expect((product.graph.nodes as Record<string, unknown>[]).find((n) => n.id === 'std-card-data')).toHaveProperty('body');
+    expect((safety.graph.items as Record<string, unknown>[]).find((n) => n.key === 'hz-shock')).toHaveProperty('source');
+  });
+  it('reaches an owner from a walk over the new node', () => {
+    const w = walkExpand(pIndex, walkStart(['card-data-standard']), 'card-data-standard');
+    expect(sorted(w.added)).toEqual(['std-card-data', 'std-card-storage']);
   });
 });

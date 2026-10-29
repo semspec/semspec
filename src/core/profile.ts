@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 // Helpers that read a profile. The core knows no kind and no field. It asks the profile.
-import type { CheckSpec, KindSpec, Profile, Role } from './types';
+import type { CheckSpec, EmbeddedSpec, KindSpec, Profile, Role } from './types';
 
 // A profile without checks gets a check definition that no node uses.
 const NO_CHECKS: CheckSpec = { kind: '__no_check_kind', field: '__no_check_field', edge: '__no_check_edge', typeField: 'type', types: {} };
@@ -12,6 +12,7 @@ export function normalise(p: Profile): Profile {
     ...p,
     links: p.links ?? [],
     parts: p.parts ?? [],
+    embedded: p.embedded ?? [],
     checks: p.checks ?? NO_CHECKS,
     linkedScopeEdges: p.linkedScopeEdges ?? [],
     lifecycle: { ...p.lifecycle, byKind: p.lifecycle.byKind ?? {}, states: p.lifecycle.states ?? {} },
@@ -59,6 +60,34 @@ export function getPath(obj: unknown, path: string): unknown {
     cur = cur[part];
   }
   return cur;
+}
+
+// The nodes that the objects of `spec` make: the first object of each id, and the owners of the id.
+// The graph node list is read as it is, so the result is the same in the model and in the checks.
+export function embeddedObjects(spec: EmbeddedSpec, nodes: Record<string, any>[], idKey: string, kindKey: string): { id: string; object: Record<string, any>; owners: string[] }[] {
+  const found = new Map<string, { id: string; object: Record<string, any>; owners: string[] }>();
+  for (const n of nodes) {
+    if (n[kindKey] !== spec.owner) continue;
+    const object = getPath(n, spec.field);
+    if (!object || typeof object !== 'object' || Array.isArray(object)) continue;
+    const raw = (object as Record<string, any>)[spec.id];
+    if (raw === undefined || raw === null || raw === '') continue;
+    const id = String(raw);
+    const entry = found.get(id);
+    if (entry) entry.owners.push(n[idKey]);
+    else found.set(id, { id, object: object as Record<string, any>, owners: [n[idKey]] });
+  }
+  return [...found.values()];
+}
+
+// A copy of the object with the value at the dotted path removed. The input stays as it is.
+export function omitPath<T extends Record<string, any>>(obj: T, path: string): T {
+  const [head, ...rest] = path.split('.');
+  if (!(head in obj)) return obj;
+  const copy: Record<string, any> = { ...obj };
+  if (!rest.length) delete copy[head];
+  else if (copy[head] && typeof copy[head] === 'object') copy[head] = omitPath(copy[head], rest.join('.'));
+  return copy as T;
 }
 
 export function firstOf(obj: unknown, fields: string[]): string {

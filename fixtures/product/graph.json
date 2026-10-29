@@ -32,6 +32,11 @@
       "replacedBy": "dec-use-two-psp"
     },
     { "id": "dec-use-two-psp", "kind": "decision", "summary": "Two PSPs share the load.", "notes": [{ "ref": "story-pay-by-card" }] },
-    { "id": "std-card-data", "kind": "standard", "body": "card-data-standard", "bodyTitle": "Card Data Standard", "clause": "3", "item": "a", "quote": "A merchant shall not store card data.", "url": "https://example.org/standard" }
+    { "id": "std-card-data", "kind": "standard", "body": { "id": "card-data-standard", "title": "Card Data Standard" }, "clause": "3", "item": "a", "quote": "A merchant shall not store card data.", "url": "https://example.org/standard" },
+    { "id": "std-card-storage", "kind": "standard", "body": { "id": "card-data-standard", "title": "Card Data Standard" }, "clause": "5", "quote": "A merchant shall encrypt stored card data." },
+    { "id": "std-privacy-notice", "kind": "standard", "body": { "id": "privacy-rules", "title": "Privacy Rules", "short": "PR" }, "clause": "2", "quote": "A shop shall show a privacy notice." },
+    { "id": "std-refund-window", "kind": "standard", "body": { "id": "refund-law", "title": "Refund Law", "short": "" }, "clause": "7", "quote": "A buyer may return an item within 14 days." },
+    { "id": "std-tax-rate", "kind": "standard", "body": { "id": "tax-code", "title": "Tax Code From The Standard" }, "clause": "9", "quote": "A shop shall show the tax rate." },
+    { "id": "tax-code", "kind": "body", "name": "Tax Code Office", "summary": "A body that is a node of the graph." }
   ]
 }

@@ -7,6 +7,10 @@
     { "key": "mit-watchdog", "type": "mitigation", "description": "A watchdog resets the controller.", "parts": ["mcu.watchdog"], "integrity": "medium", "goals": ["g-safe-operation"] },
     { "key": "mit-loose", "type": "mitigation", "description": "A mitigation that no goal names." },
     { "key": "mit-loose-old", "type": "mitigation", "description": "An old mitigation.", "state": "retired", "goals": [] },
-    { "key": "hz-overheat", "type": "hazard", "label": "Overheat of the housing", "description": "The housing gets hotter than 90 C.", "severity": "critical" }
+    { "key": "hz-overheat", "type": "hazard", "label": "Overheat of the housing", "description": "The housing gets hotter than 90 C.", "severity": "critical", "source": { "id": "thermal-code", "title": "Thermal Code", "short": "TC" } },
+    { "key": "hz-shock", "type": "hazard", "description": "A user touches a live part.", "severity": "high", "clause": "2", "source": { "id": "thermal-code", "title": "Thermal Code", "short": "TC" } },
+    { "key": "hz-fire", "type": "hazard", "description": "A cable catches fire.", "severity": "high", "clause": "5", "source": { "id": "fire-code", "title": "Fire Code", "short": "" } },
+    { "key": "hz-wire", "type": "hazard", "label": "Loose wire", "description": "A wire comes loose.", "severity": "low", "source": { "id": "wiring-rules", "title": "Title From The Hazard" } },
+    { "key": "wiring-rules", "type": "source", "label": "Wiring Rules", "claim": "A source that is a node of the graph." }
   ]
 }

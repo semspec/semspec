@@ -90,6 +90,21 @@
         }
       }
     },
+    "embedded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["owner", "field", "kind", "id", "edge"],
+        "additionalProperties": false,
+        "properties": {
+          "owner": { "type": "string", "description": "The kind of the node that holds the object." },
+          "field": { "type": "string", "description": "A dotted path to the object in the owner." },
+          "kind": { "type": "string", "description": "The kind that each distinct object becomes." },
+          "id": { "type": "string", "description": "The key of the id inside the object." },
+          "edge": { "type": "string", "description": "The name of the edge from the owner to the new node. The edge is a parent field of the owner." }
+        }
+      }
+    },
     "checks": {
       "type": "object",
       "required": ["kind", "field", "edge", "typeField"],
@@ -225,6 +240,7 @@
           "properties": {
             "source": { "type": "string", "description": "A path to the field that names the source." },
             "subtitle": { "type": "string" },
+            "name": { "type": "string", "description": "A path to the display name of the source. A value at the path is the name as written. An empty value falls back to the name made from the source." },
             "parts": {
               "type": "array",
               "items": {
