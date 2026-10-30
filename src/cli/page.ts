@@ -4,6 +4,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { kindColorCss as coreKindColorCss, type Model, type WorkspaceData } from '../core/index';
+import { THEME_KEY } from '../app/lib/theme';
 
 export interface Assets {
   js: string;
@@ -45,8 +46,9 @@ const jsonForHtml = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
 // The colour of each kind, as CSS variables for the light and the dark theme.
 export const kindColorCss = (model: Model): string => coreKindColorCss(model.profile);
 
-// Sets the dark class before the first paint, from the colour scheme of the system.
-const THEME_SCRIPT = `(function(){var m=window.matchMedia('(prefers-color-scheme: dark)');function a(){document.documentElement.classList.toggle('dark',m.matches)}a();m.addEventListener('change',a)})();`;
+// Sets the dark class before the first paint, from the stored choice or else the system colour
+// scheme. The key and the rule match src/app/lib/theme.ts. The app takes over after the load.
+const THEME_SCRIPT = `(function(){var s=null;try{s=localStorage.getItem('${THEME_KEY}')}catch(e){}var d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d)})();`;
 
 const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 

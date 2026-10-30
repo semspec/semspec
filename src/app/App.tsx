@@ -13,6 +13,7 @@ import { DetailsPanel, ExpandPanel } from '@/components/details-panel';
 import { FilterBar } from '@/components/filter-bar';
 import { KindDot } from '@/components/kind';
 import { TableView } from '@/components/table-view';
+import { ThemeSwitch } from '@/components/theme-switch';
 import { TreePanel } from '@/components/tree-panel';
 import { incomingCrossLinks, kindColorCss, type WorkspaceData } from '@core/index';
 import { Core, setProfile, type Model } from '@/lib/core';
@@ -265,6 +266,7 @@ function GraphApp({
                 <TabsTrigger value="table">Table</TabsTrigger>
               </TabsList>
             </Tabs>
+            <ThemeSwitch />
           </div>
         </header>
         <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1">

@@ -29,6 +29,7 @@ import { Core, type Kind, type NodeStatus, type Summary, type VEdge } from '@/li
 import { SIZE, layered, placeNear, type Mode, type Pos } from '@/lib/layout';
 import { LAYOUTS, boundsOf, facingSides, findContainers, forceLayout, grouped, moveWithMembers, rectsOf, type LayoutName } from '@/lib/layouts';
 import type { Viewer } from '@/lib/use-viewer';
+import { useTheme } from '@/lib/use-theme';
 import { cn } from '@/lib/utils';
 
 const BIG = 300;
@@ -163,6 +164,7 @@ function sortParentsFirst(ids: string[], parentOf: Map<string, string>): string[
 function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
   const { index, canvasIds: ids, canvasEdges: edges, selected, walk } = v;
   const flow = useReactFlow();
+  const { resolved: theme } = useTheme();
   const [confirmed, setConfirmed] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
   const scopeKey = v.scope ? (v.scope.type === 'all' ? 'all' : v.scope.id) : `walk:${v.walkRoot}`;
@@ -371,6 +373,7 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
 
   return (
     <ReactFlow
+      colorMode={theme}
       nodes={nodes}
       edges={rfEdges}
       nodeTypes={NODE_TYPES}
@@ -396,7 +399,6 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       minZoom={0.1}
       maxZoom={1.6}
       proOptions={{ hideAttribution: true }}
-      colorMode="system"
       aria-label={mode === 'cards' ? 'Cards canvas' : 'Graph canvas'}
     >
       <Background gap={20} size={1} className="opacity-60" />

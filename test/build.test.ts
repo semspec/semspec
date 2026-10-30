@@ -11,6 +11,7 @@ import { loadInputs, loadProfile, pageFor, parseArgs, run, startServer } from '.
 import { excludeMatcher } from '../src/cli/yaml';
 import { validateGraph, validateProfile } from '../src/cli/validate';
 import { renderPage } from '../src/cli/page';
+import { resolveTheme } from '../src/app/lib/theme';
 
 // Each temp folder goes when the file ends.
 const made: string[] = [];
@@ -118,10 +119,30 @@ describe.each(['product', 'safety', 'glossary'])('the page of the %s fixture', (
     expect(html).not.toMatch(/url\(\s*['"]?(https?:)?\/\//i);
     expect(html).not.toMatch(/<(img|iframe|source|video|audio)\b[^>]*\ssrc\s*=\s*["']?https?:/i);
   });
+  it('sets the theme class in an inline script in the head, before the style', async () => {
+    const html = await renderPage(buildModel(graph, profile));
+    const head = html.slice(0, html.indexOf('</head>'));
+    expect(head).toMatch(/<script>\(function\(\)\{var s=null;try\{s=localStorage\.getItem\('semspec-theme'\)\}catch/);
+    expect(head.indexOf("classList.toggle('dark'")).toBeLessThan(head.indexOf('<style>'));
+  });
+  it('sets the kind colours for the dark class', async () => {
+    const html = await renderPage(buildModel(graph, profile));
+    for (const k of profile.kinds) expect(html).toMatch(new RegExp(`\\.dark\\{[^}]*--kind-${k.id}:`));
+  });
   it('sets 1 colour variable for each kind from the profile', async () => {
     const html = await renderPage(buildModel(graph, profile));
     for (const k of profile.kinds) expect(html).toContain(`--kind-${k.id}:${k.color.light};`);
     expect(html).toContain(`Semspec – ${profile.project}`);
+  });
+});
+
+describe('the theme', () => {
+  it('uses a stored light or dark value and else the system value', () => {
+    expect(resolveTheme('light', true)).toBe('light');
+    expect(resolveTheme('dark', false)).toBe('dark');
+    expect(resolveTheme('system', true)).toBe('dark');
+    expect(resolveTheme(null, false)).toBe('light');
+    expect(resolveTheme('other', true)).toBe('dark');
   });
 });
 
