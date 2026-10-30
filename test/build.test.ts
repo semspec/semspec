@@ -4,13 +4,14 @@
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { stringify } from 'yaml';
 import { buildModel, type Graph, type Profile } from '@core/index';
 import { loadInputs, loadProfile, pageFor, parseArgs, run, startServer } from '../src/cli/index';
 import { excludeMatcher } from '../src/cli/yaml';
 import { validateGraph, validateProfile } from '../src/cli/validate';
 import { renderPage } from '../src/cli/page';
+import { buildInfo, versionLine } from '../src/cli/version';
 import { resolveTheme } from '../src/app/lib/theme';
 
 // Each temp folder goes when the file ends.
@@ -610,5 +611,46 @@ describe('the requirements of the repository', () => {
       const source = sources.get(file)!;
       expect(source.includes(`it('${name}'`) || source.includes(`it("${name}"`), `${file} has a test titled "${name}"`).toBe(true);
     }
+  });
+});
+
+describe('the build information', () => {
+  const logged = async (argv: string[]) => {
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      const code = await run(argv);
+      return { code, text: spy.mock.calls.map((c) => c.join(' ')).join('\n') };
+    } finally {
+      spy.mockRestore();
+    }
+  };
+  it('prints the version line with --version and -v', async () => {
+    for (const flag of ['--version', '-v']) {
+      const { code, text } = await logged([flag]);
+      expect(code).toBe(0);
+      expect(text).toMatch(/^semspec \S+ \(\S+( dirty)?\)$/);
+      expect(text).toBe(versionLine());
+    }
+  });
+  it('adds dirty after the commit only for a dirty tree', () => {
+    expect(versionLine({ name: 'semspec', version: '1.2.3', commit: 'abc', dirty: false })).toBe('semspec 1.2.3 (abc)');
+    expect(versionLine({ name: 'semspec', version: '1.2.3', commit: 'abc', dirty: true })).toBe('semspec 1.2.3 (abc dirty)');
+  });
+  it('prints the build information as JSON with version --json', async () => {
+    const { code, text } = await logged(['version', '--json']);
+    expect(code).toBe(0);
+    const info = JSON.parse(text);
+    expect(Object.keys(info)).toEqual(['name', 'version', 'commit', 'dirty']);
+    expect(info.name).toBe('semspec');
+    expect(typeof info.version).toBe('string');
+    expect(typeof info.commit).toBe('string');
+    expect(typeof info.dirty).toBe('boolean');
+    expect(info).toEqual(buildInfo());
+  });
+  it('names the generator in a meta tag of the page', async () => {
+    const graph: Graph = JSON.parse(readFileSync(path('safety', 'graph.json'), 'utf8'));
+    const profile: Profile = JSON.parse(readFileSync(path('safety', 'profile.json'), 'utf8'));
+    const html = await renderPage(buildModel(graph, profile));
+    expect(html).toContain(`<meta name="generator" content="${versionLine()}">`);
   });
 });

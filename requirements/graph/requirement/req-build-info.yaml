@@ -1,0 +1,33 @@
+id: req-build-info
+kind: requirement
+title: Record the version and the commit of the build
+statement: The command line tool prints its version and the commit it was built from. The build writes the commit into the tool, so a package without a .git folder knows it. A built page names the same version and commit in a generator meta tag.
+capabilities:
+  - cap-html
+area:
+  - cli
+acceptance:
+  - id: version-line
+    text: The option --version or -v prints "semspec <version> (<commit>)", with " dirty" after the commit when the tree was dirty at build time.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: prints the version line with --version and -v
+      - type: unit
+        file: test/build.test.ts
+        name: adds dirty after the commit only for a dirty tree
+  - id: version-json
+    text: The command "version --json" prints an object with the name, the version, the commit and the dirty flag.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: prints the build information as JSON with version --json
+  - id: generator-meta
+    text: A built page has a meta tag "generator" with the same text as the version line.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: names the generator in a meta tag of the page

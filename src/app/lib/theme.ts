@@ -12,6 +12,13 @@ export function parseChoice(stored: unknown): ThemeChoice {
   return stored === 'light' || stored === 'dark' ? stored : 'system';
 }
 
+// Returns the new choice for a storage event, or undefined when the event is not about the theme.
+// A null key means that another document called localStorage.clear(). The choice becomes "system".
+export function choiceFromStorageEvent(key: string | null, newValue: string | null): ThemeChoice | undefined {
+  if (key === null) return 'system';
+  return key === THEME_KEY ? parseChoice(newValue) : undefined;
+}
+
 // Returns the theme to show, from the stored value and the system colour scheme.
 export function resolveTheme(stored: unknown, systemDark: boolean): ResolvedTheme {
   const choice = parseChoice(stored);

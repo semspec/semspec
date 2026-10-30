@@ -37,6 +37,8 @@ semspec build --workspace <file> --out workspace.html
 semspec schema --profile <profile> --out <dir>
 semspec export --graph <graph> --profile <profile> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
 semspec export --workspace <file> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
+semspec --version
+semspec version --json
 ```
 
 - `serve` starts a server on localhost. It reads both inputs again on each page load.
@@ -44,6 +46,7 @@ semspec export --workspace <file> --format turtle|jsonld|shacl|cypher --out <fil
 - The page has a Light, Dark and System switch in the header. It keeps the choice in the browser storage of the viewer.
 - `schema` writes 1 JSON Schema for each kind of the profile. See "The schemas of the kinds".
 - `export` writes the graph for other tools. See "Export".
+- `semspec --version` (or `-v`) prints `semspec <version> (<commit>)`, with ` dirty` after the commit when the tree was dirty at build time. `semspec version --json` prints `{ "name", "version", "commit", "dirty" }`. The page has the same text in `<meta name="generator">`.
 
 `<graph>` is a JSON file, a YAML file or a folder of YAML files. `<profile>` is a JSON file or a YAML file (`.yaml` or `.yml`).
 

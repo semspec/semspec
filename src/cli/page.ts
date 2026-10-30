@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { kindColorCss as coreKindColorCss, type Model, type WorkspaceData } from '../core/index';
 import { THEME_KEY } from '../app/lib/theme';
+import { generatorLabel } from './version';
 
 export interface Assets {
   js: string;
@@ -64,6 +65,7 @@ export async function renderPage(data: Model | WorkspaceData): Promise<string> {
     '<head>',
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    `<meta name="generator" content="${escapeHtml(generatorLabel())}">`,
     `<title>Semspec – ${escapeHtml(title)}</title>`,
     `<script>${THEME_SCRIPT}</script>`,
     `<style>${inlineStyle(css)}</style>`,

@@ -2,7 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // The theme store. It keeps the choice in localStorage and sets the dark class on the root element.
 import { useCallback, useSyncExternalStore } from 'react';
-import { THEME_KEY, parseChoice, resolveTheme, type ResolvedTheme, type ThemeChoice } from './theme';
+import { THEME_KEY, choiceFromStorageEvent, parseChoice, resolveTheme, type ResolvedTheme, type ThemeChoice } from './theme';
 
 const query = () => window.matchMedia('(prefers-color-scheme: dark)');
 const listeners = new Set<() => void>();
@@ -42,6 +42,13 @@ function subscribe(listener: () => void) {
   if (!watching) {
     watching = true;
     query().addEventListener('change', notify);
+    // Another tab or a parent page of the same origin changed the stored choice. The store does not write it back.
+    window.addEventListener('storage', (e) => {
+      const next = choiceFromStorageEvent(e.key, e.newValue);
+      if (next === undefined) return;
+      choice = next;
+      notify();
+    });
   }
   apply();
   return () => {

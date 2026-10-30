@@ -5,6 +5,8 @@
 //   semspec build --graph <file> --profile <file> --out <file.html> [--exclude <pattern>]...
 //   semspec serve --workspace <file> [--port 4173] [--host 127.0.0.1]
 //   semspec build --workspace <file> --out <file.html>
+//   semspec --version | -v
+//   semspec version --json
 //   semspec schema --profile <file> --out <dir>
 //   semspec export --graph <file> --profile <file> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
 //   semspec export --workspace <file> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
@@ -17,6 +19,7 @@ import { pathToFileURL } from 'node:url';
 import { EXPORT_FORMATS, buildModel, exportModel, exportWorkspace, isExportFormat, kindSchemas, type ExportOptions } from '../core/index';
 import { loadInputs, loadProfile } from './inputs';
 import { renderPage } from './page';
+import { buildInfo, versionLine } from './version';
 import { loadWorkspace } from './workspace';
 
 export { loadInputs, loadProfile };
@@ -29,6 +32,8 @@ Usage:
   semspec serve --workspace <file> [--port 4173] [--host 127.0.0.1]
   semspec build --workspace <file> --out <file.html>
   semspec schema --profile <file> --out <dir>
+  semspec --version | -v
+  semspec version --json
   semspec export --graph <file> --profile <file> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
   semspec export --workspace <file> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
 
@@ -131,6 +136,14 @@ export function parseArgs(argv: string[]): { command?: string; flags: Record<str
 export async function run(argv: string[]): Promise<number> {
   const { command, flags, lists } = parseArgs(argv);
   const exclude = lists.exclude ?? [];
+  if (command === '--version' || command === '-v') {
+    console.log(versionLine());
+    return 0;
+  }
+  if (command === 'version') {
+    console.log('json' in flags ? JSON.stringify(buildInfo()) : versionLine());
+    return 0;
+  }
   if (!command || command === '--help' || command === 'help') {
     console.log(USAGE);
     return command ? 0 : 1;
