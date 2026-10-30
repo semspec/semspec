@@ -227,7 +227,8 @@ export interface Profile {
   // The name of the project, shown as secondary text.
   project: string;
   // `defaultKind` is the kind of a node with no value in the `kind` key.
-  source: { nodes: string; id: string; kind: string; defaultKind?: string };
+  // `markdown` turns on the reading of `*.md` files in a graph folder. `body` is the field that gets the text after the front matter.
+  source: { nodes: string; id: string; kind: string; defaultKind?: string; markdown?: { body: string } };
   fields: { title: string[]; idPrefixPattern?: string; statement: string[]; level?: string; delivery?: string; decided?: string };
   lifecycle: {
     field: string;

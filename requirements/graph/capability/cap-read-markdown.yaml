@@ -1,0 +1,6 @@
+id: cap-read-markdown
+kind: capability
+title: Read Markdown pages as nodes
+statement: Semspec reads the Markdown files of a graph folder as nodes, when the profile turns this on.
+features:
+  - feat-graph-input

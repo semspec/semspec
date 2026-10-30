@@ -23,7 +23,11 @@ export function loadInputs(graphPath: string, profilePath: string, exclude: stri
   let labels: string[] | undefined;
   let graph: Graph;
   const extra: string[] = [];
-  if (isDirectory(graphPath)) ({ graph, labels } = readGraphFolder(graphPath, profile, exclude));
+  if (isDirectory(graphPath)) {
+    const folder = readGraphFolder(graphPath, profile, exclude);
+    ({ graph, labels } = folder);
+    extra.push(...folder.warnings);
+  }
   else {
     graph = readInput(graphPath, 'graph') as Graph;
     if (exclude.length) extra.push('The option --exclude has no effect because the graph is a file, not a folder.');

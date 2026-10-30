@@ -16,7 +16,16 @@
         "nodes": { "type": "string", "description": "The key of the list of nodes in the graph." },
         "id": { "type": "string", "description": "The key of the id of a node." },
         "kind": { "type": "string", "description": "The key of the kind of a node." },
-        "defaultKind": { "type": "string", "description": "The kind of a node that has no value in the kind key. It must be a kind of the profile." }
+        "defaultKind": { "type": "string", "description": "The kind of a node that has no value in the kind key. It must be a kind of the profile." },
+        "markdown": {
+          "type": "object",
+          "required": ["body"],
+          "additionalProperties": false,
+          "properties": {
+            "body": { "type": "string", "minLength": 1, "description": "The field that gets the text after the front matter of a Markdown page. A graph folder reads *.md files only when this key is set." }
+          },
+          "description": "Turns on the reading of Markdown pages in a graph folder. The front matter of a page holds the fields of a node."
+        }
       }
     },
     "fields": {

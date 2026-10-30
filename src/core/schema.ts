@@ -100,6 +100,7 @@ export function kindSchemas(input: ProfileInput): Record<string, JsonSchema> {
       if (many) item[many] = { type: 'boolean' };
       properties[field] = { type: 'array', items: { type: 'object', properties: item, required: [target, ...requiredProperties(profile.edges[field])], additionalProperties: true } };
     }
+    if (profile.source.markdown) properties[profile.source.markdown.body] = text;
     if (profile.supersededBy) properties[profile.supersededBy] = text;
     (profile.parts ?? []).filter((p) => p.owner === kind.id).forEach((p) => (properties[p.field] = partProperty(profile, p)));
     Object.assign(properties, checkProperties(profile), statusProperties(profile));

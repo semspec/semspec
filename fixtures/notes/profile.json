@@ -1,0 +1,16 @@
+{
+  "project": "Garden notes",
+  "source": { "nodes": "nodes", "id": "id", "kind": "kind", "defaultKind": "guide", "markdown": { "body": "body" } },
+  "fields": { "title": ["title"], "statement": ["description"] },
+  "lifecycle": { "field": "state", "fallback": "current" },
+  "kinds": [
+    { "id": "section", "label": "Section", "plural": "sections", "role": "hierarchy", "color": { "light": "#1971c2", "dark": "#74c0fc" }, "chips": ["members"] },
+    { "id": "guide", "label": "Guide", "plural": "guides", "role": "hierarchy", "parents": [["inSection"]], "color": { "light": "#2b8a3e", "dark": "#69db7c" }, "chips": [] }
+  ],
+  "edges": {
+    "inSection": { "labels": ["In section", "Contains"], "down": true, "from": ["guide"], "to": ["section"] }
+  },
+  "details": {
+    "textSections": [{ "title": "Text", "field": "body" }]
+  }
+}

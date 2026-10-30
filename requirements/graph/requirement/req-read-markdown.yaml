@@ -1,0 +1,76 @@
+id: req-read-markdown
+kind: requirement
+title: Read each Markdown page as a node
+statement: When the profile sets source.markdown, Semspec reads each Markdown file below a graph folder as 1 node. The front matter holds the fields of the node. The text after the front matter goes into the body field.
+capabilities:
+  - cap-read-markdown
+area:
+  - cli
+acceptance:
+  - id: front-matter
+    text: A Markdown page with front matter gives 1 node. The body field holds the trimmed text after the front matter.
+    status: verified
+    tests:
+      - type: unit
+        file: test/markdown.test.ts
+        name: reads a Markdown page with front matter as 1 node
+      - type: unit
+        file: test/markdown.test.ts
+        name: puts the trimmed text after the front matter in the body field
+      - type: unit
+        file: test/markdown.test.ts
+        name: adds no body field for an empty body
+  - id: file-name-id
+    text: A page with no id in the front matter gets the file name without .md as its id.
+    status: verified
+    tests:
+      - type: unit
+        file: test/markdown.test.ts
+        name: takes the id from the file name when the front matter has no id
+  - id: opt-in
+    text: A profile with no source.markdown ignores Markdown files, so a README.md in a graph folder changes nothing.
+    status: verified
+    tests:
+      - type: unit
+        file: test/markdown.test.ts
+        name: ignores Markdown files when the profile has no source.markdown
+  - id: no-front-matter
+    text: A Markdown file with no front matter is no node. Semspec prints 1 warning that names the file.
+    status: verified
+    tests:
+      - type: unit
+        file: test/markdown.test.ts
+        name: warns with the file name for a Markdown file with no front matter
+      - type: unit
+        file: test/markdown.test.ts
+        name: builds a page from a Markdown folder and prints 1 warning for a file with no front matter
+  - id: bad-front-matter
+    text: Front matter that is not valid YAML or not a mapping is an error that names the file. A key with the name of the body field is also an error.
+    status: verified
+    tests:
+      - type: unit
+        file: test/markdown.test.ts
+        name: fails with the file name for front matter that is not valid YAML
+      - type: unit
+        file: test/markdown.test.ts
+        name: fails with the file name for front matter that is not a mapping
+      - type: unit
+        file: test/markdown.test.ts
+        name: fails with the file name for a key that is the body field
+  - id: exclude-order
+    text: The option --exclude skips Markdown files. Semspec reads Markdown and YAML files together in sorted path order.
+    status: verified
+    tests:
+      - type: unit
+        file: test/markdown.test.ts
+        name: skips a Markdown file that --exclude matches
+      - type: unit
+        file: test/markdown.test.ts
+        name: reads Markdown files and YAML files together in sorted path order
+  - id: schema
+    text: The schema output types the body field as a string.
+    status: verified
+    tests:
+      - type: unit
+        file: test/markdown.test.ts
+        name: types the body field as a string in the schema output

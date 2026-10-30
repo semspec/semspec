@@ -33,6 +33,8 @@ function crossCheckProfile(p: Profile): string[] {
   errors.push(...profileProvenanceProblems(p));
   errors.push(...profileIriProblems(p));
   need('source defaultKind', p.source.defaultKind);
+  const body = p.source.markdown?.body;
+  if (body !== undefined && (body === p.source.id || body === p.source.kind)) errors.push(`profile source markdown body "${body}" is also the id key or the kind key. Use a different field.`);
   need('checks kind', p.checks?.kind);
   need('facets groupKind', p.facets?.groupKind);
   need('entry kind', p.entry?.kind);
