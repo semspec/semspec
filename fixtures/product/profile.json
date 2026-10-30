@@ -1,5 +1,7 @@
 {
   "project": "Shop product",
+  "iri": { "base": "https://example.org/shop/", "prefixes": { "ex": "https://example.org/ns/" } },
+  "fieldIris": { "priority": "ex:priority" },
   "source": { "nodes": "nodes", "id": "id", "kind": "kind" },
   "fields": {
     "title": ["name", "short", "title"],
@@ -17,9 +19,10 @@
   },
   "kinds": [
     { "id": "product", "label": "Product", "plural": "products", "prefix": "prd-", "role": "hierarchy", "color": { "light": "#5f3dc4", "dark": "#b197fc" }, "chips": ["lifecycle", "members"] },
-    { "id": "epic", "label": "Epic", "plural": "epics", "prefix": "epic-", "role": "hierarchy", "parents": [["products"]], "color": { "light": "#1971c2", "dark": "#74c0fc" }, "chips": ["lifecycle", "members"] },
+    { "id": "epic", "iri": "ex:Epic", "label": "Epic", "plural": "epics", "prefix": "epic-", "role": "hierarchy", "parents": [["products"]], "color": { "light": "#1971c2", "dark": "#74c0fc" }, "chips": ["lifecycle", "members"] },
     {
       "id": "story",
+      "iri": "ex:Story",
       "label": "Story",
       "plural": "stories",
       "prefix": "story-",
@@ -54,10 +57,11 @@
     "issuedBy": { "labels": ["Issued by", "Issues"], "down": true },
     "complies": {
       "labels": ["Complies with", "Complied with by"],
+      "iri": "ex:compliesWith",
       "target": "std",
       "from": ["story"],
       "to": ["standard"],
-      "properties": { "since": { "type": "date", "required": true }, "audited": { "type": "boolean" } }
+      "properties": { "since": { "type": "date", "required": true, "iri": "ex:since" }, "audited": { "type": "boolean" } }
     },
     "notes": {
       "labels": ["Notes", "Noted by"],

@@ -4,7 +4,7 @@
 // the names that the profile gives.
 import { readFileSync } from 'node:fs';
 import Ajv from 'ajv/dist/2020.js';
-import { buildModel, embeddedObjects, endProblems, getPath, linkTargetKey, parentFields, nodeCodeProblems, profileProvenanceProblems, profileVocabularyProblems, propertyProblems, provenanceFields, provenanceProblems, readLinkItem, refsOf, withDefaultKind, type Graph, type Profile } from '../core/index';
+import { buildModel, embeddedObjects, profileIriProblems, endProblems, getPath, linkTargetKey, parentFields, nodeCodeProblems, profileProvenanceProblems, profileVocabularyProblems, propertyProblems, provenanceFields, provenanceProblems, readLinkItem, refsOf, withDefaultKind, type Graph, type Profile } from '../core/index';
 
 const schemaPath = new URL('../../schema/profile.schema.json', import.meta.url);
 
@@ -31,6 +31,7 @@ function crossCheckProfile(p: Profile): string[] {
   });
   errors.push(...profileVocabularyProblems(p));
   errors.push(...profileProvenanceProblems(p));
+  errors.push(...profileIriProblems(p));
   need('source defaultKind', p.source.defaultKind);
   need('checks kind', p.checks?.kind);
   need('facets groupKind', p.facets?.groupKind);

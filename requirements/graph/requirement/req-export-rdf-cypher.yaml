@@ -1,0 +1,211 @@
+id: req-export-rdf-cypher
+kind: requirement
+title: Export a graph as RDF, SHACL and Cypher
+statement: "A user exports a graph, or all graphs of a workspace, so other tools can use it. The formats are Turtle, JSON-LD, SHACL shapes and a Cypher script. The mapping follows RDF, SKOS, PROV-O, OWL and SHACL, and every IRI comes from the profile."
+capabilities:
+  - cap-export-graph
+area:
+  - core
+  - cli
+acceptance:
+  - id: iri-minted
+    text: "A node IRI is the base, the kind and the url-encoded id, or the value of the field that iri.field names. A term without a mapping gets an IRI under the base. A profile without a base gets a base from the id of the graph."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "mints node IRIs from the base, the kind and the url-encoded id"
+      - type: unit
+        file: test/export.test.ts
+        name: "mints the IRI of a term without a mapping under the base"
+      - type: unit
+        file: test/export.test.ts
+        name: "uses a base with the id of the graph when the profile has none"
+      - type: unit
+        file: test/export.test.ts
+        name: "takes the IRI of a node from the field that iri.field names"
+  - id: iri-mapped
+    text: "A kind, an edge, an edge property and a field can name an iri, a full IRI or a CURIE, that maps it to an existing class or property."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "maps a kind, an edge, an edge property and a field to the IRI of the profile"
+      - type: unit
+        file: test/export.test.ts
+        name: "resolves a CURIE and a full IRI, and refuses an unknown prefix"
+  - id: iri-check
+    text: "A CURIE with a prefix that the profile does not declare is a profile error. A bad base, a bad prefix name and a redefined built-in prefix are errors too."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "is a profile error when a CURIE uses an unknown prefix"
+      - type: unit
+        file: test/export.test.ts
+        name: "is a profile error for a vocabulary or a concept with an unknown prefix, a bad base and a built-in prefix redefined"
+      - type: unit
+        file: test/export.test.ts
+        name: "adds no problem for a profile without iri"
+      - type: unit
+        file: test/export.test.ts
+        name: "still accepts the fixtures with their iri keys"
+  - id: turtle
+    text: "The Turtle parses, ends each statement with a dot, declares each prefix it uses and holds every triple of the graph."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "parses, ends each statement with a dot and declares each prefix that it uses"
+      - type: unit
+        file: test/export.test.ts
+        name: "round-trips every triple of the graph"
+  - id: rdf-nodes
+    text: "Each node has the class of its kind and the label of its title. Numbers, booleans and ISO dates get xsd types. A coded field is the concept IRI. Each edge is a triple between the IRIs of its nodes."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "types each node with the class of its kind and the label of its title"
+      - type: unit
+        file: test/export.test.ts
+        name: "writes numbers, booleans and ISO dates with xsd types, and a coded field as the concept IRI"
+      - type: unit
+        file: test/export.test.ts
+        name: "writes a triple for each edge of the model, between the IRIs of its nodes"
+  - id: annotation
+    text: "An edge with properties is a triple with an RDF 1.2 annotation in Turtle and with @annotation in JSON-LD. The option --annotations reified writes an rdf:Statement node instead."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "writes an edge with properties as an RDF 1.2 annotation, and the plain triple of an edge without"
+      - type: unit
+        file: test/export.test.ts
+        name: "writes the reified form without annotations when asked"
+      - type: unit
+        file: test/export.test.ts
+        name: "writes an edge with properties with @annotation, and the reified form without it"
+  - id: skos
+    text: "A vocabulary is a skos:ConceptScheme and a concept is a skos:Concept with notation, label, definition, broader, altLabel and inScheme."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "writes the vocabularies as SKOS"
+  - id: prov
+    text: "Provenance is PROV-O: the marker is the type of the activity that generated the node or the edge, and the source, the date and the agent map to wasDerivedFrom, generatedAtTime and wasAttributedTo."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "writes provenance with PROV-O"
+  - id: ontology
+    text: "The profile is an ontology: a class for each kind with a label, an object property for each edge with a domain and a range from from and to, and a datatype property for each edge property."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "writes the profile as an ontology"
+  - id: jsonld
+    text: "The JSON-LD is valid JSON with a context and a graph, and has the same subjects as the Turtle. A typed literal has @value and @type, and an object is @json."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "is valid JSON with a context and a graph"
+      - type: unit
+        file: test/export.test.ts
+        name: "has the same subjects as the Turtle"
+      - type: unit
+        file: test/export.test.ts
+        name: "writes a typed literal with @value and @type, and an object as @json"
+  - id: shacl
+    text: "The SHACL has a node shape with a target class for each kind, a required id, the target kinds of each edge, the codes of each coded field, an ISO date pattern and the datatype of each typed edge property."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "has a shape with a target class for each kind"
+      - type: unit
+        file: test/export.test.ts
+        name: "requires the id, constrains the target kinds of an edge and lists the codes of a coded field"
+  - id: cypher
+    text: "The Cypher script has well formed statements. It has a node for each node of the model and a relationship for each edge. The type is the upper snake case of the edge name. A list stays a list. An object becomes a JSON string. Provenance is a set of properties."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "has well formed statements: quotes balanced, no raw newline in a string, a semicolon at the end of each"
+      - type: unit
+        file: test/export.test.ts
+        name: "writes a node for each node of the model and a relationship for each edge"
+      - type: unit
+        file: test/export.test.ts
+        name: "uses the upper snake case of the edge name as the relationship type"
+      - type: unit
+        file: test/export.test.ts
+        name: "keeps a list of texts as a list and writes an object or a mixed list as a JSON string"
+      - type: unit
+        file: test/export.test.ts
+        name: "writes the provenance of a node and of an edge as properties"
+  - id: escaping
+    text: "Quotes, backslashes, newlines, control characters, unicode, a > in an IRI and a backtick in a label are escaped in every format."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "escapes a string for Turtle on 1 line and keeps unicode"
+      - type: unit
+        file: test/export.test.ts
+        name: "escapes an IRI so that > and other forbidden characters stay out of the brackets"
+      - type: unit
+        file: test/export.test.ts
+        name: "escapes a string for Cypher on 1 line and keeps unicode"
+      - type: unit
+        file: test/export.test.ts
+        name: "writes Turtle, TriG and Cypher with every nasty case in a form that parses"
+      - type: unit
+        file: test/export.test.ts
+        name: "keeps a raw > out of an IRI"
+      - type: unit
+        file: test/export.test.ts
+        name: "escapes the strings of JSON-LD through JSON"
+      - type: unit
+        file: test/export.test.ts
+        name: "keeps the reified form valid"
+  - id: workspace
+    text: "With --workspace, all graphs go into 1 file: TriG with a named graph for each graph, a @graph for each graph in JSON-LD, the shapes of all profiles, and a graph property on each node in Cypher. A cross link is an object property or a relationship."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "writes the workspace as TriG with a named graph for each workspace graph"
+      - type: unit
+        file: test/export.test.ts
+        name: "turns a cross link of the workspace into an object property to the node of the other graph"
+      - type: unit
+        file: test/export.test.ts
+        name: "writes a @graph for each graph of the workspace, with its name"
+      - type: unit
+        file: test/export.test.ts
+        name: "has the shapes of all profiles in the workspace"
+      - type: unit
+        file: test/export.test.ts
+        name: "adds the property graph to each node of the workspace and counts the nodes, edges and cross links"
+  - id: cli
+    text: "semspec export writes the chosen format of a graph or of a workspace into the file, and refuses a missing option, an unknown format and a graph check that fails."
+    status: verified
+    tests:
+      - type: unit
+        file: test/export.test.ts
+        name: "writes each format of a graph into the file"
+      - type: unit
+        file: test/export.test.ts
+        name: "writes each format of the workspace into 1 file"
+      - type: unit
+        file: test/export.test.ts
+        name: "refuses a missing option, an unknown format and a workspace with a graph"
+      - type: unit
+        file: test/export.test.ts
+        name: "checks the graph before it exports"

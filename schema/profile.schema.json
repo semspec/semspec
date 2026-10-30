@@ -61,6 +61,7 @@
           "target": { "type": "string", "description": "For a link field: the key of the node id in an object of the field. The default is \"id\". The other keys of the object are the properties of the edge." },
           "from": { "type": "array", "items": { "type": "string" }, "description": "The kinds that the source node of an edge of this name may have." },
           "to": { "type": "array", "items": { "type": "string" }, "description": "The kinds that the target node of an edge of this name may have." },
+          "iri": { "type": "string", "description": "A full IRI or a CURIE with a prefix that iri.prefixes declares. It maps the term to an existing class or property. Without it, the export mints an IRI." },
           "properties": {
             "type": "object",
             "description": "The properties of an edge of this name, by property name.",
@@ -71,7 +72,8 @@
               "properties": {
                 "type": { "enum": ["string", "number", "boolean", "date"], "description": "A date is an ISO date string: YYYY, YYYY-MM or YYYY-MM-DD." },
                 "required": { "type": "boolean", "description": "Set when every edge of this name must have the property." },
-                "vocabulary": { "type": "string", "description": "The id of a vocabulary. The value of the property must be a code of the vocabulary. The type must be string." }
+                "vocabulary": { "type": "string", "description": "The id of a vocabulary. The value of the property must be a code of the vocabulary. The type must be string." },
+                "iri": { "type": "string", "description": "A full IRI or a CURIE with a prefix that iri.prefixes declares. It maps the term to an existing class or property. Without it, the export mints an IRI." }
               }
             }
           }
@@ -204,6 +206,21 @@
           }
         ]
       }
+    },
+    "iri": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The IRIs of the export. See the Export section of the README.",
+      "properties": {
+        "base": { "type": "string", "description": "The start of the IRI of a node and of a minted term. A node IRI is <base><kind>/<id>. A minted term is <base>vocab/<name>." },
+        "prefixes": { "type": "object", "description": "Namespace IRIs by prefix, for the CURIEs of the profile.", "additionalProperties": { "type": "string" } },
+        "field": { "type": "string", "description": "The node field that holds the IRI of the node. A node without the field gets a minted IRI." }
+      }
+    },
+    "fieldIris": {
+      "type": "object",
+      "description": "The property of a node field, by field name. A full IRI or a CURIE.",
+      "additionalProperties": { "type": "string" }
     },
     "fieldVocabularies": {
       "type": "object",
@@ -622,6 +639,7 @@
           "items": { "type": "array", "items": { "type": "string" } },
           "description": "Groups of parent fields. The first group that names a node places the node in the tree. Every group makes the scope."
         },
+        "iri": { "type": "string", "description": "A full IRI or a CURIE with a prefix that iri.prefixes declares. It maps the term to an existing class or property. Without it, the export mints an IRI." },
         "placedUnder": { "type": "string", "description": "A node of this kind is placed when it reaches a node of the named kind." },
         "unplacedLabel": { "type": "string" },
         "citation": {

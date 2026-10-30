@@ -1,5 +1,6 @@
 {
   "project": "Music glossary",
+  "iri": { "prefixes": { "ex": "https://example.org/ns/" } },
   "source": { "nodes": "entries", "id": "id", "kind": "type", "defaultKind": "term" },
   "fields": {
     "title": ["term", "name"],
@@ -9,10 +10,10 @@
   "lifecycle": { "field": "state", "fallback": "stable", "states": { "retired": { "muted": true }, "replaced": { "muted": true } } },
   "kinds": [
     { "id": "group", "label": "Group", "plural": "groups", "prefix": "grp-", "role": "hierarchy", "color": { "light": "#1971c2", "dark": "#74c0fc" }, "chips": ["lifecycle", "members"] },
-    { "id": "term", "label": "Term", "plural": "terms", "role": "hierarchy", "parents": [["inGroup"]], "color": { "light": "#d9480f", "dark": "#ffa94d" }, "chips": ["lifecycle"] }
+    { "id": "term", "iri": "ex:Term", "label": "Term", "plural": "terms", "role": "hierarchy", "parents": [["inGroup"]], "color": { "light": "#d9480f", "dark": "#ffa94d" }, "chips": ["lifecycle"] }
   ],
   "edges": {
-    "inGroup": { "labels": ["In group", "Contains"], "down": true, "from": ["term"], "to": ["group"] },
+    "inGroup": { "iri": "ex:memberOf", "labels": ["In group", "Contains"], "down": true, "from": ["term"], "to": ["group"] },
     "relations": {
       "labels": ["Relates to", "Related from"],
       "from": ["term"],

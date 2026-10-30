@@ -6,13 +6,15 @@
 //   semspec serve --workspace <file> [--port 4173] [--host 127.0.0.1]
 //   semspec build --workspace <file> --out <file.html>
 //   semspec schema --profile <file> --out <dir>
+//   semspec export --graph <file> --profile <file> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
+//   semspec export --workspace <file> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
 // A graph is a JSON file, a YAML file, or a folder of YAML files. A profile is a JSON or YAML file.
 // --exclude skips the paths of a graph folder that match a pattern. It can repeat.
 import { createServer } from 'node:http';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { buildModel, kindSchemas } from '../core/index';
+import { EXPORT_FORMATS, buildModel, exportModel, exportWorkspace, isExportFormat, kindSchemas, type ExportOptions } from '../core/index';
 import { loadInputs, loadProfile } from './inputs';
 import { renderPage } from './page';
 import { loadWorkspace } from './workspace';
@@ -27,12 +29,16 @@ Usage:
   semspec serve --workspace <file> [--port 4173] [--host 127.0.0.1]
   semspec build --workspace <file> --out <file.html>
   semspec schema --profile <file> --out <dir>
+  semspec export --graph <file> --profile <file> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
+  semspec export --workspace <file> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
 
 The graph is a JSON file, a YAML file or a folder of YAML files. The profile is a JSON or YAML file.
 --exclude skips the folders and files of a graph folder that match a pattern. The option can repeat.
 A pattern matches a path relative to the graph folder. It supports *, ** and ?.
 --workspace reads a workspace file that lists several graphs. It cannot combine with --graph, --profile or --exclude.
-The schema command writes 1 JSON Schema for each kind of the profile. See the README for the formats.`;
+The schema command writes 1 JSON Schema for each kind of the profile. See the README for the formats.
+The export command writes the graph as RDF (turtle, jsonld), as SHACL shapes (shacl) or as a Cypher script (cypher).
+With --workspace, it writes all graphs into 1 file. See "Export" in the README.`;
 
 // Writes 1 JSON Schema for each kind of the profile. It returns the paths.
 export function writeSchemas(profilePath: string, outDir: string): string[] {
@@ -42,6 +48,21 @@ export function writeSchemas(profilePath: string, outDir: string): string[] {
     writeFileSync(file, `${JSON.stringify(schema, null, 2)}\n`);
     return file;
   });
+}
+
+// Exports a graph, or all graphs of a workspace, as text. It throws on an error and returns the warnings.
+export function exportText(flags: Record<string, string>, exclude: string[] = []): { text: string; warnings: string[] } {
+  const format = flags.format ?? '';
+  if (!isExportFormat(format)) throw new Error(`The option --format must be one of ${EXPORT_FORMATS.join(', ')}.`);
+  const annotations = flags.annotations ?? 'annotation';
+  if (annotations !== 'annotation' && annotations !== 'reified') throw new Error('The option --annotations must be annotation or reified.');
+  const options: ExportOptions = { annotations };
+  if (flags.workspace !== undefined) {
+    const { data, warnings } = loadWorkspace(flags.workspace);
+    return { text: exportWorkspace(data, format, options), warnings };
+  }
+  const { graph, profile, warnings } = loadInputs(flags.graph, flags.profile, exclude);
+  return { text: exportModel(buildModel(graph, profile), format, options), warnings };
 }
 
 export async function pageFor(graphPath: string, profilePath: string, exclude: string[] = []): Promise<{ html: string; warnings: string[] }> {
@@ -122,6 +143,27 @@ export async function run(argv: string[]): Promise<number> {
     try {
       const files = writeSchemas(flags.profile, flags.out);
       console.log(`wrote ${files.length} schemas to ${flags.out}`);
+      return 0;
+    } catch (e) {
+      console.error((e as Error).message);
+      return 1;
+    }
+  }
+  if (command === 'export') {
+    if (flags.workspace !== undefined ? flags.graph !== undefined || flags.profile !== undefined || exclude.length : !flags.graph || !flags.profile) {
+      console.error(`Use --workspace alone, or use --graph and --profile.\n\n${USAGE}`);
+      return 1;
+    }
+    if (!flags.format || !flags.out) {
+      console.error(`The options --format and --out are required.\n\n${USAGE}`);
+      return 1;
+    }
+    try {
+      const { text, warnings } = exportText(flags, exclude);
+      warnings.forEach((w) => console.warn(`warning: ${w}`));
+      mkdirSync(dirname(resolve(flags.out)), { recursive: true });
+      writeFileSync(flags.out, text);
+      console.log(`wrote ${flags.out} (${(Buffer.byteLength(text) / 1024).toFixed(0)} KB)`);
       return 0;
     } catch (e) {
       console.error((e as Error).message);

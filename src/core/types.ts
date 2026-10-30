@@ -37,6 +37,8 @@ export interface KindSpec {
   unplacedLabel?: string;
   citation?: CitationSpec;
   chips?: ChipSpec[];
+  // The class that the kind maps to, as a full IRI or a CURIE. See iri.ts.
+  iri?: string;
 }
 
 export interface PartSpec {
@@ -153,7 +155,18 @@ export interface EdgeSpec {
   target?: string;
   from?: string[];
   to?: string[];
-  properties?: Record<string, { type: PropertyType; required?: boolean; vocabulary?: string }>;
+  properties?: Record<string, { type: PropertyType; required?: boolean; vocabulary?: string; iri?: string }>;
+  // The property that the edge name maps to, as a full IRI or a CURIE. See iri.ts.
+  iri?: string;
+}
+
+// The IRIs of a profile. `base` starts the IRI of each node and of each minted term. `prefixes` maps a prefix
+// to a namespace IRI, so a CURIE in an `iri` of the profile has a meaning. `field` names a node field that holds
+// the IRI of the node.
+export interface IriSpec {
+  base?: string;
+  prefixes?: Record<string, string>;
+  field?: string;
 }
 
 // Provenance: where a fact comes from. The same fields apply to a node, to an edge property and to a
@@ -243,6 +256,9 @@ export interface Profile {
   // The scheme of a field, by field path. The field is a node field, the lifecycle field or a field filter field.
   fieldVocabularies?: Record<string, string>;
   provenance?: ProvenanceSpec;
+  // The property that a node field maps to, by field name, as a full IRI or a CURIE.
+  fieldIris?: Record<string, string>;
+  iri?: IriSpec;
   facets?: { groupKind: string; groupLabel: string };
   entry?: { kind: string; childKind: string; title: string; countLabel: string };
   groups?: { hierarchy: string };

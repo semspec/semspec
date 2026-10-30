@@ -1,0 +1,6 @@
+id: cap-export-graph
+kind: capability
+title: Export as RDF, SHACL and Cypher
+statement: The export command writes a graph or a workspace as Turtle, JSON-LD, SHACL shapes or a Cypher script.
+features:
+  - feat-export

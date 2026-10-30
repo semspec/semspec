@@ -1,5 +1,14 @@
 {
   "project": "Shop product",
+  "iri": {
+    "base": "https://example.org/shop/",
+    "prefixes": {
+      "ex": "https://example.org/ns/"
+    }
+  },
+  "fieldIris": {
+    "priority": "ex:priority"
+  },
   "source": {
     "nodes": "nodes",
     "id": "id",
@@ -69,7 +78,8 @@
       "chips": [
         "lifecycle",
         "members"
-      ]
+      ],
+      "iri": "ex:Epic"
     },
     {
       "id": "story",
@@ -102,7 +112,8 @@
           "field": "release"
         },
         "coverage"
-      ]
+      ],
+      "iri": "ex:Story"
     },
     {
       "id": "scenario",
@@ -232,7 +243,8 @@
       "labels": [
         "Complies with",
         "Complied with by"
-      ]
+      ],
+      "iri": "ex:compliesWith"
     },
     "notes": {
       "labels": [
