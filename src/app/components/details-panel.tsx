@@ -249,22 +249,23 @@ function EdgeDetails({ v, edge }: { v: Viewer; edge: VEdge }) {
         </>
       )}
       <ProvenanceSection v={v} record={edge.p} />
-      <Separator />
-      <Section title="Properties" count={props.length}>
-        {!props.length && <span className="text-xs text-muted-foreground">None.</span>}
-        {props.length > 0 && (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
-            {props.map(([key, value]) => {
-              const concept = Core.propertyConcept(edge.k, key, value);
-              return (
-                <Prop key={key} label={key}>
-                  {concept ? <Coded concept={concept} /> : typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)}
-                </Prop>
-              );
-            })}
-          </dl>
-        )}
-      </Section>
+      {props.length > 0 && (
+        <>
+          <Separator />
+          <Section title="Properties" count={props.length}>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
+              {props.map(([key, value]) => {
+                const concept = Core.propertyConcept(edge.k, key, value);
+                return (
+                  <Prop key={key} label={key}>
+                    {concept ? <Coded concept={concept} /> : typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)}
+                  </Prop>
+                );
+              })}
+            </dl>
+          </Section>
+        </>
+      )}
     </div>
   );
 }

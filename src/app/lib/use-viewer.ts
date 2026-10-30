@@ -20,7 +20,10 @@ function groupOf(index: Index, id: string): string {
     n = index.byId.get(n.parents[0])!;
   }
   if (Core.LINKED_KINDS.includes(n.kind)) return `g:${n.kind}`;
-  if (!Core.kindSpec(n.kind)?.parents?.length) return 'g:hier';
+  if (!Core.kindSpec(n.kind)?.parents?.length) {
+    const kinds = Core.hierarchyRootKinds(index.profile, Array.from(index.byId.values(), (x) => x.kind));
+    return Core.hierarchyGroupKey(kinds, n.kind);
+  }
   if (index.unplaced.has(n.id)) return `g:unplaced:${n.kind}`;
   return `g:un:${n.kind}`;
 }
@@ -68,7 +71,7 @@ export function useViewer(model: Model, session?: { initial?: ViewerState; save:
   // The canvas colours each node by its status. It is off by default.
   const [statusColour, setStatusColour] = useState(init?.statusColour ?? false);
   const [panel, setPanel] = useState<Panel>(init?.panel ?? 'details');
-  const [open, setOpen] = useState<Set<string>>(() => init?.open ?? new Set(['g:hier']));
+  const [open, setOpen] = useState<Set<string>>(() => init?.open ?? new Set(['g:hier', ...Core.hierarchySections(model.profile, model.nodes).map((s) => s.key)]));
 
   // The nodes of the scope, before the filters.
   const scopeIds = useMemo<string[]>(() => {

@@ -17,6 +17,8 @@ interface Group {
   count: number;
   warn?: boolean;
   hint?: string;
+  // Sub-headings, one per root kind, when the roots have more than 1 kind.
+  sections?: { key: string; kind: string; ids: string[] }[];
 }
 
 function sortIds(index: Index, ids: string[]) {
@@ -35,7 +37,8 @@ function buildGroups(v: Viewer): Group[] {
   const groups: Group[] = [];
   const treeKinds = Core.HIERARCHY_KINDS.filter((k) => Core.kindSpec(k)?.role === 'hierarchy');
   const roots = treeKinds.filter((k) => !Core.kindSpec(k)?.parents?.length).flatMap(ofKind);
-  groups.push({ key: 'g:hier', label: P.groups?.hierarchy ?? 'Tree', ids: sortIds(index, roots), count: roots.length });
+  const sections = Core.hierarchySections(P, model.nodes.filter((n) => roots.includes(n.id))).map((s) => ({ ...s, ids: sortIds(index, s.ids) }));
+  groups.push({ key: 'g:hier', label: P.groups?.hierarchy ?? 'Tree', ids: sortIds(index, roots), count: roots.length, sections: sections.length ? sections : undefined });
   Core.LINKED_KINDS.forEach((k) => {
     // A linked node with a parent shows below its parent, so the group lists the roots only.
     const ids = ofKind(k).filter((id) => !index.byId.get(id)!.parents.length);
@@ -208,7 +211,29 @@ export function TreePanel({ v }: { v: Viewer }) {
                   <span className="truncate">{g.label}</span>
                   <span className={cn('ml-auto rounded-full px-1.5 text-[10px] leading-4 tabular-nums', g.warn ? 'bg-warn/15' : 'bg-muted')}>{matches ? items.length : g.count}</span>
                 </button>
-                {open && renderList(items, 0, new Set())}
+                {open && !g.sections && renderList(items, 0, new Set())}
+                {open &&
+                  g.sections?.map((sec) => {
+                    const secItems = matches ? sec.ids.filter((id) => matches(id)) : sec.ids;
+                    if (matches && !secItems.length) return null;
+                    const secOpen = matches ? true : v.open.has(sec.key);
+                    return (
+                      <div key={sec.key} role="group">
+                        <button
+                          type="button"
+                          aria-expanded={secOpen}
+                          onClick={() => v.toggleOpen(sec.key)}
+                          className="flex h-7 w-full items-center gap-1 pr-2 pl-5 text-left text-[11px] font-medium tracking-wide text-muted-foreground uppercase outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <ChevronRight className={cn('size-3.5 transition-transform', secOpen && 'rotate-90')} />
+                          <KindDot kind={sec.kind} />
+                          <span className="truncate">{capitalise(Core.KIND_PLURAL[sec.kind])}</span>
+                          <span className="ml-auto rounded-full bg-muted px-1.5 text-[10px] leading-4 tabular-nums">{matches ? secItems.length : sec.ids.length}</span>
+                        </button>
+                        {secOpen && renderList(secItems, 0, new Set())}
+                      </div>
+                    );
+                  })}
               </div>
             );
           })}

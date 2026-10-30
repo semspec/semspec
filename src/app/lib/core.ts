@@ -54,6 +54,9 @@ export const Core = {
   get DOWN_EDGES() {
     return C.downEdges(profile);
   },
+  hierarchyRootKinds: C.hierarchyRootKinds,
+  hierarchyGroupKey: C.hierarchyGroupKey,
+  hierarchySections: C.hierarchySections,
   buildIndex: C.buildIndex,
   computeScope: C.computeScope,
   groupsOf: C.groupsOf,

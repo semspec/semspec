@@ -18,3 +18,4 @@ export * from './rdf-export';
 export * from './shacl';
 export * from './cypher';
 export * from './export';
+export * from './tree-groups';
