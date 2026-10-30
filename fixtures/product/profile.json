@@ -89,6 +89,7 @@
   "facets": { "groupKind": "epic", "groupLabel": "Epic" },
   "entry": { "kind": "epic", "childKind": "story", "title": "Pick an epic to see what it contains", "countLabel": "stories" },
   "groups": { "hierarchy": "Product tree" },
+  "layout": { "default": "grouped", "groupEdge": "epics" },
   "details": {
     "properties": [
       { "label": "Status", "field": "status" },

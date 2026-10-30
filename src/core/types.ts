@@ -171,6 +171,8 @@ export interface Profile {
   entry?: { kind: string; childKind: string; title: string; countLabel: string };
   groups?: { hierarchy: string };
   details?: DetailsSpec;
+  // The layout of the Graph and Cards views. `groupEdge` names the edge whose target is the container of its source.
+  layout?: { default?: 'layered' | 'grouped' | 'force'; groupEdge?: string };
 }
 
 // A graph is a list of nodes. Each node has an id, a kind and any other fields.

@@ -20,12 +20,14 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import { ChevronsRight, ChevronsLeft, EyeOff, LayoutGrid, Maximize2, Undo2, Waypoints, Network } from 'lucide-react';
+import { ChevronsRight, ChevronsLeft, EyeOff, LayoutGrid, Maximize2, Undo2, Waypoints, Network, Layers, Workflow, Orbit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CountBadge, KindDot, NodeSummaryView, StatusDot, kindColor, statusShare, toneColor } from '@/components/kind';
 import { Core, type Kind, type NodeStatus, type Summary, type VEdge } from '@/lib/core';
 import { SIZE, layered, placeNear, type Mode, type Pos } from '@/lib/layout';
+import { LAYOUTS, boundsOf, facingSides, findContainers, forceLayout, grouped, moveWithMembers, rectsOf, type LayoutName } from '@/lib/layouts';
 import type { Viewer } from '@/lib/use-viewer';
 import { cn } from '@/lib/utils';
 
@@ -44,11 +46,25 @@ interface NodeData extends Record<string, unknown> {
 
 const hidden = 'size-1! min-h-0! min-w-0! border-0! bg-transparent!';
 
+// Handles on all 4 sides. The layered layout uses the 2 handles without an id. The others pick a side.
+const SIDES: [string, Position][] = [
+  ['left', Position.Left],
+  ['right', Position.Right],
+  ['top', Position.Top],
+  ['bottom', Position.Bottom],
+];
+
 function Handles() {
   return (
     <>
       <Handle type="target" position={Position.Left} className={hidden} isConnectable={false} />
       <Handle type="source" position={Position.Right} className={hidden} isConnectable={false} />
+      {SIDES.map(([side, position]) => (
+        <Handle key={`t-${side}`} id={`t-${side}`} type="target" position={position} className={hidden} isConnectable={false} />
+      ))}
+      {SIDES.map(([side, position]) => (
+        <Handle key={`s-${side}`} id={`s-${side}`} type="source" position={position} className={hidden} isConnectable={false} />
+      ))}
     </>
   );
 }
@@ -103,7 +119,46 @@ function CardNode({ data }: NodeProps<Node<NodeData>>) {
   );
 }
 
-const NODE_TYPES = { pill: PillNode, card: CardNode };
+// A container of the grouped layout: a title bar in the style of a pill, and a frame around the members.
+function ContainerNode({ data }: NodeProps<Node<NodeData>>) {
+  const { summary, badge, selected, dim, status } = data;
+  const color = status ? toneColor(status.tone) : kindColor(summary.kind);
+  return (
+    <div
+      className={cn('relative size-full rounded-xl border-2 border-dashed transition-opacity', selected && 'ring-2 ring-ring', dim && 'opacity-25', summary.muted && 'opacity-60')}
+      style={{ borderColor: `color-mix(in oklab, ${color} 60%, var(--border))`, background: `color-mix(in oklab, ${color} 6%, transparent)` }}
+    >
+      <div className="flex h-8 items-center gap-2 px-3 text-[13px] font-medium">
+        <KindDot kind={summary.kind} className="size-2.5" />
+        <span className={cn('min-w-0 flex-1 truncate', summary.muted && 'line-through')}>{summary.title}</span>
+        {!!status?.total && (
+          <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
+            <StatusDot tone={status.tone} />
+            {statusShare(status, true)}
+          </span>
+        )}
+      </div>
+      <CountBadge count={badge} className="absolute -top-2 -right-1" />
+      <Handles />
+    </div>
+  );
+}
+
+const NODE_TYPES = { pill: PillNode, card: CardNode, container: ContainerNode };
+
+const LAYOUT_LABEL: Record<LayoutName, string> = { layered: 'Layered layout', grouped: 'Grouped layout', force: 'Force layout' };
+const LAYOUT_ICON: Record<LayoutName, React.ReactNode> = { layered: <Workflow />, grouped: <Layers />, force: <Orbit /> };
+
+// React Flow needs a container before its members.
+function sortParentsFirst(ids: string[], parentOf: Map<string, string>): string[] {
+  if (!parentOf.size) return ids;
+  const depth = (id: string) => {
+    let d = 0;
+    for (let up = parentOf.get(id); up !== undefined; up = parentOf.get(up)) d++;
+    return d;
+  };
+  return ids.map((id, i) => ({ id, i, d: depth(id) })).sort((a, b) => a.d - b.d || a.i - b.i).map((x) => x.id);
+}
 
 function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
   const { index, canvasIds: ids, canvasEdges: edges, selected, walk } = v;
@@ -114,13 +169,19 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
   useEffect(() => setConfirmed(false), [scopeKey]);
 
   const store = v.positions.current[mode];
+  const spec = Core.profile.layout;
+  const groupEdge = spec?.groupEdge;
+  const [chosen, setChosen] = useState<LayoutName | null>(null);
+  const wanted: LayoutName = chosen ?? spec?.default ?? 'layered';
+  const layout: LayoutName = wanted === 'grouped' && !groupEdge ? 'layered' : wanted;
+  const containers = useMemo(() => findContainers(ids, edges, layout === 'grouped' ? groupEdge : undefined), [ids, edges, layout, groupEdge]);
 
   const positions = useMemo(() => {
-    const key = ids.join('|');
+    const key = `${layout}::${ids.join('|')}`;
     const tickSame = store.tick === v.layoutTick;
     if (tickSame && store.key === key && store.map.size) return store.map;
     let next: Map<string, Pos>;
-    if (tickSame && walk && store.map.size) {
+    if (tickSame && walk && store.map.size && store.key.startsWith(`${layout}::`)) {
       // A walk keeps the nodes where they are. New nodes go next to their source.
       next = new Map(store.map);
       const DOWNWARD = Core.DOWN_EDGES;
@@ -137,6 +198,10 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       bySource.forEach((list, from) => {
         next = placeNear(next, from, list, mode);
       });
+    } else if (layout === 'grouped' && groupEdge) {
+      next = grouped(ids, edges, mode, groupEdge, Core.DOWN_EDGES);
+    } else if (layout === 'force') {
+      next = forceLayout(ids, edges, mode);
     } else {
       next = layered(ids, edges, mode);
     }
@@ -145,7 +210,10 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
     store.key = key;
     return next;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ids, edges, mode, v.layoutTick, walk]);
+  }, [ids, edges, mode, v.layoutTick, walk, layout, groupEdge]);
+
+  // The rectangle of each node. A container takes the box around its members.
+  const rects = useMemo(() => rectsOf(ids, containers.parentOf, positions, mode), [ids, containers, positions, mode]);
 
   // The neighbours of a selected node stand out and the rest dims. The scope node itself dims nothing.
   const isRoot = !!selected && ((v.scope?.type === 'node' && v.scope.id === selected) || v.walkRoot === selected);
@@ -156,13 +224,18 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
 
   const derived = useMemo<Node<NodeData>[]>(
     () =>
-      ids.map((id) => {
+      sortParentsFirst(ids, containers.parentOf).map((id) => {
         const n = index.byId.get(id)!;
+        const parent = containers.parentOf.get(id);
+        const rect = rects.get(id)!;
+        const origin = parent ? rects.get(parent)! : { x: 0, y: 0 };
+        const isBox = containers.children.has(id);
         return {
           id,
-          type: mode === 'cards' ? 'card' : 'pill',
-          position: positions.get(id) ?? { x: 0, y: 0 },
-          width: SIZE[mode].w,
+          type: isBox ? 'container' : mode === 'cards' ? 'card' : 'pill',
+          position: { x: rect.x - origin.x, y: rect.y - origin.y },
+          ...(isBox ? { width: rect.w, height: rect.h } : { width: SIZE[mode].w }),
+          ...(parent ? { parentId: parent, extent: 'parent' as const } : {}),
           data: {
             kind: n.kind,
             summary: Core.summaryOf(index, n),
@@ -173,7 +246,7 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
           },
         };
       }),
-    [ids, index, mode, positions, selected, neighbours, v.canvasSet, v.statusColour, v.filters.fields],
+    [ids, index, mode, rects, containers, selected, neighbours, v.canvasSet, v.statusColour, v.filters.fields],
   );
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<NodeData>>(derived);
   useEffect(() => setNodes(derived), [derived, setNodes]);
@@ -181,27 +254,37 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
   const showAll = edges.length <= SMALL_SCOPE_EDGES;
   const rfEdges = useMemo<Edge[]>(
     () =>
-      edges.map((e: VEdge, i) => {
+      edges.flatMap((e: VEdge, i) => {
+        // The nesting shows the edge to the container of a node.
+        if (layout === 'grouped' && e.k === groupEdge && containers.parentOf.get(e.s) === e.t) return [];
         const touches = e.s === hovered || e.t === hovered || e.s === selected || e.t === selected;
         const dim = !!neighbours && !touches;
         // A `down` edge points from the specific node on the right to the general node on the left.
         // React Flow draws it from the general node, so the line leaves a right side and enters a left side.
         // The arrow stays at the general node.
         const down = Core.DOWN_EDGES.has(e.k);
+        const from = down ? e.t : e.s;
+        const to = down ? e.s : e.t;
+        // The force layout and the edges between containers attach on the sides that face each other.
+        const facing =
+          (layout === 'force' || (layout === 'grouped' && containers.parentOf.get(e.s) !== containers.parentOf.get(e.t))) && rects.has(from) && rects.has(to)
+            ? facingSides(rects.get(from)!, rects.get(to)!)
+            : null;
         const marker = { type: MarkerType.ArrowClosed, width: 12, height: 12, color: 'var(--muted-foreground)' };
-        return {
+        return [{
           id: `e${i}`,
-          source: down ? e.t : e.s,
-          target: down ? e.s : e.t,
+          source: from,
+          target: to,
+          ...(facing ? { sourceHandle: `s-${facing.source}`, targetHandle: `t-${facing.target}` } : {}),
           label: showAll || touches ? Core.EDGE_LABEL[e.k]?.[0] ?? e.k : undefined,
           labelStyle: { fontSize: 11, fill: 'var(--muted-foreground)' },
           labelBgStyle: { fill: 'var(--background)', fillOpacity: 0.85 },
           labelBgPadding: [4, 2],
           style: { stroke: 'var(--muted-foreground)', strokeOpacity: dim ? 0.12 : touches ? 0.9 : 0.45, strokeWidth: touches ? 1.6 : 1.1 },
           ...(down ? { markerStart: marker } : { markerEnd: marker }),
-        };
+        }];
       }),
-    [edges, hovered, selected, neighbours, showAll],
+    [edges, hovered, selected, neighbours, showAll, layout, groupEdge, containers, rects],
   );
 
   // Fit keeps the text readable: the zoom never goes below 0.7. A canvas that is larger than the
@@ -215,13 +298,10 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       // does not depend on what React Flow has measured yet.
       const rect = domNode?.getBoundingClientRect();
       const size = SIZE[mode];
-      const pts = ids.map((id) => positions.get(id)).filter((p): p is Pos => !!p);
-      if (!rect || !rect.width || !pts.length) return;
-      const minX = Math.min(...pts.map((p) => p.x));
-      const minY = Math.min(...pts.map((p) => p.y));
-      const width = Math.max(...pts.map((p) => p.x)) + size.w - minX;
-      const height = Math.max(...pts.map((p) => p.y)) + size.h - minY;
-      const z = Math.min(1, Math.max(0.7, Math.min((rect.width - 48) / width, (rect.height - 110) / height)));
+      const all = ids.map((id) => rects.get(id)).filter((r) => !!r);
+      if (!rect || !rect.width || !all.length) return;
+      const { x: minX, y: minY, w: width, h: height } = boundsOf(all);
+      const z = Math.min(1, Math.max(layout === 'layered' ? 0.7 : 0.4, Math.min((rect.width - 48) / width, (rect.height - 110) / height)));
       const x = width * z + 48 <= rect.width ? (rect.width - width * z) / 2 - minX * z : 24 - minX * z;
       // A canvas taller than the view shows the root of the scope in the middle of the left edge.
       const rootPos = positions.get(v.scope?.type === 'node' ? v.scope.id : (v.walkRoot ?? ids[0]));
@@ -233,20 +313,20 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
             : 64 - minY * z;
       flow.setViewport({ x, y, zoom: z }, { duration: animate ? 250 : 0 });
     },
-    [flow, domNode, ids, positions, mode, v.scope, v.walkRoot],
+    [flow, domNode, ids, positions, rects, mode, layout, v.scope, v.walkRoot],
   );
   // Fit on a new scope, a re-layout and a change of mode. A walk step keeps the view. A change of
   // the panel size fits again, until the reader moves or zooms the canvas.
   const moved = useRef(false);
   useEffect(() => {
     moved.current = false;
-  }, [v.layoutTick, mode, scopeKey, confirmed]);
+  }, [v.layoutTick, mode, scopeKey, confirmed, layout]);
   useEffect(() => {
     if (moved.current) return;
     const t = setTimeout(() => fit(false), 80);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [v.layoutTick, mode, scopeKey, confirmed, Math.round(vw / 40), Math.round(vh / 40)]);
+  }, [v.layoutTick, mode, scopeKey, confirmed, layout, Math.round(vw / 40), Math.round(vh / 40)]);
 
   if (ids.length > BIG && !confirmed) {
     return (
@@ -292,7 +372,12 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       onNodesChange={onNodesChange}
       onNodeClick={(_, n) => v.select(n.id)}
       onNodeDoubleClick={(_, n) => v.expand(n.id)}
-      onNodeDragStop={(_, n) => store.map.set(n.id, n.position)}
+      onNodeDragStop={(_, n) => {
+        // A member has a position inside its container. The store keeps absolute positions.
+        const parent = containers.parentOf.get(n.id);
+        const origin = parent ? rects.get(parent) : undefined;
+        moveWithMembers(store.map, containers.parentOf, n.id, { x: n.position.x + (origin?.x ?? 0), y: n.position.y + (origin?.y ?? 0) });
+      }}
       onNodeMouseEnter={(_, n) => setHovered(n.id)}
       onNodeMouseLeave={() => setHovered(null)}
       onPaneClick={() => v.select(null)}
@@ -314,6 +399,17 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       <Panel position="top-left" className="flex items-center gap-1.5 rounded-lg border bg-card/95 p-1 shadow-xs">
         {tool('Re-layout the canvas', <LayoutGrid />, v.relayout)}
         {tool('Fit the canvas', <Maximize2 />, () => fit(true))}
+        <span className="mx-0.5 h-4 w-px bg-border" />
+        <ToggleGroup value={[layout]} onValueChange={(next) => next[0] && setChosen(next[0] as LayoutName)} variant="outline" size="sm" spacing={0} aria-label="Layout">
+          {LAYOUTS.map((name) => (
+            <Tooltip key={name}>
+              <TooltipTrigger render={<ToggleGroupItem value={name} aria-label={LAYOUT_LABEL[name]} disabled={name === 'grouped' && !groupEdge} />}>
+                {LAYOUT_ICON[name]}
+              </TooltipTrigger>
+              <TooltipContent>{name === 'grouped' && !groupEdge ? 'The profile has no group edge' : LAYOUT_LABEL[name]}</TooltipContent>
+            </Tooltip>
+          ))}
+        </ToggleGroup>
         <span className="mx-0.5 h-4 w-px bg-border" />
         {tool('Expand the selected node', <ChevronsRight />, () => sel && v.expand(sel), !sel)}
         {tool('Collapse what the selected node added', <ChevronsLeft />, () => sel && v.collapse(sel), !sel || !walk)}

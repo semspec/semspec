@@ -16,6 +16,7 @@
     "relations": { "labels": ["Relates to", "Related from"] }
   },
   "refs": { "field": "relations", "target": "to", "note": "relation" },
+  "layout": { "default": "force" },
   "embedded": [{ "owner": "term", "field": "owner", "kind": "group", "edge": "inGroup" }],
   "fieldFilters": [{ "field": "origin", "label": "Origin", "from": "keys", "values": { "theory": "Theory book", "primer": "Primer", "house": "House note" } }],
   "details": {

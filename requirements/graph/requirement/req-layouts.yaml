@@ -1,0 +1,50 @@
+id: req-layouts
+kind: requirement
+title: Pick a layout for the Graph and Cards views
+statement: A profile picks the layout with layout.default. A switch in the toolbar of the canvas changes it. The layouts are layered, grouped and force.
+capabilities:
+  - cap-tree-graph
+area:
+  - app
+  - core
+acceptance:
+  - id: layered
+    text: The layered layout puts the general node left of the specific node. It is the layout when the profile names none.
+    status: verified
+    tests:
+      - type: unit
+        file: test/layout.test.ts
+        name: puts the general node left of the specific node and keeps every node apart
+  - id: grouped
+    text: The grouped layout draws a node that is the target of the group edge as a container around its members. A container can sit in a container. A box holds its members.
+    status: verified
+    tests:
+      - type: unit
+        file: test/layout.test.ts
+        name: finds nested containers and skips a cycle
+      - type: unit
+        file: test/layout.test.ts
+        name: gives every container a box that holds its members, 2 levels deep
+      - type: unit
+        file: test/layout.test.ts
+        name: puts a member with 2 containers in the first one
+  - id: force
+    text: The force layout gives the same positions for the same input, and no 2 nodes lie on each other.
+    status: verified
+    tests:
+      - type: unit
+        file: test/layout.test.ts
+        name: gives the same positions on 2 runs
+      - type: unit
+        file: test/layout.test.ts
+        name: leaves no 2 nodes on each other, in the 2 modes
+  - id: profile
+    text: The profile validation refuses the layout grouped without a group edge, and a group edge that is not in edges.
+    status: verified
+    tests:
+      - type: unit
+        file: test/layout.test.ts
+        name: refuses grouped without a group edge
+      - type: unit
+        file: test/layout.test.ts
+        name: refuses a group edge that is not in edges

@@ -46,6 +46,8 @@ function crossCheckProfile(p: Profile): string[] {
   needEdge('refs', p.refs?.field);
   p.parts?.forEach((x) => needEdge('parts', x.edge));
   p.embedded?.forEach((x) => needEdge('embedded', x.edge));
+  needEdge('layout groupEdge', p.layout?.groupEdge);
+  if (p.layout?.default === 'grouped' && !p.layout.groupEdge) errors.push('profile layout default is "grouped", which needs a groupEdge');
   needEdge('checks', p.checks?.edge);
   const linkFields = new Set([...p.kinds.flatMap(parentFields), ...(p.links ?? [])]);
   p.crossLinks?.forEach((c) => linkFields.has(c.field) && errors.push(`profile crossLinks field "${c.field}" is also a parent or link field. Use a different field.`));

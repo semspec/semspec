@@ -156,8 +156,23 @@ The profile is a JSON or YAML object. See `schema/profile.schema.json` and the 2
 | `checks` | The check field, the check kind, the check types and their identity. |
 | `status` | A status field with 3 values, 1 for each tone: good, warn and bad. A node with no status of its own gets the roll-up of the nodes below it: all good is good, all bad is bad, and a mix is warn. A node with a muted lifecycle does not count. A toggle colours the canvas by status, and a filter selects the status values. |
 | `fieldFilters` | Filters on a list field or a text field: the field, a label, labels for values, a separator that groups the values in the picker, and an optional `from`. A node without the field takes the values of the nodes above or below it. The table has a column for each field. |
+| `layout` | The layout of the Graph and Cards views. The optional `default` is `layered`, `grouped` or `force`. The optional `groupEdge` names the edge whose target is the container of its source. The value `grouped` needs `groupEdge`. See the section on layouts. |
 | `facets`, `entry`, `groups` | The group facet, the start page and the names of tree groups. |
 | `details` | The sections of the details panel: properties, text sections, option lists, source lists, object lists, tagged lists and citations. |
+
+## Layouts
+
+The Graph view and the Cards view have 3 layouts. A profile picks the first one with `layout.default`. A switch in the toolbar of the canvas changes it.
+
+- `layered`: dagre lays out the nodes from left to right. The general nodes are on the left. This is the default. It suits requirements.
+- `grouped`: a node that is the target of the `groupEdge` edge from a node on the canvas is a container. Its members sit inside it. A container can sit inside a container. A member with 2 containers sits in the first one. The edges of the `groupEdge` name are hidden for the container of a member, because the nesting shows them. The switch is disabled when the profile has no `groupEdge`.
+- `force`: `d3-force` places the nodes. The simulation runs a fixed number of ticks from start positions that follow the node order. The same input gives the same result. It suits a graph with no main direction.
+
+A walk puts a new node next to its source in every layout.
+
+```json
+"layout": { "default": "grouped", "groupEdge": "epics" }
+```
 
 ## Tagged lists and the filter by tag
 

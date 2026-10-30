@@ -205,6 +205,24 @@
       "description": "The start page lists the nodes of this kind, with the number of their children.",
       "properties": { "kind": { "type": "string" }, "childKind": { "type": "string" }, "title": { "type": "string" }, "countLabel": { "type": "string" } }
     },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The layout of the Graph and Cards views.",
+      "properties": {
+        "default": { "enum": ["layered", "grouped", "force"], "description": "The layout that the views start with. The default is layered. The value grouped needs groupEdge." },
+        "groupEdge": { "type": "string", "description": "The name of an edge. The target of the edge is the container of its source. The grouped layout draws the source inside the target." }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The layout of the Graph and Cards views.",
+      "properties": {
+        "default": { "enum": ["layered", "grouped", "force"], "description": "The layout that the views start with. The default is layered. The value grouped needs groupEdge." },
+        "groupEdge": { "type": "string", "description": "The name of an edge. The target of the edge is the container of its source. The grouped layout draws the source inside the target." }
+      }
+    },
     "groups": { "type": "object", "properties": { "hierarchy": { "type": "string" } }, "additionalProperties": false },
     "details": {
       "type": "object",
