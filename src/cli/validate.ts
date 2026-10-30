@@ -47,6 +47,8 @@ function crossCheckProfile(p: Profile): string[] {
   p.parts?.forEach((x) => needEdge('parts', x.edge));
   p.embedded?.forEach((x) => needEdge('embedded', x.edge));
   needEdge('checks', p.checks?.edge);
+  const linkFields = new Set([...p.kinds.flatMap(parentFields), ...(p.links ?? [])]);
+  p.crossLinks?.forEach((c) => linkFields.has(c.field) && errors.push(`profile crossLinks field "${c.field}" is also a parent or link field. Use a different field.`));
   p.embedded?.forEach((x) => {
     const head = x.field.split('.')[0];
     const owner = p.kinds.find((k) => k.id === x.owner);
@@ -90,6 +92,14 @@ export function validateGraph(graph: Graph, profile: Profile, labels?: string[])
       if (!Array.isArray(v)) errors.push(`Field "${f}" of "${String(n[profile.source.id])}" is not a list${labels ? ` (${label(i, n[profile.source.id])})` : ''}`);
       else v.forEach((t) => !ids.has(String(t)) && missing++);
     });
+  });
+  // A cross link field holds a list of node ids of another graph.
+  list.forEach((n: Record<string, unknown>, i: number) => {
+    for (const c of profile.crossLinks ?? []) {
+      const v = n[c.field];
+      if (v === undefined) continue;
+      if (!Array.isArray(v) || v.some((t) => typeof t !== 'string')) errors.push(`Cross link field "${c.field}" of "${String(n[profile.source.id])}" is not a list of ids${labels ? ` (${label(i, n[profile.source.id])})` : ''}`);
+    }
   });
   // 2 objects with the same id must hold the same fields. The model keeps the first one.
   for (const e of profile.embedded ?? []) {

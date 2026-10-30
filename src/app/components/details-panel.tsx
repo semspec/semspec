@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ChipView, KindBadge, KindDot, NodeSummaryView, StatusCounts, StatusDot } from '@/components/kind';
 import { Core, type VEdge } from '@/lib/core';
+import { useWorkspace } from '@/lib/workspace';
 import type { Viewer } from '@/lib/use-viewer';
 import { cn } from '@/lib/utils';
 
@@ -434,6 +435,8 @@ export function DetailsPanel({ v }: { v: Viewer }) {
         );
       })}
 
+      <CrossLinks v={v} id={n.id} />
+
       {[
         { title: 'Outgoing edges', list: groups(out, 0), total: out.length },
         { title: 'Incoming edges', list: groups(inc, 1), total: inc.length },
@@ -456,6 +459,62 @@ export function DetailsPanel({ v }: { v: Viewer }) {
         </div>
       ))}
     </div>
+  );
+}
+
+// A button that shows a node of another graph.
+function CrossLinkButton({ graph, id, note }: { graph: string; id: string; note?: string }) {
+  const ws = useWorkspace();
+  const target = ws.nodeOf(graph, id);
+  if (!target) return <code title="This node is not in the graph.">{id}</code>;
+  return (
+    <Button variant="ghost" size="sm" title={id} onClick={() => ws.jump(graph, id)} className="h-auto w-full flex-col items-start gap-0 px-1 py-0.5 text-left font-normal whitespace-normal">
+      <span className="break-words">{target.title}</span>
+      {note && <span className="text-xs break-words text-muted-foreground">{note}</span>}
+    </Button>
+  );
+}
+
+// The cross links of a node: 1 section for each entry of `crossLinks` in the profile, and 1
+// section for each graph that points at the node.
+function CrossLinks({ v, id }: { v: Viewer; id: string }) {
+  const ws = useWorkspace();
+  const out = v.index.crossOut.get(id) ?? [];
+  const incoming = ws.incoming(id);
+  const sources = ws.graphs.filter((g) => incoming.some((c) => c.graph === g.id));
+  return (
+    <>
+      {(Core.profile.crossLinks ?? [])
+        .filter((spec) => ws.graphs.some((g) => g.id === spec.graph))
+        .map((spec) => {
+          const links = out.filter((c) => c.field === spec.field);
+          if (!links.length) return null;
+          const target = ws.graphs.find((g) => g.id === spec.graph)!;
+          return (
+            <div key={spec.field}>
+              <Separator />
+              <Section title={spec.label} count={links.length}>
+                {links.map((c) => (
+                  <CrossLinkButton key={c.t} graph={c.graph} id={c.t} note={target.label} />
+                ))}
+              </Section>
+            </div>
+          );
+        })}
+      {sources.map((g) => {
+        const list = incoming.filter((c) => c.graph === g.id);
+        return (
+          <div key={g.id}>
+            <Separator />
+            <Section title={`Used by · ${g.label}`} count={list.length}>
+              {list.map((c) => (
+                <CrossLinkButton key={c.s + c.field} graph={c.graph} id={c.s} note={c.label} />
+              ))}
+            </Section>
+          </div>
+        );
+      })}
+    </>
   );
 }
 

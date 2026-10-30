@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://semspec.dev/schema/workspace.schema.json",
+  "title": "Semspec workspace",
+  "description": "A workspace file lists several graphs of 1 system. Each graph has its own profile. A path is relative to the workspace file.",
+  "type": "object",
+  "required": ["title", "graphs"],
+  "additionalProperties": false,
+  "properties": {
+    "title": { "type": "string", "minLength": 1, "description": "The title of the page." },
+    "graphs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "graph", "profile"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "description": "The id of the graph. It is unique in the workspace. A cross link names it." },
+          "label": { "type": "string", "minLength": 1, "description": "The name of the graph in the page." },
+          "graph": { "type": "string", "minLength": 1, "description": "The path of the graph: a JSON file, a YAML file or a folder of YAML files." },
+          "profile": { "type": "string", "minLength": 1, "description": "The path of the profile of the graph." },
+          "exclude": { "type": "array", "items": { "type": "string" }, "description": "Patterns of paths to skip in a graph folder. They work like --exclude." }
+        }
+      }
+    }
+  }
+}

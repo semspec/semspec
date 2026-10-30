@@ -1,0 +1,6 @@
+id: cap-workspace
+kind: capability
+title: Show several graphs on 1 page
+statement: Semspec reads a workspace file, checks each graph and the links between the graphs, and writes 1 page that holds all graphs.
+features:
+  - feat-workspace

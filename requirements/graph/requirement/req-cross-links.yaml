@@ -1,0 +1,54 @@
+id: req-cross-links
+kind: requirement
+title: Link a node to a node of another graph
+statement: A profile declares cross link fields with the id of the target graph and a label. A field holds a list of node ids of the target graph. A cross link is not an edge of the graph. The details panel shows the outgoing cross links, and the incoming ones as Used by. A click on an entry shows the target node in its graph.
+capabilities:
+  - cap-workspace
+area:
+  - core
+  - app
+acceptance:
+  - id: apart
+    text: A cross link is not an edge of the graph, and the index of a graph lists the outgoing cross links of each node.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: stay apart from the edges of the graph
+      - type: unit
+        file: test/workspace.test.ts
+        name: give each node of the index a list of outgoing cross links
+  - id: incoming
+    text: The workspace computes the incoming cross links of each target node.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: give the incoming cross links of each target node across the workspace
+  - id: unknown-graph
+    text: A cross link to a graph that the workspace does not have is an error.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: refuses a cross link to a graph that the workspace does not have
+  - id: unknown-node
+    text: A cross link to a node that the target graph does not have is a warning, and the link is skipped.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: warns about a cross link to a node that the target graph does not have
+      - type: unit
+        file: test/workspace.test.ts
+        name: leave a link to a missing node out of the incoming links and report it as a warning
+  - id: field-shape
+    text: A cross link field is a list of ids, and it is not a parent or link field.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: refuse a cross link field that is not a list of ids
+      - type: unit
+        file: test/workspace.test.ts
+        name: refuse a crossLinks entry that is also a link field

@@ -5,7 +5,7 @@
 //   parents: where the tree shows the node. The first group of parent fields that names a node wins.
 //   up:      every parent field of the kind. The scope and the group facet follow this list.
 // Edge direction follows the graph: from the specific node to the general node.
-import type { Graph, Index, Model, Profile, RawNode, VEdge, VNode } from './types';
+import type { CrossLink, Graph, Index, Model, Profile, RawNode, VEdge, VNode } from './types';
 import { allLinkFields, embeddedObjects, firstOf, getPath, isMuted, kindOf, normalise, omitPath, withDefaultKind } from './profile';
 import { checkKey, checkTitle, citationTitle, deriveTitle, snippet, wordCasing } from './titles';
 
@@ -166,6 +166,15 @@ export function buildModel(graph: Graph, input: Profile): Model {
     if (P.refs) for (const t of (n[P.refs.field] as Record<string, any>[]) ?? []) link(P.refs.field, t[P.refs.target], t[P.refs.note]);
   }
 
+  const crossLinks: CrossLink[] = [];
+  for (const n of graphNodes) {
+    for (const spec of P.crossLinks ?? []) {
+      const value = n[spec.field];
+      if (!Array.isArray(value)) continue;
+      for (const t of value) if (typeof t === 'string') crossLinks.push({ s: n[idKey], field: spec.field, graph: spec.graph, t });
+    }
+  }
+
   const existing = (list: unknown) => ((list as string[]) ?? []).filter((p) => byId.has(p));
   const targets = (n: Record<string, any>, field: string) => existing([...((n[field] as string[]) ?? []), ...(embeddedParents.get(n[idKey])?.get(field) ?? [])]);
   for (const n of graphNodes) {
@@ -208,6 +217,7 @@ export function buildModel(graph: Graph, input: Profile): Model {
     nodes,
     edges,
     unresolved,
+    crossLinks,
     unplaced,
     stats: { unplaced: unplaced.length, unplacedLive: live.length },
     disclosure: (graph.disclosure as Record<string, unknown>) ?? {},
@@ -222,6 +232,7 @@ export function buildIndex(model: Model): Index {
   const scopeChildren = new Map<string, string[]>();
   const out = new Map<string, VEdge[]>();
   const inc = new Map<string, VEdge[]>();
+  const crossOut = new Map<string, CrossLink[]>();
   for (const n of model.nodes) {
     byId.set(n.id, n);
     children.set(n.id, []);
@@ -237,5 +248,6 @@ export function buildIndex(model: Model): Index {
     out.get(e.s)?.push(e);
     inc.get(e.t)?.push(e);
   }
-  return { profile: model.profile, byId, children, scopeChildren, out, inc, model, moduleCache: new Map(), statusCache: new Map(), carrierCache: new Map(), fieldCache: new Map(), unplaced: new Set(model.unplaced) };
+  for (const c of model.crossLinks) crossOut.set(c.s, [...(crossOut.get(c.s) ?? []), c]);
+  return { profile: model.profile, byId, children, scopeChildren, out, inc, crossOut, model, moduleCache: new Map(), statusCache: new Map(), carrierCache: new Map(), fieldCache: new Map(), unplaced: new Set(model.unplaced) };
 }

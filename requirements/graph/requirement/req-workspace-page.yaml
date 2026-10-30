@@ -1,0 +1,17 @@
+id: req-workspace-page
+kind: requirement
+title: Write 1 page with all graphs
+statement: The build command writes 1 self-contained page that holds the data of all graphs. The page title is the workspace title. The app shows a switch between the graphs, keeps the state of each graph and has a Back button after a jump between graphs.
+capabilities:
+  - cap-workspace
+area:
+  - cli
+  - app
+acceptance:
+  - id: one-page
+    text: The build command writes 1 page that holds the models of all graphs, and the workspace title as page title.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: writes 1 page that holds all graphs with the build command

@@ -12,6 +12,7 @@ What Semspec does today:
 - A status colour mode colours the graph by status. Filters select nodes by status and by profile fields. The table exports to CSV.
 - `semspec schema` writes a JSON Schema for each kind, so editors and agents can check the YAML files.
 - `serve` runs a live local page. `build` writes 1 self-contained HTML file.
+- A workspace holds several graphs, each with its own profile, on 1 page. A node of 1 graph can link to a node of another graph.
 
 The tool knows no project. Every kind, edge, field, colour and label comes from the profile.
 
@@ -30,6 +31,8 @@ The install builds the tool. It needs Node 20 or later.
 ```
 semspec serve --graph <graph> --profile <profile> [--port 4173] [--host 127.0.0.1] [--exclude <pattern>]...
 semspec build --graph <graph> --profile <profile> --out explorer.html [--exclude <pattern>]...
+semspec serve --workspace <file> [--port 4173] [--host 127.0.0.1]
+semspec build --workspace <file> --out workspace.html
 semspec schema --profile <profile> --out <dir>
 ```
 
@@ -40,6 +43,8 @@ semspec schema --profile <profile> --out <dir>
 `<graph>` is a JSON file, a YAML file or a folder of YAML files. `<profile>` is a JSON file or a YAML file (`.yaml` or `.yml`).
 
 `--exclude` skips paths of a graph folder. It can repeat. See "The YAML folder".
+
+`--workspace` reads a workspace file instead of `--graph` and `--profile`. See "Workspace". It cannot combine with `--graph`, `--profile` or `--exclude`.
 
 `serve` and `build` check the 2 inputs first and stop with a message when an input is not valid. A message about a YAML node names its file.
 
@@ -71,6 +76,44 @@ semspec build --graph requirements --profile profile.yaml --out explorer.html --
 - Semspec does not read into an excluded folder.
 - `--exclude` has no effect when `--graph` is a file. Semspec prints 1 warning.
 - Quote a pattern with `*` or `?`, so the shell does not expand it.
+
+## Workspace
+
+A user can keep several graphs about 1 system, for example a requirements graph and a domain model. A workspace file lists them. The page holds all graphs, with a switch between them.
+
+```json
+{
+  "title": "Shop workspace",
+  "graphs": [
+    { "id": "req", "label": "Requirements", "graph": "product/graph.json", "profile": "product/profile.json" },
+    { "id": "domain", "label": "Domain model", "graph": "domain/graph.json", "profile": "domain/profile.json", "exclude": ["schema"] }
+  ]
+}
+```
+
+- The workspace file is JSON or YAML. See `schema/workspace.schema.json` and `fixtures/workspace/`.
+- A path is relative to the workspace file. `graph` and `profile` take the same files as `--graph` and `--profile`.
+- `id` is unique. A cross link names it. `label` is the name in the switch. `exclude` is optional and works like `--exclude`.
+- Each graph and each profile is checked as in the single-graph form. A message names the graph id.
+- `serve` reads all inputs again on each page load.
+- The page title is the workspace title. The header shows the label of the active graph and a switch when the workspace has more than 1 graph.
+- Each graph keeps its scope, filters, view, selection, walk and canvas positions. A return to the graph restores them.
+
+### Cross links
+
+A profile declares the fields that point into another graph:
+
+```json
+"crossLinks": [ { "field": "terms", "graph": "domain", "label": "Uses term" } ]
+```
+
+- `field` is a field of a node. It holds a list of node ids of the target graph, for example `"terms": ["basket", "card"]`. An object with an `id` is not accepted.
+- `graph` is the `id` of the target graph in the workspace file.
+- `label` is the title of the section in the details panel.
+- A cross link is not an edge of the graph. It does not change the tree, the scope, the walk or the canvas.
+- A cross link to a graph that the workspace does not have is an error. An id that the target graph does not have is a warning, and the link is skipped.
+- `field` must not be a parent field or a link field of the profile.
+- The details panel shows a section with the label of each entry, and a section "Used by" with the label of the source graph for a node that other graphs point at. A click on an entry shows the node in its graph, selected and revealed in the tree. The Back button in the header returns to the previous graph and node.
 
 ## The schemas of the kinds
 
@@ -106,6 +149,7 @@ The profile is a JSON or YAML object. See `schema/profile.schema.json` and the 2
 | `kinds` | The node kinds: id, label, plural, role, colour for the light and the dark theme, parent field groups, a citation rule (with an optional `name` path for the display name of the source) and the chips of a summary. |
 | `edges` | A label pair for each edge name, and a `down` flag for an edge whose target is the more general node. |
 | `links`, `refs`, `supersededBy` | Link fields that are not parent fields. |
+| `crossLinks` | Fields that hold node ids of another graph of a workspace: the field, the id of the target graph and a label. See "Cross links". |
 | `linkedScopeEdges` | The edges that pull a linked node into the scope of a node. |
 | `parts` | Which kinds own parts, in which field, and the fields of a part. |
 | `embedded` | Objects in a node that are nodes of their own: the owner kind, the dotted path of the object, the new kind, the key of the id in the object (needed only for an object) and the edge. The edge is a parent field of the owner. It differs from the field. |

@@ -132,6 +132,14 @@ export interface DetailsSpec {
   }[];
 }
 
+// A field that points into another graph of the workspace. The field holds a list of node ids
+// of the target graph. `graph` is the id of the target graph in the workspace file.
+export interface CrossLinkSpec {
+  field: string;
+  graph: string;
+  label: string;
+}
+
 export interface Profile {
   // The name of the project, shown as secondary text.
   project: string;
@@ -149,6 +157,8 @@ export interface Profile {
   // `down` marks an edge whose target is the more general node.
   edges: Record<string, { labels: [string, string]; down?: boolean }>;
   links?: string[];
+  // Links into other graphs. They are not edges of this graph.
+  crossLinks?: CrossLinkSpec[];
   refs?: { field: string; target: string; note: string };
   supersededBy?: string;
   linkedScopeEdges?: string[];
@@ -193,11 +203,21 @@ export interface VEdge {
   n?: string;
 }
 
+// A link from a node of this graph to a node of another graph. `t` may name no node.
+export interface CrossLink {
+  s: string;
+  field: string;
+  graph: string;
+  t: string;
+}
+
 export interface Model {
   profile: Profile;
   nodes: VNode[];
   edges: VEdge[];
   unresolved: { s: string; t: string; k: string }[];
+  // The links to other graphs, in the order of the nodes and of the profile.
+  crossLinks: CrossLink[];
   unplaced: string[];
   stats: { unplaced: number; unplacedLive: number };
   disclosure: Record<string, unknown>;
@@ -211,6 +231,8 @@ export interface Index {
   scopeChildren: Map<string, string[]>;
   out: Map<string, VEdge[]>;
   inc: Map<string, VEdge[]>;
+  // The outgoing cross links of each node.
+  crossOut: Map<string, CrossLink[]>;
   model: Model;
   moduleCache: Map<string, Set<string>>;
   statusCache: Map<string, Set<string>>;

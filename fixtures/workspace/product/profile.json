@@ -1,0 +1,450 @@
+{
+  "project": "Shop product",
+  "source": {
+    "nodes": "nodes",
+    "id": "id",
+    "kind": "kind"
+  },
+  "fields": {
+    "title": [
+      "name",
+      "short",
+      "title"
+    ],
+    "idPrefixPattern": "^[a-z]+-",
+    "statement": [
+      "summary",
+      "quote"
+    ],
+    "level": "priority",
+    "delivery": "release",
+    "decided": "decidedOn"
+  },
+  "lifecycle": {
+    "field": "status",
+    "fallback": "planned",
+    "byKind": {
+      "standard": ""
+    },
+    "states": {
+      "dropped": {
+        "muted": true
+      },
+      "replaced": {
+        "muted": true
+      }
+    }
+  },
+  "kinds": [
+    {
+      "id": "product",
+      "label": "Product",
+      "plural": "products",
+      "prefix": "prd-",
+      "role": "hierarchy",
+      "color": {
+        "light": "#5f3dc4",
+        "dark": "#b197fc"
+      },
+      "chips": [
+        "lifecycle",
+        "members"
+      ]
+    },
+    {
+      "id": "epic",
+      "label": "Epic",
+      "plural": "epics",
+      "prefix": "epic-",
+      "role": "hierarchy",
+      "parents": [
+        [
+          "products"
+        ]
+      ],
+      "color": {
+        "light": "#1971c2",
+        "dark": "#74c0fc"
+      },
+      "chips": [
+        "lifecycle",
+        "members"
+      ]
+    },
+    {
+      "id": "story",
+      "label": "Story",
+      "plural": "stories",
+      "prefix": "story-",
+      "role": "hierarchy",
+      "parents": [
+        [
+          "epics"
+        ],
+        [
+          "follows"
+        ]
+      ],
+      "placedUnder": "epic",
+      "unplacedLabel": "Not placed in an epic",
+      "color": {
+        "light": "#d9480f",
+        "dark": "#ffa94d"
+      },
+      "chips": [
+        {
+          "field": "priority",
+          "format": "upper",
+          "tone": "level"
+        },
+        "lifecycle",
+        {
+          "field": "release"
+        },
+        "coverage"
+      ]
+    },
+    {
+      "id": "scenario",
+      "label": "Scenario",
+      "plural": "scenarios",
+      "role": "part",
+      "color": {
+        "light": "#c2255c",
+        "dark": "#f783ac"
+      },
+      "chips": [
+        "verified",
+        "verifyTypes"
+      ]
+    },
+    {
+      "id": "decision",
+      "label": "Decision",
+      "plural": "decisions",
+      "prefix": "dec-",
+      "role": "linked",
+      "color": {
+        "light": "#495057",
+        "dark": "#adb5bd"
+      },
+      "chips": [
+        "lifecycle",
+        {
+          "field": "decidedOn",
+          "template": "decided {value}",
+          "slice": 10
+        }
+      ]
+    },
+    {
+      "id": "standard",
+      "label": "Standard",
+      "plural": "standards",
+      "prefix": "std-",
+      "role": "linked",
+      "parents": [
+        [
+          "issuedBy"
+        ]
+      ],
+      "color": {
+        "light": "#9c36b5",
+        "dark": "#da77f2"
+      },
+      "citation": {
+        "source": "body.id",
+        "name": "body.short",
+        "subtitle": "body.title",
+        "parts": [
+          {
+            "field": "clause",
+            "prefix": "Clause "
+          },
+          {
+            "field": "item",
+            "wrap": "()"
+          }
+        ]
+      },
+      "chips": [
+        {
+          "field": "clause",
+          "template": "Clause {value}"
+        }
+      ]
+    },
+    {
+      "id": "body",
+      "label": "Body",
+      "plural": "bodies",
+      "role": "linked",
+      "color": {
+        "light": "#0b7285",
+        "dark": "#66d9e8"
+      },
+      "chips": []
+    },
+    {
+      "id": "test",
+      "label": "Test",
+      "plural": "tests",
+      "role": "check",
+      "color": {
+        "light": "#6c757d",
+        "dark": "#ced4da"
+      },
+      "chips": [
+        "checkType"
+      ]
+    }
+  ],
+  "edges": {
+    "products": {
+      "labels": [
+        "In product",
+        "Contains"
+      ],
+      "down": true
+    },
+    "epics": {
+      "labels": [
+        "In epic",
+        "Contains"
+      ],
+      "down": true
+    },
+    "follows": {
+      "labels": [
+        "Follows",
+        "Followed by"
+      ],
+      "down": true
+    },
+    "issuedBy": {
+      "labels": [
+        "Issued by",
+        "Issues"
+      ],
+      "down": true
+    },
+    "complies": {
+      "labels": [
+        "Complies with",
+        "Complied with by"
+      ]
+    },
+    "notes": {
+      "labels": [
+        "Notes",
+        "Noted by"
+      ]
+    },
+    "replacedBy": {
+      "labels": [
+        "Replaced by",
+        "Replaces"
+      ]
+    },
+    "scenario": {
+      "labels": [
+        "Scenario of",
+        "Has scenario"
+      ],
+      "down": true
+    },
+    "tested": {
+      "labels": [
+        "Tested by",
+        "Tests"
+      ]
+    }
+  },
+  "links": [
+    "complies"
+  ],
+  "refs": {
+    "field": "notes",
+    "target": "ref",
+    "note": "text"
+  },
+  "supersededBy": "replacedBy",
+  "linkedScopeEdges": [
+    "complies",
+    "notes"
+  ],
+  "parts": [
+    {
+      "kind": "scenario",
+      "owner": "story",
+      "field": "scenarios",
+      "id": "key",
+      "text": "text",
+      "edge": "scenario",
+      "sectionTitle": "Scenarios"
+    }
+  ],
+  "embedded": [
+    {
+      "owner": "standard",
+      "field": "body",
+      "kind": "body",
+      "id": "id",
+      "edge": "issuedBy"
+    }
+  ],
+  "checks": {
+    "kind": "test",
+    "field": "tests",
+    "edge": "tested",
+    "typeField": "type",
+    "types": {
+      "unit": {
+        "key": [
+          "file",
+          "name"
+        ],
+        "title": [
+          "name",
+          "short",
+          "title"
+        ]
+      },
+      "manual": {
+        "key": [
+          "plan"
+        ],
+        "title": [
+          "plan"
+        ],
+        "titlePrefix": "manual"
+      }
+    },
+    "sectionTitle": "Tests",
+    "noneText": "No test."
+  },
+  "status": {
+    "label": "Result",
+    "field": "result",
+    "values": [
+      {
+        "value": "pass",
+        "label": "Pass",
+        "tone": "good"
+      },
+      {
+        "value": "partial",
+        "label": "Partial",
+        "tone": "warn"
+      },
+      {
+        "value": "fail",
+        "label": "Fail",
+        "tone": "bad"
+      }
+    ],
+    "detail": {
+      "field": "openBrowsers",
+      "label": "Open on"
+    }
+  },
+  "fieldFilters": [
+    {
+      "field": "teams",
+      "label": "Team",
+      "values": {
+        "web": "Web shop"
+      }
+    },
+    {
+      "field": "priority",
+      "label": "Priority"
+    },
+    {
+      "field": "basis",
+      "label": "Basis",
+      "from": "keys",
+      "values": {
+        "law": "Law",
+        "contract": "Contract"
+      }
+    }
+  ],
+  "facets": {
+    "groupKind": "epic",
+    "groupLabel": "Epic"
+  },
+  "entry": {
+    "kind": "epic",
+    "childKind": "story",
+    "title": "Pick an epic to see what it contains",
+    "countLabel": "stories"
+  },
+  "groups": {
+    "hierarchy": "Product tree"
+  },
+  "details": {
+    "properties": [
+      {
+        "label": "Status",
+        "field": "status"
+      },
+      {
+        "label": "Release",
+        "field": "release"
+      },
+      {
+        "label": "Priority",
+        "field": "priority",
+        "format": "upper"
+      },
+      {
+        "label": "Owner",
+        "field": "owner"
+      }
+    ],
+    "statementTitle": {
+      "standard": "Quoted clause",
+      "scenario": "Scenario",
+      "default": "Summary"
+    },
+    "textSections": [
+      {
+        "title": "Rationale",
+        "field": "rationale"
+      }
+    ],
+    "taggedLists": [
+      {
+        "title": "Basis",
+        "field": "basis",
+        "labels": {
+          "law.region": "Region",
+          "contract": "Contract"
+        }
+      }
+    ],
+    "citations": [
+      {
+        "kind": "standard",
+        "title": "Citation",
+        "rows": [
+          {
+            "label": "Link",
+            "path": "url",
+            "link": true
+          }
+        ],
+        "anchor": "clause",
+        "url": "url"
+      }
+    ]
+  },
+  "crossLinks": [
+    {
+      "field": "terms",
+      "graph": "domain",
+      "label": "Uses term"
+    }
+  ]
+}

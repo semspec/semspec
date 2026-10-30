@@ -113,3 +113,12 @@ export function firstOf(obj: unknown, fields: string[]): string {
   }
   return '';
 }
+
+// The CSS variables of the kind colours, for the light and the dark theme.
+export function kindColorCss(p: Profile): string {
+  const safe = (c: string) => c.replace(/[^#a-zA-Z0-9(),.%\s/-]/g, '');
+  const id = (k: string) => k.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const light = p.kinds.map((k) => `--kind-${id(k.id)}:${safe(k.color.light)};`).join('');
+  const dark = p.kinds.map((k) => `--kind-${id(k.id)}:${safe(k.color.dark)};`).join('');
+  return `:root{${light}}.dark{${dark}}`;
+}

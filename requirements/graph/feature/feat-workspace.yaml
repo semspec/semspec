@@ -1,0 +1,6 @@
+id: feat-workspace
+kind: feature
+title: Workspace of several graphs
+statement: A user keeps several graphs about 1 system, each with its own profile. A workspace shows them on 1 page, with a switch between them and links from a node of 1 graph to a node of another.
+products:
+  - prd-semspec

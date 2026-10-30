@@ -1,0 +1,236 @@
+{
+  "nodes": [
+    {
+      "id": "prd-shop",
+      "kind": "product",
+      "name": "Shop",
+      "summary": "An online shop."
+    },
+    {
+      "id": "epic-checkout",
+      "kind": "epic",
+      "name": "Checkout",
+      "summary": "The buyer pays for a basket.",
+      "products": [
+        "prd-shop"
+      ],
+      "basis": [
+        {
+          "law": {
+            "region": "EU",
+            "article": "12"
+          }
+        },
+        {
+          "contract": {}
+        }
+      ],
+      "terms": [
+        "basket"
+      ]
+    },
+    {
+      "id": "epic-search",
+      "kind": "epic",
+      "summary": "The buyer finds an item.",
+      "products": [
+        "prd-shop"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "story-pay-by-card",
+      "kind": "story",
+      "summary": "The buyer pays by card. A card with 3DS asks for a second step. The PSP charges the card.",
+      "priority": "high",
+      "release": "r1",
+      "teams": [
+        "payments",
+        "web"
+      ],
+      "epics": [
+        "epic-checkout"
+      ],
+      "complies": [
+        "std-card-data"
+      ],
+      "scenarios": [
+        {
+          "key": "declined",
+          "text": "A declined card shows a message.",
+          "result": "pass",
+          "tests": [
+            {
+              "type": "unit",
+              "file": "tests/pay.test.ts",
+              "name": "showsDeclineMessage"
+            }
+          ]
+        },
+        {
+          "key": "charged",
+          "text": "A valid card is charged once.",
+          "result": "fail",
+          "openBrowsers": [
+            "Safari",
+            "Firefox"
+          ]
+        }
+      ],
+      "terms": [
+        "card",
+        "payment"
+      ]
+    },
+    {
+      "id": "story-pay-by-card-3ds",
+      "kind": "story",
+      "summary": "The buyer confirms a payment in a 3DS step.",
+      "priority": "medium",
+      "follows": [
+        "story-pay-by-card"
+      ],
+      "tests": [
+        {
+          "type": "manual",
+          "plan": "plan-7"
+        }
+      ]
+    },
+    {
+      "id": "story-save-card",
+      "kind": "story",
+      "summary": "The buyer saves a card.",
+      "result": "pass",
+      "teams": [
+        "payments"
+      ],
+      "priority": "low",
+      "release": "r2",
+      "basis": [
+        {
+          "contract": {}
+        }
+      ],
+      "epics": [
+        "epic-checkout"
+      ],
+      "follows": [
+        "story-pay-by-card"
+      ],
+      "terms": [
+        "card"
+      ]
+    },
+    {
+      "id": "story-search-synonyms",
+      "kind": "story",
+      "summary": "The search knows synonyms.",
+      "teams": "search",
+      "priority": "medium",
+      "epics": [
+        "epic-search"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "story-loose",
+      "kind": "story",
+      "summary": "A story with no epic."
+    },
+    {
+      "id": "story-loose-child",
+      "kind": "story",
+      "summary": "A dropped follow-up.",
+      "result": "fail",
+      "status": "dropped",
+      "follows": [
+        "story-loose"
+      ]
+    },
+    {
+      "id": "dec-use-psp",
+      "kind": "decision",
+      "name": "Use an external PSP",
+      "summary": "A payment service provider takes the card data.",
+      "decidedOn": "2026-03-01",
+      "notes": [
+        {
+          "ref": "epic-checkout",
+          "text": "governs the epic"
+        }
+      ],
+      "replacedBy": "dec-use-two-psp"
+    },
+    {
+      "id": "dec-use-two-psp",
+      "kind": "decision",
+      "summary": "Two PSPs share the load.",
+      "notes": [
+        {
+          "ref": "story-pay-by-card"
+        }
+      ]
+    },
+    {
+      "id": "std-card-data",
+      "kind": "standard",
+      "body": {
+        "id": "card-data-standard",
+        "title": "Card Data Standard"
+      },
+      "clause": "3",
+      "item": "a",
+      "quote": "A merchant shall not store card data.",
+      "url": "https://example.org/standard"
+    },
+    {
+      "id": "std-card-storage",
+      "kind": "standard",
+      "body": {
+        "id": "card-data-standard",
+        "title": "Card Data Standard"
+      },
+      "clause": "5",
+      "quote": "A merchant shall encrypt stored card data."
+    },
+    {
+      "id": "std-privacy-notice",
+      "kind": "standard",
+      "body": {
+        "id": "privacy-rules",
+        "title": "Privacy Rules",
+        "short": "PR"
+      },
+      "clause": "2",
+      "quote": "A shop shall show a privacy notice."
+    },
+    {
+      "id": "std-refund-window",
+      "kind": "standard",
+      "body": {
+        "id": "refund-law",
+        "title": "Refund Law",
+        "short": ""
+      },
+      "clause": "7",
+      "quote": "A buyer may return an item within 14 days."
+    },
+    {
+      "id": "std-tax-rate",
+      "kind": "standard",
+      "body": {
+        "id": "tax-code",
+        "title": "Tax Code From The Standard"
+      },
+      "clause": "9",
+      "quote": "A shop shall show the tax rate."
+    },
+    {
+      "id": "tax-code",
+      "kind": "body",
+      "name": "Tax Code Office",
+      "summary": "A body that is a node of the graph."
+    }
+  ]
+}

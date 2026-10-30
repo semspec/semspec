@@ -1,0 +1,8 @@
+{
+  "entries": [
+    { "id": "basket", "term": "Basket", "definition": "The items that a buyer plans to pay for.", "owner": "grp-order", "relations": [{ "to": "payment", "relation": "is paid by" }] },
+    { "id": "card", "term": "Card", "definition": "A means of payment that a buyer can save.", "owner": "grp-money", "relations": [{ "to": "payment", "relation": "pays with it" }] },
+    { "id": "payment", "term": "Payment", "definition": "A transfer of money for a basket.", "owner": "grp-money" },
+    { "id": "refund", "term": "Refund", "definition": "A payment back to the buyer.", "owner": "grp-money", "relations": [{ "to": "payment", "relation": "reverses" }] }
+  ]
+}

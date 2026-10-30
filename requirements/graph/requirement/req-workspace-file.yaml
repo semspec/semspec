@@ -1,0 +1,51 @@
+id: req-workspace-file
+kind: requirement
+title: Read a workspace file
+statement: A workspace file lists the graphs with an id, a label, a graph path, a profile path and an optional exclude list. The commands serve and build take it with --workspace. The option cannot combine with --graph or --profile.
+capabilities:
+  - cap-workspace
+area:
+  - cli
+acceptance:
+  - id: load
+    text: The workspace loads every graph with its profile. Paths are relative to the workspace file.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: loads all graphs with their cross links
+  - id: unique-id
+    text: A graph id that appears twice is an error.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: refuses a graph id that appears twice
+  - id: names-graph
+    text: The message about an invalid graph or profile names the graph id.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: names the graph id in the message of an invalid graph or profile
+  - id: exclude
+    text: The exclude list of a graph works like --exclude.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: excludes paths of a graph folder with the exclude option
+  - id: no-mix
+    text: The option --workspace cannot combine with --graph or --profile.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: refuses --workspace together with --graph or --profile
+  - id: serve
+    text: The serve command reads all inputs again on each request.
+    status: verified
+    tests:
+      - type: unit
+        file: test/workspace.test.ts
+        name: serves the workspace page with the serve command

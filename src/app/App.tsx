@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
-import { Info, Network, Palette, Table2, TriangleAlert, X } from 'lucide-react';
+import { useMemo, useRef, useState, useEffect } from 'react';
+import { ArrowLeft, Info, Network, Palette, Table2, TriangleAlert, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,8 +14,10 @@ import { FilterBar } from '@/components/filter-bar';
 import { KindDot } from '@/components/kind';
 import { TableView } from '@/components/table-view';
 import { TreePanel } from '@/components/tree-panel';
-import { Core, type Model } from '@/lib/core';
-import { useViewer, type View, type Viewer } from '@/lib/use-viewer';
+import { incomingCrossLinks, kindColorCss, type WorkspaceData } from '@core/index';
+import { Core, setProfile, type Model } from '@/lib/core';
+import { useViewer, type View, type Viewer, type ViewerState } from '@/lib/use-viewer';
+import { WorkspaceContext, type WorkspaceApi } from '@/lib/workspace';
 import { cn } from '@/lib/utils';
 
 function ScopeControl({ v }: { v: Viewer }) {
@@ -133,12 +136,91 @@ function CenterView({ v }: { v: Viewer }) {
   );
 }
 
-export function App({ model }: { model: Model }) {
-  const v = useViewer(model);
+interface Focus {
+  node: string;
+  seq: number;
+}
+
+// The workspace state: the active graph, the trail of jumps and the saved state of each graph.
+export function App({ data }: { data: WorkspaceData }) {
+  const [activeId, setActiveId] = useState(data.graphs[0].id);
+  const [trail, setTrail] = useState<{ graph: string; node: string | null }[]>([]);
+  const [focus, setFocus] = useState<Focus | null>(null);
+  const saved = useRef(new Map<string, ViewerState>());
+  const seq = useRef(0);
+  const incoming = useMemo(() => incomingCrossLinks(data.graphs), [data]);
+  const nodes = useMemo(() => new Map(data.graphs.map((g) => [g.id, new Map(g.model.nodes.map((n) => [n.id, n]))])), [data]);
+  const graph = data.graphs.find((g) => g.id === activeId)!;
+  // The profile is global for the app. The graph that shows is the only one that reads it.
+  setProfile(graph.model.profile);
+
+  const jumpFrom = (target: string, node: string, from: string | null) => {
+    setTrail((t) => [...t, { graph: activeId, node: from }]);
+    setActiveId(target);
+    setFocus({ node, seq: ++seq.current });
+  };
+  const last = trail[trail.length - 1];
+  const root: Omit<WorkspaceApi, 'jump'> & { jumpFrom: typeof jumpFrom } = {
+    graphs: data.graphs,
+    activeId,
+    setActive: (id) => {
+      setTrail([]);
+      setFocus(null);
+      setActiveId(id);
+    },
+    jumpFrom,
+    back: () => {
+      if (!last) return;
+      setTrail((t) => t.slice(0, -1));
+      setActiveId(last.graph);
+      setFocus(last.node ? { node: last.node, seq: ++seq.current } : null);
+    },
+    canBack: trail.length > 0,
+    backLabel: last ? data.graphs.find((g) => g.id === last.graph)?.label : undefined,
+    incoming: (node) => incoming.get(activeId)?.get(node) ?? [],
+    nodeOf: (g, node) => nodes.get(g)?.get(node),
+  };
+  return (
+    <GraphApp
+      key={activeId}
+      label={graph.label}
+      model={graph.model}
+      root={root}
+      focus={focus}
+      session={{ initial: saved.current.get(activeId), save: (s) => saved.current.set(activeId, s) }}
+    />
+  );
+}
+
+function GraphApp({
+  label,
+  model,
+  root,
+  focus,
+  session,
+}: {
+  label: string;
+  model: Model;
+  root: Omit<WorkspaceApi, 'jump'> & { jumpFrom: (graph: string, node: string, from: string | null) => void };
+  focus: Focus | null;
+  session: { initial?: ViewerState; save: (state: ViewerState) => void };
+}) {
+  const v = useViewer(model, session);
+  const ws: WorkspaceApi = { ...root, jump: (graph, node) => root.jumpFrom(graph, node, v.selected) };
+  // A jump or a Back selects the node. The scope shows the node when the canvas does not.
+  useEffect(() => {
+    if (!focus || !v.index.byId.has(focus.node)) return;
+    if (v.canvasSet.has(focus.node)) v.select(focus.node, { panel: 'details' });
+    else v.setScope({ type: 'node', id: focus.node });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus]);
   const active = v.scope || v.walk;
   const status = `${v.canvasIds.length} nodes · ${v.canvasEdges.length} edges${v.walk ? ' · walk' : ''}`;
 
   return (
+    <WorkspaceContext.Provider value={ws}>
+      {/* The kinds of each graph have their own colours. These variables replace those of the page. */}
+      <style>{kindColorCss(model.profile)}</style>
     <TooltipProvider delay={300}>
       <div className="flex h-screen flex-col bg-background text-[13px] text-foreground">
         <header className="flex h-12 shrink-0 items-center gap-4 border-b bg-card px-3">
@@ -149,10 +231,26 @@ export function App({ model }: { model: Model }) {
             <div className="leading-tight">
               <div className="text-sm font-semibold">Semspec</div>
               <div className="text-[11px] text-muted-foreground tabular-nums">
-                {model.profile.project} · {model.nodes.length} nodes · {model.edges.length} edges
+                {label} · {model.nodes.length} nodes · {model.edges.length} edges
               </div>
             </div>
           </div>
+          {ws.graphs.length > 1 && (
+            <Tabs value={ws.activeId} onValueChange={ws.setActive}>
+              <TabsList aria-label="Graph">
+                {ws.graphs.map((g) => (
+                  <TabsTrigger key={g.id} value={g.id}>
+                    {g.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          )}
+          {ws.canBack && (
+            <Button variant="outline" size="sm" onClick={ws.back}>
+              <ArrowLeft /> Back{ws.backLabel ? ` to ${ws.backLabel}` : ''}
+            </Button>
+          )}
           <ScopeControl v={v} />
           <div className="ml-auto flex items-center gap-3">
             {model.profile.status && (
@@ -221,5 +319,6 @@ export function App({ model }: { model: Model }) {
         </ResizablePanelGroup>
       </div>
     </TooltipProvider>
+    </WorkspaceContext.Provider>
   );
 }

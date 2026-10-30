@@ -2,7 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // The state of the viewer: scope, filters, view, selection and the walk on the canvas.
 // The rules live in the core module. This hook only holds the state and calls them.
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Core, type Filters, type Index, type Model, type VEdge, type VNode, type Walk } from './core';
 
 export type View = 'graph' | 'cards' | 'table';
@@ -25,23 +25,47 @@ function groupOf(index: Index, id: string): string {
   return `g:un:${n.kind}`;
 }
 
-export function useViewer(model: Model) {
+type Positions = Record<'graph' | 'cards', { map: Map<string, { x: number; y: number }>; tick: number; key: string }>;
+
+// The state of a viewer. A workspace keeps it when the user leaves a graph, and gives it back
+// when the user returns.
+export interface ViewerState {
+  scope: Scope;
+  depth: number | null;
+  filters: Filters;
+  view: View;
+  selected: string | null;
+  selectSeq: number;
+  walk: Walk | null;
+  walkRoot: string | null;
+  history: (Walk | null)[];
+  layoutTick: number;
+  dock: boolean;
+  statusColour: boolean;
+  panel: Panel;
+  open: Set<string>;
+  positions: Positions;
+}
+
+// `session` restores a saved state at the start. The hook saves the state after each render.
+export function useViewer(model: Model, session?: { initial?: ViewerState; save: (state: ViewerState) => void }) {
   const index = useMemo(() => Core.buildIndex(model), [model]);
-  const [scope, setScopeState] = useState<Scope>(null);
-  const [depth, setDepth] = useState<number | null>(null);
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  const [view, setView] = useState<View>('graph');
-  const [selected, setSelected] = useState<string | null>(null);
-  const [selectSeq, setSelectSeq] = useState(0);
-  const [walk, setWalk] = useState<Walk | null>(null);
-  const [walkRoot, setWalkRoot] = useState<string | null>(null);
-  const [history, setHistory] = useState<(Walk | null)[]>([]);
-  const [layoutTick, setLayoutTick] = useState(0);
-  const [dock, setDock] = useState(false);
+  const init = session?.initial;
+  const [scope, setScopeState] = useState<Scope>(init?.scope ?? null);
+  const [depth, setDepth] = useState<number | null>(init?.depth ?? null);
+  const [filters, setFilters] = useState<Filters>(init?.filters ?? EMPTY_FILTERS);
+  const [view, setView] = useState<View>(init?.view ?? 'graph');
+  const [selected, setSelected] = useState<string | null>(init?.selected ?? null);
+  const [selectSeq, setSelectSeq] = useState(init?.selectSeq ?? 0);
+  const [walk, setWalk] = useState<Walk | null>(init?.walk ?? null);
+  const [walkRoot, setWalkRoot] = useState<string | null>(init?.walkRoot ?? null);
+  const [history, setHistory] = useState<(Walk | null)[]>(init?.history ?? []);
+  const [layoutTick, setLayoutTick] = useState(init?.layoutTick ?? 0);
+  const [dock, setDock] = useState(init?.dock ?? false);
   // The canvas colours each node by its status. It is off by default.
-  const [statusColour, setStatusColour] = useState(false);
-  const [panel, setPanel] = useState<Panel>('details');
-  const [open, setOpen] = useState<Set<string>>(() => new Set(['g:hier']));
+  const [statusColour, setStatusColour] = useState(init?.statusColour ?? false);
+  const [panel, setPanel] = useState<Panel>(init?.panel ?? 'details');
+  const [open, setOpen] = useState<Set<string>>(() => init?.open ?? new Set(['g:hier']));
 
   // The nodes of the scope, before the filters.
   const scopeIds = useMemo<string[]>(() => {
@@ -177,9 +201,21 @@ export function useViewer(model: Model) {
 
   // The canvas positions of each mode. A switch between Graph and Cards keeps the walk and the
   // positions of each mode.
-  const positions = useRef<Record<'graph' | 'cards', { map: Map<string, { x: number; y: number }>; tick: number; key: string }>>({
-    graph: { map: new Map(), tick: -1, key: '' },
-    cards: { map: new Map(), tick: -1, key: '' },
+  const positions = useRef<Positions>(
+    init?.positions ?? {
+      graph: { map: new Map(), tick: -1, key: '' },
+      cards: { map: new Map(), tick: -1, key: '' },
+    },
+  );
+
+  const latest: ViewerState = { scope, depth, filters, view, selected, selectSeq, walk, walkRoot, history, layoutTick, dock, statusColour, panel, open, positions: positions.current };
+  const current = useRef(latest);
+  current.current = latest;
+  const saver = useRef(session?.save);
+  saver.current = session?.save;
+  // The state is saved after each render, so the next viewer of this graph reads the last state.
+  useEffect(() => {
+    saver.current?.(current.current);
   });
 
   return {

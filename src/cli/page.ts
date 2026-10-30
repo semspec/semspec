@@ -3,7 +3,7 @@
 // Builds the 1-file page: the bundled app, its style, the colours of the kinds and the model.
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import type { Model } from '../core/index';
+import { kindColorCss as coreKindColorCss, type Model, type WorkspaceData } from '../core/index';
 
 export interface Assets {
   js: string;
@@ -43,35 +43,33 @@ const inlineStyle = (s: string) => s.replace(/<\/style/gi, '<\\/style');
 const jsonForHtml = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
 
 // The colour of each kind, as CSS variables for the light and the dark theme.
-export function kindColorCss(model: Model): string {
-  const safe = (c: string) => c.replace(/[^#a-zA-Z0-9(),.%\s/-]/g, '');
-  const id = (k: string) => k.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const light = model.profile.kinds.map((k) => `--kind-${id(k.id)}:${safe(k.color.light)};`).join('');
-  const dark = model.profile.kinds.map((k) => `--kind-${id(k.id)}:${safe(k.color.dark)};`).join('');
-  return `:root{${light}}.dark{${dark}}`;
-}
+export const kindColorCss = (model: Model): string => coreKindColorCss(model.profile);
 
 // Sets the dark class before the first paint, from the colour scheme of the system.
 const THEME_SCRIPT = `(function(){var m=window.matchMedia('(prefers-color-scheme: dark)');function a(){document.documentElement.classList.toggle('dark',m.matches)}a();m.addEventListener('change',a)})();`;
 
 const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
-export async function renderPage(model: Model): Promise<string> {
+// A workspace page holds `{ title, graphs }`. A page of 1 graph holds the model itself.
+export async function renderPage(data: Model | WorkspaceData): Promise<string> {
   const { js, css } = await loadAssets();
+  const workspace = 'graphs' in data;
+  const first = workspace ? data.graphs[0].model : data;
+  const title = workspace ? data.title : data.profile.project;
   return [
     '<!doctype html>',
     '<html lang="en">',
     '<head>',
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    `<title>Semspec – ${escapeHtml(model.profile.project)}</title>`,
+    `<title>Semspec – ${escapeHtml(title)}</title>`,
     `<script>${THEME_SCRIPT}</script>`,
     `<style>${inlineStyle(css)}</style>`,
-    `<style>${inlineStyle(kindColorCss(model))}</style>`,
+    `<style>${inlineStyle(kindColorCss(first))}</style>`,
     '</head>',
     '<body>',
     '<div id="root"></div>',
-    `<script type="application/json" id="graph-data">${jsonForHtml(model)}</script>`,
+    `<script type="application/json" id="graph-data">${jsonForHtml(data)}</script>`,
     `<script>${inlineScript(js)}</script>`,
     '</body>',
     '</html>',
