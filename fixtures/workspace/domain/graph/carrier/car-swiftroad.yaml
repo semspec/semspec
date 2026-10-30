@@ -1,0 +1,20 @@
+id: "car-swiftroad"
+kind: "carrier"
+name: "Swiftroad"
+summary: "Carrier with a wide road network."
+segment: "logistics"
+ownedBy:
+  - { id: "grp-tessel", share: 0.4, since: "2020", how: "reported", source: "src-carrier-register", retrieved: "2026-02-18", agent: "analyst-b" }
+operatesIn:
+  - { id: "mkt-alderland", status: "active", since: "2012", how: "verified", source: "src-carrier-register", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-brightmark", status: "active", since: "2014", how: "verified", source: "src-carrier-register", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-calder", status: "active", since: "2018", how: "verified", source: "src-carrier-register", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-dunmere", status: "pilot", since: "2025", how: "reported", source: "src-carrier-register", retrieved: "2026-03-20", agent: "analyst-a" }
+offers:
+  - { id: "del-home", status: "active", how: "verified", source: "src-carrier-register", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "del-express", status: "active", how: "verified", source: "src-carrier-register", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "del-locker", status: "active", how: "verified", source: "src-carrier-register", retrieved: "2026-04-14", agent: "analyst-a" }
+how: "verified"
+source: "src-carrier-register"
+retrieved: "2026-03-20"
+agent: "analyst-a"

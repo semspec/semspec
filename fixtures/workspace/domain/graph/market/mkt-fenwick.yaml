@@ -1,0 +1,15 @@
+id: "mkt-fenwick"
+kind: "market"
+name: "Fenwick Isles"
+summary: "A market of online retail in the Coastal Union."
+inZone: ["zone-coast"]
+supervisedBy:
+  - { id: "auth-coast", since: "2019", how: "verified", source: "src-authority-bulletin", retrieved: "2026-02-02", agent: "analyst-b" }
+boundBy:
+  - { id: "rule-refund", since: "2019", how: "reported", source: "src-authority-bulletin", retrieved: "2026-03-11", agent: "analyst-a" }
+  - { id: "rule-price", since: "2015", how: "reported", source: "src-authority-bulletin", retrieved: "2026-03-11", agent: "analyst-a" }
+  - { id: "rule-warranty", since: "2018", how: "reported", source: "src-authority-bulletin", retrieved: "2026-03-11", agent: "analyst-a" }
+how: "reported"
+source: "src-authority-bulletin"
+retrieved: "2026-03-11"
+agent: "analyst-a"

@@ -1,0 +1,8 @@
+id: "cat-grocery"
+kind: "category"
+name: "Grocery"
+summary: "Food and drink for the home."
+how: "verified"
+source: "src-market-survey"
+retrieved: "2026-04-02"
+agent: "analyst-b"

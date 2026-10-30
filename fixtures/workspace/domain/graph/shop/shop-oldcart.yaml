@@ -1,0 +1,18 @@
+id: "shop-oldcart"
+kind: "shop"
+name: "Oldcart"
+summary: "Former general shop, merged into Brightcart."
+segment: "retail"
+state: "closed"
+ownedBy:
+  - { id: "grp-veldt", share: 1.0, since: "2012", how: "verified", source: "src-veldt-report", retrieved: "2026-02-18", agent: "register-import" }
+operatesIn:
+  - { id: "mkt-alderland", status: "closed", since: "2012", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+usesProvider:
+  - { id: "prov-payvale", since: "2014", share: 1.0, how: "verified", source: "src-market-survey", retrieved: "2026-03-24", agent: "analyst-b" }
+succeededBy:
+  - { id: "shop-brightcart", date: "2021-06", reason: "The group merged the two shops under one brand.", how: "verified", source: "src-merger-notice", retrieved: "2026-02-18", agent: "register-import" }
+how: "verified"
+source: "src-merger-notice"
+retrieved: "2026-03-20"
+agent: "analyst-a"

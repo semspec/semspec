@@ -1,0 +1,8 @@
+id: "del-pickup"
+kind: "delivery"
+name: "Pickup in store"
+summary: "The buyer collects the order at a shop."
+how: "verified"
+source: "src-market-survey"
+retrieved: "2026-04-02"
+agent: "analyst-b"

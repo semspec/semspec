@@ -1,0 +1,6 @@
+id: "src-provider-directory"
+kind: "source"
+name: "Payment Provider Directory 2026"
+summary: "List of licensed payment providers."
+url: "https://example.org/documents/provider-directory"
+publisher: "Example Press"

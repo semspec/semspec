@@ -1,0 +1,24 @@
+id: "shop-greenbasket"
+kind: "shop"
+name: "Greenbasket Foods"
+summary: "Grocery shop with fresh food."
+segment: "grocery"
+ownedBy:
+  - { id: "grp-tessel", share: 0.65, since: "2022", how: "reported", source: "src-trade-gazette", retrieved: "2026-02-18", agent: "analyst-b" }
+operatesIn:
+  - { id: "mkt-fenwick", status: "active", since: "2022", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-eastreach", status: "active", since: "2023", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+usesProvider:
+  - { id: "prov-payvale", since: "2022", share: 1.0, how: "verified", source: "src-market-survey", retrieved: "2026-03-24", agent: "analyst-b" }
+  - { id: "car-hollin", since: "2022", share: 1.0, how: "verified", source: "src-market-survey", retrieved: "2026-03-24", agent: "analyst-b" }
+offers:
+  - { id: "cat-fresh", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "cat-grocery", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "del-home", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "del-express", status: "pilot", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "pay-card", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "pay-voucher", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+how: "reported"
+source: "src-trade-gazette"
+retrieved: "2026-03-20"
+agent: "analyst-a"

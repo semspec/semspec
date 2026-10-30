@@ -1,0 +1,15 @@
+id: "prov-quillpay"
+kind: "provider"
+name: "Quillpay"
+summary: "Wallet provider with a low fee."
+segment: "payments"
+operatesIn:
+  - { id: "mkt-eastreach", status: "active", since: "2021", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-dunmere", status: "active", since: "2022", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-fenwick", status: "pilot", since: "2024", how: "reported", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+offers:
+  - { id: "pay-wallet", status: "active", how: "verified", source: "src-provider-directory", retrieved: "2026-04-14", agent: "analyst-a" }
+how: "reported"
+source: "src-market-survey"
+retrieved: "2026-03-20"
+agent: "analyst-a"

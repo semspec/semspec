@@ -1,0 +1,8 @@
+id: "pay-invoice"
+kind: "method"
+name: "Pay by invoice"
+summary: "The buyer pays after the goods arrive."
+how: "verified"
+source: "src-provider-directory"
+retrieved: "2026-04-09"
+agent: "analyst-a"

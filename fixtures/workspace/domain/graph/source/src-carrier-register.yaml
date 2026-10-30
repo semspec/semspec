@@ -1,0 +1,6 @@
+id: "src-carrier-register"
+kind: "source"
+name: "Carrier Register 2026"
+summary: "Public list of licensed carriers and their routes."
+url: "https://example.org/documents/carrier-register"
+publisher: "Example Press"

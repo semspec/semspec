@@ -1,0 +1,12 @@
+id: "rule-warranty"
+kind: "rule"
+name: "Goods Guarantee Rule"
+summary: "The seller answers for faults in goods for a set period."
+enacted: "2017"
+basis:
+  - { ruling: { court: "Basin Court" } }
+  - { guideline: {  } }
+how: "verified"
+source: "src-consumer-code"
+retrieved: "2026-01-15"
+agent: "analyst-a"

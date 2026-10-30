@@ -1,0 +1,9 @@
+id: "cat-fresh"
+kind: "category"
+name: "Fresh food"
+summary: "Fruit, vegetables and dairy."
+broader: ["cat-grocery"]
+how: "verified"
+source: "src-market-survey"
+retrieved: "2026-04-02"
+agent: "analyst-b"

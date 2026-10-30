@@ -546,11 +546,13 @@ describe('Turtle', () => {
   });
   it('turns a cross link of the workspace into an object property to the node of the other graph', () => {
     const ds = datasetOf(workspace.graphs.map((g) => ({ id: g.id, model: g.model, name: g.id, resolveCross: (graph: string, id: string) => `x:${graph}/${id}` })));
-    const req = ds.graphs[0].triples.filter((t) => t.p.endsWith('/field/terms'));
+    const req = ds.graphs[0].triples.filter((t) => t.p.endsWith('/field/concerns'));
     expect(req.length).toBeGreaterThan(0);
     expect(req.every((t) => t.o.t === 'iri' && t.o.v.startsWith('x:domain/'))).toBe(true);
     const text = targets.find((t) => t.name === 'workspace')!.text;
-    expect(text).toMatch(/urn:semspec:domain:aggregate\//);
+    expect(text).toContain('<https://example.org/retail/shop/shop-brightcart>');
+    expect(text).toContain('<https://example.org/shop/story/story-pay-by-card>');
+    expect(text).toContain('schema:Store');
   });
 });
 
@@ -619,7 +621,8 @@ describe('SHACL', () => {
     const text = exportWorkspace(workspace, 'shacl');
     parseTurtle(text);
     const kinds = workspace.graphs.reduce((n, g) => n + g.model.profile.kinds.length, 0);
-    expect(new Set(text.match(/sh:targetClass [^ ]+/g)).size).toBeGreaterThanOrEqual(kinds - 1);
+    // The 4 organisation kinds of the retail market profile share the class schema:Organization.
+    expect(new Set(text.match(/sh:targetClass [^ ]+/g)).size).toBeGreaterThanOrEqual(kinds - 4);
     expect((text.match(/sh:targetClass/g) ?? []).length).toBe(kinds);
   });
 });

@@ -1,0 +1,9 @@
+id: "cat-furniture"
+kind: "category"
+name: "Furniture"
+summary: "Tables, chairs and beds."
+broader: ["cat-home"]
+how: "verified"
+source: "src-market-survey"
+retrieved: "2026-04-02"
+agent: "analyst-b"

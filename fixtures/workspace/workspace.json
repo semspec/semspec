@@ -2,6 +2,6 @@
   "title": "Shop workspace",
   "graphs": [
     { "id": "req", "label": "Requirements", "graph": "product/graph.json", "profile": "product/profile.json" },
-    { "id": "domain", "label": "Domain model", "graph": "domain/graph", "profile": "domain/profile.yaml" }
+    { "id": "domain", "label": "Retail market", "graph": "domain/graph", "profile": "domain/profile.yaml" }
   ]
 }

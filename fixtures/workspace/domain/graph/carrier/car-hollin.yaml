@@ -1,0 +1,16 @@
+id: "car-hollin"
+kind: "carrier"
+name: "Hollin Freight"
+summary: "Carrier for large and heavy parcels."
+segment: "logistics"
+operatesIn:
+  - { id: "mkt-calder", status: "active", since: "2015", how: "verified", source: "src-carrier-register", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-dunmere", status: "active", since: "2016", how: "verified", source: "src-carrier-register", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-fenwick", status: "active", since: "2020", how: "verified", source: "src-carrier-register", retrieved: "2026-03-20", agent: "analyst-a" }
+offers:
+  - { id: "del-home", status: "active", how: "verified", source: "src-carrier-register", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "del-pickup", status: "active", how: "reported", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+how: "verified"
+source: "src-carrier-register"
+retrieved: "2026-03-20"
+agent: "analyst-a"

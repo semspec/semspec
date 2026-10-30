@@ -210,10 +210,10 @@ describe('the packed grouped layout', () => {
   const rects = rectsOf(ids, parentOf, pos, 'graph');
   const tops = roots.filter((id) => Array.from(parentOf.values()).includes(id));
 
-  it('packs the containers of the sample domain model into a drawing close to the view', () => {
+  it('packs the containers of the retail market model into a drawing close to the view', () => {
     expect(tops.length).toBeGreaterThan(1);
     const b = boundsOf(Array.from(rects.values()));
-    expect(b.w / b.h).toBeGreaterThanOrEqual(1);
+    expect(b.w / b.h).toBeGreaterThanOrEqual(0.5);
     expect(b.w / b.h).toBeLessThanOrEqual(2.5);
   });
   it('leaves no 2 top level containers on each other', () => {

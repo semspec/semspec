@@ -1,0 +1,9 @@
+id: "cat-clothing"
+kind: "category"
+name: "Clothing"
+summary: "Clothes for all ages."
+broader: ["cat-fashion"]
+how: "verified"
+source: "src-market-survey"
+retrieved: "2026-04-02"
+agent: "analyst-b"

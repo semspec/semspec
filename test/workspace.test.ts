@@ -5,7 +5,7 @@ import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { buildIndex, buildModel, checkCrossLinks, incomingCrossLinks, type Graph, type Profile, type WorkspaceData } from '@core/index';
+import { buildIndex, buildModel, checkCrossLinks, fieldLabel, incomingCrossLinks, propertyLabel, type Graph, type Profile, type WorkspaceData } from '@core/index';
 import { findContainers } from '../src/app/lib/layouts';
 import { run, startWorkspaceServer } from '../src/cli/index';
 import { loadWorkspace } from '../src/cli/workspace';
@@ -46,18 +46,12 @@ describe('the workspace file', () => {
     expect(data.title).toBe('Shop workspace');
     expect(data.graphs.map((g) => [g.id, g.label])).toEqual([
       ['req', 'Requirements'],
-      ['domain', 'Domain model'],
+      ['domain', 'Retail market'],
     ]);
     const links = data.graphs[0].model.crossLinks;
-    expect(links.length).toBe(25);
-    expect(links.filter((c) => c.s === 'story-pay-by-card').map((c) => c.t)).toEqual([
-      'ent-payment',
-      'vo-card-details',
-      'cmd-capture-payment',
-      'evt-payment-captured',
-      'evt-payment-declined',
-    ]);
-    expect(links.every((c) => c.field === 'terms' && c.graph === 'domain')).toBe(true);
+    expect(links.length).toBe(37);
+    expect(links.filter((c) => c.s === 'story-pay-by-card').map((c) => c.t)).toEqual(['pay-card', 'prov-payvale', 'prov-tillpay', 'prov-quillpay']);
+    expect(links.every((c) => c.field === 'concerns' && c.graph === 'domain')).toBe(true);
     expect(data.graphs[1].model.crossLinks).toEqual([]);
   });
   it('refuses a graph id that appears twice', () => {
@@ -78,17 +72,17 @@ describe('the workspace file', () => {
   });
   it('refuses a cross link to a graph that the workspace does not have', () => {
     const file = copyWorkspace((ws) => (ws.graphs = ws.graphs.slice(0, 1)));
-    expect(() => loadWorkspace(file)).toThrow(/Graph "req": the cross link "terms" names the unknown graph "domain"/);
+    expect(() => loadWorkspace(file)).toThrow(/Graph "req": the cross link "concerns" names the unknown graph "domain"/);
   });
   it('warns about a cross link to a node that the target graph does not have', () => {
     const dir = tmp();
     cpSync(fixtures, dir, { recursive: true });
     const graph = json<{ nodes: Record<string, unknown>[] }>('product/graph.json');
-    graph.nodes.find((n) => n.id === 'epic-checkout')!.terms = ['ent-basket', 'missing-term'];
+    graph.nodes.find((n) => n.id === 'epic-checkout')!.concerns = ['pay-card', 'missing-term'];
     writeFileSync(join(dir, 'product', 'graph.json'), JSON.stringify(graph));
     const { warnings } = loadWorkspace(join(dir, 'workspace.json'));
     expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toMatch(/Graph "req": 1 cross link\(s\) in "terms" name a node that is not in the graph "domain" \("missing-term"\)/);
+    expect(warnings[0]).toMatch(/Graph "req": 1 cross link\(s\) in "concerns" name a node that is not in the graph "domain" \("missing-term"\)/);
   });
   it('excludes paths of a graph folder with the exclude option', () => {
     const dir = tmp();
@@ -108,37 +102,81 @@ describe('the workspace file', () => {
   });
 });
 
-describe('the domain model of the workspace', () => {
-  const { data } = loadWorkspace(workspacePath);
+describe('the retail market model of the workspace', () => {
+  const { data, warnings } = loadWorkspace(workspacePath);
   const domain = data.graphs[1];
+  const profile = domain.model.profile;
   const count = (kind: string) => domain.model.nodes.filter((n) => n.kind === kind).length;
+  const index = buildIndex(domain.model);
+  const edge = (s: string, k: string, t: string) => index.out.get(s)!.find((e) => e.k === k && e.t === t);
 
-  it('has 45 nodes in 7 kinds', () => {
-    expect(domain.model.nodes.length).toBe(45);
-    expect(['context', 'aggregate', 'entity', 'value', 'command', 'query', 'event'].map(count)).toEqual([3, 6, 8, 8, 8, 4, 8]);
+  it('has 78 nodes in 14 kinds and no validation warning', () => {
+    expect(warnings).toEqual([]);
+    expect(domain.model.nodes.length).toBe(78);
+    const kinds = ['group', 'shop', 'marketplace', 'provider', 'carrier', 'zone', 'market', 'authority', 'category', 'delivery', 'method', 'rule', 'article', 'source'];
+    expect(kinds.map(count)).toEqual([3, 6, 2, 4, 3, 3, 6, 3, 12, 4, 4, 6, 14, 8]);
     expect(domain.model.unresolved).toEqual([]);
   });
-  it('shows the containers of the grouped layout for 1 aggregate', () => {
-    expect(domain.model.profile.layout).toEqual({ default: 'grouped', groupEdge: 'partOf' });
+  it('shows the zones as containers of the markets in the grouped layout', () => {
+    expect(profile.layout).toEqual({ default: 'grouped', groupEdge: 'inZone' });
     const ids = domain.model.nodes.map((n) => n.id);
-    const found = findContainers(ids, domain.model.edges, 'partOf');
-    expect(found.parentOf.get('agg-payment')).toBe('ctx-payments');
-    expect(found.parentOf.get('cmd-capture-payment')).toBe('agg-payment');
-    expect(found.children.get('agg-payment')!.sort()).toEqual([
-      'cmd-capture-payment', 'cmd-request-payment', 'ent-payment', 'evt-payment-captured', 'evt-payment-declined', 'qry-get-payment', 'vo-card-details', 'vo-money',
+    const found = findContainers(ids, domain.model.edges, 'inZone');
+    expect(found.parentOf.get('mkt-alderland')).toBe('zone-north');
+    expect(found.children.get('zone-coast')!.sort()).toEqual(['mkt-eastreach', 'mkt-fenwick']);
+    expect(found.roots.filter((id) => found.children.has(id)).sort()).toEqual(['zone-central', 'zone-coast', 'zone-north']);
+  });
+  it('keeps the properties of an edge, with the provenance of the edge', () => {
+    expect(edge('shop-brightcart', 'operatesIn', 'mkt-calder')!.p).toMatchObject({ status: 'pilot', since: '2025', how: 'verified', source: 'src-market-survey' });
+    expect(edge('shop-brightcart', 'ownedBy', 'grp-veldt')!.p).toMatchObject({ share: 0.8, since: '2019' });
+    expect(edge('shop-brightcart', 'usesProvider', 'car-swiftroad')!.p).toMatchObject({ share: 0.7, since: '2019' });
+    expect(edge('shop-oldcart', 'succeededBy', 'shop-brightcart')!.p).toMatchObject({ date: '2021-06' });
+    expect(edge('mkt-calder', 'supervisedBy', 'auth-north')).toBeDefined();
+    expect(index.out.get('mkt-calder')!.filter((e) => e.k === 'supervisedBy').length).toBe(2);
+  });
+  it('declares from, to and typed properties for every edge', () => {
+    for (const [name, spec] of Object.entries(profile.edges)) {
+      expect(spec.from?.length, name).toBeGreaterThan(0);
+      expect(spec.to?.length, name).toBeGreaterThan(0);
+    }
+    expect(profile.edges.operatesIn.properties).toMatchObject({ status: { type: 'string', vocabulary: 'status', required: true }, since: { type: 'date', required: true } });
+    expect(profile.edges.ownedBy.to).toEqual(['group']);
+    expect(profile.edges.broader.from).toEqual(['category']);
+  });
+  it('builds the category taxonomy in 3 levels and the articles of a rule', () => {
+    expect(edge('cat-running-shoes', 'broader', 'cat-footwear')).toBeDefined();
+    expect(edge('cat-footwear', 'broader', 'cat-fashion')).toBeDefined();
+    expect(domain.model.nodes.filter((n) => n.kind === 'category' && !n.parents.length).length).toBe(4);
+    expect(edge('art-refund-time', 'inRule', 'rule-refund')).toBeDefined();
+    expect(domain.model.nodes.filter((n) => n.kind === 'article' && n.parents.includes('rule-refund')).length).toBe(3);
+  });
+  it('gives each coded field a vocabulary with labels, and the segments a broader level', () => {
+    expect(fieldLabel(profile, 'state', 'pilot')).toBe('Pilot');
+    expect(fieldLabel(profile, 'segment', 'fashion')).toBe('Fashion retail');
+    expect(fieldLabel(profile, 'zoneCode', 'coa')).toBe('COA');
+    expect(profile.vocabularies!.segment.concepts.find((c) => c.code === 'payments')!.broader).toBe('infrastructure');
+    expect(profile.vocabularies!.how.concepts.map((c) => c.code)).toEqual(['verified', 'reported', 'inferred']);
+    expect(propertyLabel(profile, 'operatesIn', 'status', 'suspended')).toBe('Suspended');
+  });
+  it('records the provenance marker of the nodes, and gives each verified fact a source', () => {
+    const marked = domain.model.nodes.filter((n) => n.kind !== 'source');
+    const by = (how: string) => marked.filter((n) => n.d.how === how);
+    expect(by('verified').length + by('reported').length + by('inferred').length).toBe(marked.length);
+    expect(by('verified').length).toBeGreaterThan(by('reported').length);
+    expect(by('inferred').length).toBeGreaterThan(0);
+    expect(by('verified').every((n) => typeof n.d.source === 'string')).toBe(true);
+    expect(profile.provenance!.requireSource).toEqual(['verified']);
+    expect(edge('art-withdrawal-period', 'derivedFrom', 'src-consumer-code')).toBeDefined();
+  });
+  it('keeps the basis of a rule as a tagged list with the keys as filter values', () => {
+    const rule = domain.model.nodes.find((n) => n.id === 'rule-warranty')!;
+    expect(rule.d.basis).toEqual([{ ruling: { court: 'Basin Court' } }, { guideline: {} }]);
+    expect(profile.fieldFilters!.find((f) => f.field === 'basis')).toMatchObject({ from: 'keys' });
+  });
+  it('maps some kinds to schema.org classes, with a base IRI under example.org', () => {
+    expect(profile.iri!.base).toBe('https://example.org/retail/');
+    expect(profile.kinds.filter((k) => k.iri?.startsWith('schema:')).map((k) => k.iri!).sort()).toEqual([
+      'schema:Legislation', 'schema:Organization', 'schema:Organization', 'schema:Organization', 'schema:Organization', 'schema:Place', 'schema:Product', 'schema:Store',
     ]);
-    expect(found.roots.sort()).toEqual(['ctx-catalogue', 'ctx-ordering', 'ctx-payments']);
-  });
-  it('links a command to its events and an event to a handler in another context', () => {
-    const index = buildIndex(domain.model);
-    expect(index.out.get('cmd-capture-payment')!.filter((e) => e.k === 'emits').map((e) => e.t).sort()).toEqual(['evt-payment-captured', 'evt-payment-declined']);
-    expect(index.out.get('evt-order-placed')!.filter((e) => e.k === 'handledBy').map((e) => e.t)).toEqual(['cmd-request-payment']);
-    expect(index.out.get('ent-payment')!.some((e) => e.k === 'refs' && e.t === 'ent-order' && e.n === 'refers to')).toBe(true);
-  });
-  it('keeps the standard anchors of a term as a tagged list with the keys as filter values', () => {
-    const money = domain.model.nodes.find((n) => n.id === 'vo-money')!;
-    expect(money.d.anchors).toEqual([{ 'std-pay': { element: 'Amount' } }, { 'std-ccy': { element: 'Currency code' } }]);
-    expect(domain.model.profile.fieldFilters![0]).toMatchObject({ field: 'anchors', from: 'keys' });
   });
 });
 
@@ -147,26 +185,28 @@ describe('the cross links in the model', () => {
   const [req, domain] = data.graphs;
 
   it('stay apart from the edges of the graph', () => {
-    expect(req.model.edges.some((e) => e.k === 'terms')).toBe(false);
+    expect(req.model.edges.some((e) => e.k === 'concerns')).toBe(false);
     expect(req.model.unresolved).toEqual([]);
   });
   it('give each node of the index a list of outgoing cross links', () => {
     const index = buildIndex(req.model);
-    expect(index.crossOut.get('story-pay-by-card')!.map((c) => c.t).slice(0, 2)).toEqual(['ent-payment', 'vo-card-details']);
+    expect(index.crossOut.get('story-pay-by-card')!.map((c) => c.t).slice(0, 2)).toEqual(['pay-card', 'prov-payvale']);
     expect(index.crossOut.get('prd-shop')).toBeUndefined();
   });
   it('give the incoming cross links of each target node across the workspace', () => {
     const incoming = incomingCrossLinks(data.graphs);
-    const card = incoming.get('domain')!.get('vo-card-details')!;
-    expect(card.map((c) => c.s)).toEqual(['story-pay-by-card', 'story-save-card']);
-    expect(card[0]).toEqual({ graph: 'req', s: 'story-pay-by-card', field: 'terms', label: 'Uses term' });
-    expect(incoming.get('domain')!.get('ent-refund')).toBeUndefined();
-    expect(incoming.get('domain')!.size).toBeGreaterThanOrEqual(15);
+    const refund = incoming.get('domain')!.get('rule-refund')!;
+    expect(refund.map((c) => c.s)).toEqual(['story-loose-child']);
+    expect(refund[0]).toEqual({ graph: 'req', s: 'story-loose-child', field: 'concerns', label: 'Concerns' });
+    const card = incoming.get('domain')!.get('pay-card')!;
+    expect(card.map((c) => c.s)).toEqual(['epic-checkout', 'story-pay-by-card', 'story-pay-by-card-3ds', 'story-save-card', 'story-loose-child', 'dec-use-psp']);
+    expect(incoming.get('domain')!.get('rule-warranty')).toBeUndefined();
+    expect(incoming.get('domain')!.size).toBeGreaterThanOrEqual(20);
     expect(incoming.get('req')!.size).toBe(0);
   });
   it('leave a link to a missing node out of the incoming links and report it as a warning', () => {
     const graph = json<{ nodes: Record<string, unknown>[] }>('product/graph.json');
-    graph.nodes[1].terms = ['nothing'];
+    graph.nodes[1].concerns = ['nothing'];
     const model = buildModel(graph, req.model.profile);
     const graphs = [{ ...req, model }, domain];
     expect(incomingCrossLinks(graphs).get('domain')!.has('nothing')).toBe(false);
@@ -175,7 +215,7 @@ describe('the cross links in the model', () => {
     expect(checked.warnings.some((w) => w.includes('"nothing"'))).toBe(true);
   });
   it('report a link to an unknown graph as an error', () => {
-    expect(checkCrossLinks([req]).errors).toEqual(['Graph "req": the cross link "terms" names the unknown graph "domain"']);
+    expect(checkCrossLinks([req]).errors).toEqual(['Graph "req": the cross link "concerns" names the unknown graph "domain"']);
   });
 });
 
@@ -189,8 +229,8 @@ describe('the cross link fields in the inputs', () => {
     expect(validateProfile(bad).join()).toMatch(/also a parent or link field/);
   });
   it('refuse a cross link field that is not a list of ids', () => {
-    const graph: Graph = { nodes: [{ id: 'a', kind: 'epic', terms: 'basket' }] };
-    expect(validateGraph(graph, profile).errors.join()).toMatch(/Cross link field "terms" of "a" is not a list of ids/);
+    const graph: Graph = { nodes: [{ id: 'a', kind: 'epic', concerns: 'pay-card' }] };
+    expect(validateGraph(graph, profile).errors.join()).toMatch(/Cross link field "concerns" of "a" is not a list of ids/);
   });
 });
 
@@ -211,8 +251,8 @@ describe('the workspace on the command line', () => {
     expect(data.graphs.map((g) => g.id)).toEqual(['req', 'domain']);
     const ids = (i: number) => new Set(data.graphs[i].model.nodes.map((n) => n.id));
     expect(ids(0).has('story-pay-by-card')).toBe(true);
-    expect(ids(1).has('ent-basket')).toBe(true);
-    expect(data.graphs[0].model.crossLinks.length).toBe(25);
+    expect(ids(1).has('pay-card')).toBe(true);
+    expect(data.graphs[0].model.crossLinks.length).toBe(37);
   });
   it('serves the workspace page with the serve command', async () => {
     const server = await startWorkspaceServer(workspacePath, 0, '127.0.0.1');

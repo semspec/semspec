@@ -1,7 +1,0 @@
-id: "vo-price"
-kind: "value"
-term: "Price"
-definition: "The money for one unit of a product on one day."
-partOf: ["agg-product"]
-refs:
-  - { to: vo-money, relation: "is a" }

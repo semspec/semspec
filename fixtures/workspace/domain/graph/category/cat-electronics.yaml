@@ -1,0 +1,8 @@
+id: "cat-electronics"
+kind: "category"
+name: "Electronics"
+summary: "Devices and accessories."
+how: "verified"
+source: "src-market-survey"
+retrieved: "2026-04-02"
+agent: "analyst-b"

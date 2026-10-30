@@ -1,0 +1,12 @@
+id: "rule-refund"
+kind: "rule"
+name: "Prompt Refund Rule"
+summary: "The seller returns the money within a fixed time after a cancellation."
+enacted: "2018"
+basis:
+  - { statute: { year: "2018" } }
+  - { guideline: {  } }
+how: "verified"
+source: "src-consumer-code"
+retrieved: "2026-01-15"
+agent: "analyst-a"

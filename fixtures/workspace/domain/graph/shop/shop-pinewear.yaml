@@ -1,0 +1,26 @@
+id: "shop-pinewear"
+kind: "shop"
+name: "Pinewear"
+summary: "Shop for outdoor clothes and shoes."
+segment: "fashion"
+ownedBy:
+  - { id: "grp-marlow", share: 1.0, since: "2017", how: "verified", source: "src-trade-gazette", retrieved: "2026-02-18", agent: "register-import" }
+operatesIn:
+  - { id: "mkt-brightmark", status: "active", since: "2017", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-eastreach", status: "active", since: "2019", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-fenwick", status: "pilot", since: "2025", how: "reported", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+usesProvider:
+  - { id: "prov-payvale", since: "2017", share: 0.5, how: "verified", source: "src-market-survey", retrieved: "2026-03-24", agent: "analyst-b" }
+  - { id: "prov-quillpay", since: "2023", share: 0.5, how: "verified", source: "src-market-survey", retrieved: "2026-03-24", agent: "analyst-b" }
+  - { id: "car-swiftroad", since: "2017", share: 1.0, how: "verified", source: "src-market-survey", retrieved: "2026-03-24", agent: "analyst-b" }
+offers:
+  - { id: "cat-clothing", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "cat-running-shoes", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "del-home", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "del-pickup", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "pay-card", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "pay-wallet", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+how: "verified"
+source: "src-trade-gazette"
+retrieved: "2026-03-20"
+agent: "analyst-a"

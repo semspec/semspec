@@ -1,8 +1,0 @@
-id: "vo-product-code"
-kind: "value"
-term: "Product code"
-definition: "A short text that names one product. It never changes."
-avoid: ["SKU"]
-partOf: ["agg-product"]
-anchors:
-  - std-code: { element: "Product code" }

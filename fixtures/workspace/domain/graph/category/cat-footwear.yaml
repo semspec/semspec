@@ -1,0 +1,9 @@
+id: "cat-footwear"
+kind: "category"
+name: "Footwear"
+summary: "Shoes and boots."
+broader: ["cat-fashion"]
+how: "verified"
+source: "src-market-survey"
+retrieved: "2026-04-02"
+agent: "analyst-b"

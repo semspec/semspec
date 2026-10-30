@@ -1,8 +1,0 @@
-id: "cmd-add-to-basket"
-kind: "command"
-term: "Add item to basket"
-definition: "The buyer puts a product in the basket."
-partOf: ["agg-basket"]
-emits: ["evt-item-added"]
-refs:
-  - { to: ent-basket, relation: "changes" }

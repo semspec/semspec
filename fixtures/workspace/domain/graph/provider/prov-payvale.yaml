@@ -1,0 +1,17 @@
+id: "prov-payvale"
+kind: "provider"
+name: "Payvale"
+summary: "Card and wallet payment provider."
+segment: "payments"
+operatesIn:
+  - { id: "mkt-alderland", status: "active", since: "2012", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-brightmark", status: "active", since: "2015", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-fenwick", status: "active", since: "2020", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-eastreach", status: "active", since: "2019", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+offers:
+  - { id: "pay-card", status: "active", how: "verified", source: "src-provider-directory", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "pay-wallet", status: "active", how: "verified", source: "src-provider-directory", retrieved: "2026-04-14", agent: "analyst-a" }
+how: "verified"
+source: "src-provider-directory"
+retrieved: "2026-03-20"
+agent: "analyst-a"

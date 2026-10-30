@@ -1,0 +1,17 @@
+id: "car-parcelwing"
+kind: "carrier"
+name: "Parcelwing"
+summary: "Carrier of small parcels, sold in 2024."
+segment: "logistics"
+state: "closed"
+operatesIn:
+  - { id: "mkt-calder", status: "closed", since: "2016", how: "verified", source: "src-carrier-register", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-dunmere", status: "closed", since: "2018", how: "verified", source: "src-carrier-register", retrieved: "2026-03-20", agent: "analyst-a" }
+offers:
+  - { id: "del-locker", status: "closed", how: "verified", source: "src-carrier-register", retrieved: "2026-04-14", agent: "analyst-a" }
+succeededBy:
+  - { id: "car-swiftroad", date: "2024-01", reason: "Swiftroad bought the route network.", how: "reported", source: "src-authority-bulletin", retrieved: "2026-02-02", agent: "analyst-b" }
+how: "verified"
+source: "src-carrier-register"
+retrieved: "2026-03-20"
+agent: "analyst-a"

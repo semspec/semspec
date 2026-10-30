@@ -1,0 +1,17 @@
+id: "mkt-calder"
+kind: "market"
+name: "Calder Vale"
+summary: "A market of online retail in the Central Basin."
+inZone: ["zone-central"]
+supervisedBy:
+  - { id: "auth-central", since: "2010", how: "verified", source: "src-authority-bulletin", retrieved: "2026-02-02", agent: "analyst-b" }
+  - { id: "auth-north", since: "2022", how: "verified", source: "src-authority-bulletin", retrieved: "2026-02-02", agent: "analyst-b" }
+boundBy:
+  - { id: "rule-withdrawal", since: "2016", how: "verified", source: "src-consumer-code", retrieved: "2026-03-11", agent: "analyst-a" }
+  - { id: "rule-price", since: "2014", how: "verified", source: "src-consumer-code", retrieved: "2026-03-11", agent: "analyst-a" }
+  - { id: "rule-warranty", since: "2017", how: "verified", source: "src-consumer-code", retrieved: "2026-03-11", agent: "analyst-a" }
+  - { id: "rule-data", since: "2020", how: "verified", source: "src-consumer-code", retrieved: "2026-03-11", agent: "analyst-a" }
+how: "verified"
+source: "src-consumer-code"
+retrieved: "2026-03-11"
+agent: "analyst-a"

@@ -1,5 +1,0 @@
-id: "vo-synonym"
-kind: "value"
-term: "Synonym"
-definition: "One word in a synonym set."
-partOf: ["agg-synonyms"]

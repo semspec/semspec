@@ -1,7 +1,0 @@
-id: "evt-order-cancelled"
-kind: "event"
-term: "Order cancelled"
-definition: "An order is closed and it will not ship."
-trigger: "Cancel order"
-partOf: ["agg-order"]
-handledBy: ["cmd-issue-refund"]

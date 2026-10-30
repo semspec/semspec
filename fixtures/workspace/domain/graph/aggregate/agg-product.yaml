@@ -1,5 +1,0 @@
-id: "agg-product"
-kind: "aggregate"
-term: "Product aggregate"
-definition: "All data of one product in the catalogue."
-partOf: ["ctx-catalogue"]

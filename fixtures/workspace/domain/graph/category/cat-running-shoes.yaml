@@ -1,0 +1,9 @@
+id: "cat-running-shoes"
+kind: "category"
+name: "Running shoes"
+summary: "Shoes for road and trail."
+broader: ["cat-footwear"]
+how: "verified"
+source: "src-market-survey"
+retrieved: "2026-04-02"
+agent: "analyst-b"

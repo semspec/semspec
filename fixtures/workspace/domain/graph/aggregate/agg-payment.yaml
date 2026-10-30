@@ -1,5 +1,0 @@
-id: "agg-payment"
-kind: "aggregate"
-term: "Payment aggregate"
-definition: "All data of one payment for one order."
-partOf: ["ctx-payments"]

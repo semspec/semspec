@@ -1,0 +1,8 @@
+id: "cat-home"
+kind: "category"
+name: "Home and living"
+summary: "Items for the home."
+how: "verified"
+source: "src-market-survey"
+retrieved: "2026-04-02"
+agent: "analyst-b"

@@ -1,0 +1,7 @@
+id: "del-express"
+kind: "delivery"
+name: "Express delivery"
+summary: "The carrier delivers on the next day."
+how: "inferred"
+retrieved: "2026-04-02"
+agent: "analyst-b"

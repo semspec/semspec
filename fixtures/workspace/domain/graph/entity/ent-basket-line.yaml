@@ -1,8 +1,0 @@
-id: "ent-basket-line"
-kind: "entity"
-term: "Basket line"
-definition: "One product in a basket, with a quantity."
-partOf: ["agg-basket"]
-refs:
-  - { to: ent-product, relation: "refers to" }
-  - { to: vo-quantity, relation: "counts with" }

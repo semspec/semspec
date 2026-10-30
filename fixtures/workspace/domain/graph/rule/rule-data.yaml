@@ -1,0 +1,12 @@
+id: "rule-data"
+kind: "rule"
+name: "Buyer Data Rule"
+summary: "The shop keeps and uses buyer data only for the order."
+enacted: "2020"
+basis:
+  - { statute: { year: "2020" } }
+  - { guideline: {  } }
+how: "verified"
+source: "src-consumer-code"
+retrieved: "2026-01-15"
+agent: "analyst-a"

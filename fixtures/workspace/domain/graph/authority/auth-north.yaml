@@ -1,0 +1,8 @@
+id: "auth-north"
+kind: "authority"
+name: "Northern Trade Office"
+summary: "Supervises shops and marketplaces in the Northern Belt."
+how: "verified"
+source: "src-authority-bulletin"
+retrieved: "2026-02-02"
+agent: "analyst-b"

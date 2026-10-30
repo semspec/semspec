@@ -1,9 +1,0 @@
-id: "ent-order-line"
-kind: "entity"
-term: "Order line"
-definition: "One product of an order. It keeps the price at the time of the order."
-partOf: ["agg-order"]
-refs:
-  - { to: ent-product, relation: "refers to" }
-  - { to: vo-price, relation: "copies" }
-  - { to: vo-quantity, relation: "counts with" }

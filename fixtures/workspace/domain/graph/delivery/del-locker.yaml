@@ -1,0 +1,8 @@
+id: "del-locker"
+kind: "delivery"
+name: "Parcel locker"
+summary: "The buyer collects the parcel from a locker."
+how: "verified"
+source: "src-market-survey"
+retrieved: "2026-04-02"
+agent: "analyst-b"

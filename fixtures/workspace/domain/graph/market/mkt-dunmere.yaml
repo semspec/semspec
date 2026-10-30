@@ -1,0 +1,15 @@
+id: "mkt-dunmere"
+kind: "market"
+name: "Dunmere"
+summary: "A market of online retail in the Central Basin."
+inZone: ["zone-central"]
+supervisedBy:
+  - { id: "auth-central", since: "2014", how: "verified", source: "src-authority-bulletin", retrieved: "2026-02-02", agent: "analyst-b" }
+boundBy:
+  - { id: "rule-refund", since: "2019", how: "reported", source: "src-authority-bulletin", retrieved: "2026-03-11", agent: "analyst-a" }
+  - { id: "rule-warranty", since: "2018", how: "reported", source: "src-authority-bulletin", retrieved: "2026-03-11", agent: "analyst-a" }
+  - { id: "rule-delivery", since: "2022", how: "reported", source: "src-authority-bulletin", retrieved: "2026-03-11", agent: "analyst-a" }
+how: "reported"
+source: "src-authority-bulletin"
+retrieved: "2026-03-11"
+agent: "analyst-a"

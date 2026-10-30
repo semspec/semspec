@@ -1,0 +1,12 @@
+id: "rule-delivery"
+kind: "rule"
+name: "Delivery Time Rule"
+summary: "The seller delivers within the time that the order states."
+enacted: "2021"
+basis:
+  - { statute: { year: "2021" } }
+  - { guideline: {  } }
+how: "verified"
+source: "src-consumer-code"
+retrieved: "2026-01-15"
+agent: "analyst-a"

@@ -1,0 +1,11 @@
+id: "rule-price"
+kind: "rule"
+name: "Price Display Rule"
+summary: "The shop shows the full price before the buyer pays."
+enacted: "2014"
+basis:
+  - { guideline: {  } }
+how: "verified"
+source: "src-consumer-code"
+retrieved: "2026-01-15"
+agent: "analyst-a"

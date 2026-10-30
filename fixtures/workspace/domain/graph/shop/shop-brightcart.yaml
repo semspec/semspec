@@ -1,0 +1,27 @@
+id: "shop-brightcart"
+kind: "shop"
+name: "Brightcart"
+summary: "General online shop."
+segment: "retail"
+ownedBy:
+  - { id: "grp-veldt", share: 0.8, since: "2019", how: "verified", source: "src-veldt-report", retrieved: "2026-02-18", agent: "register-import" }
+operatesIn:
+  - { id: "mkt-alderland", status: "active", since: "2018", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-brightmark", status: "active", since: "2020", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-calder", status: "pilot", since: "2025", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+usesProvider:
+  - { id: "prov-payvale", since: "2019", share: 0.6, how: "verified", source: "src-market-survey", retrieved: "2026-03-24", agent: "analyst-b" }
+  - { id: "prov-tillpay", since: "2022", share: 0.4, how: "verified", source: "src-market-survey", retrieved: "2026-03-24", agent: "analyst-b" }
+  - { id: "car-swiftroad", since: "2019", share: 0.7, how: "verified", source: "src-market-survey", retrieved: "2026-03-24", agent: "analyst-b" }
+  - { id: "car-hollin", since: "2021", share: 0.3, how: "verified", source: "src-market-survey", retrieved: "2026-03-24", agent: "analyst-b" }
+offers:
+  - { id: "cat-electronics", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "cat-home", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "del-home", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "del-locker", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "pay-card", status: "active", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "pay-invoice", status: "pilot", how: "verified", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+how: "verified"
+source: "src-veldt-report"
+retrieved: "2026-03-20"
+agent: "analyst-a"

@@ -1,0 +1,8 @@
+id: "pay-wallet"
+kind: "method"
+name: "Wallet payment"
+summary: "The buyer pays from a stored balance in an app."
+how: "verified"
+source: "src-provider-directory"
+retrieved: "2026-04-09"
+agent: "analyst-a"

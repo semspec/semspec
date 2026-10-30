@@ -1,0 +1,8 @@
+id: "pay-card"
+kind: "method"
+name: "Card payment"
+summary: "The buyer pays with a card at once."
+how: "verified"
+source: "src-provider-directory"
+retrieved: "2026-04-09"
+agent: "analyst-a"

@@ -1,0 +1,16 @@
+id: "prov-tillpay"
+kind: "provider"
+name: "Tillpay"
+summary: "Card provider for the central markets."
+segment: "payments"
+operatesIn:
+  - { id: "mkt-calder", status: "active", since: "2016", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-dunmere", status: "active", since: "2017", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-alderland", status: "active", since: "2020", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+offers:
+  - { id: "pay-card", status: "active", how: "verified", source: "src-provider-directory", retrieved: "2026-04-14", agent: "analyst-a" }
+  - { id: "pay-voucher", status: "pilot", how: "reported", source: "src-market-survey", retrieved: "2026-04-14", agent: "analyst-a" }
+how: "verified"
+source: "src-provider-directory"
+retrieved: "2026-03-20"
+agent: "analyst-a"

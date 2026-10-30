@@ -1,0 +1,23 @@
+label: Status
+definition: Where an organisation, a service or an activity is in its life.
+concepts:
+  - code: planned
+    label: Planned
+    definition: The start is set for a later date.
+    order: 1
+  - code: pilot
+    label: Pilot
+    definition: The activity runs in a small test.
+    order: 2
+  - code: active
+    label: Active
+    definition: The activity runs in full.
+    order: 3
+  - code: suspended
+    label: Suspended
+    definition: The activity is paused and may start again.
+    order: 4
+  - code: closed
+    label: Closed
+    definition: The activity has ended.
+    order: 5

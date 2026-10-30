@@ -1,99 +1,166 @@
-project: Shop domain model
+project: Online retail market
+iri:
+  base: https://example.org/retail/
+  prefixes:
+    schema: https://schema.org/
+    ex: https://example.org/ns/
 source: { nodes: nodes, id: id, kind: kind }
 fields:
-  title: [term]
-  statement: [definition]
+  title: [name]
+  statement: [summary, text]
+  idPrefixPattern: "^[a-z]+-"
 lifecycle:
   field: state
-  fallback: stable
+  fallback: active
+  states:
+    closed: { muted: true }
 kinds:
-  - id: context
-    label: Context
-    plural: contexts
-    prefix: ctx-
-    role: hierarchy
-    color: { light: "#5f3dc4", dark: "#b197fc" }
-    chips: [members]
-  - id: aggregate
-    label: Aggregate
-    plural: aggregates
-    prefix: agg-
-    role: hierarchy
-    parents: [[partOf]]
-    color: { light: "#1971c2", dark: "#74c0fc" }
-    chips: [members]
-  - id: entity
-    label: Entity
-    plural: entities
-    prefix: ent-
-    role: hierarchy
-    parents: [[partOf]]
-    color: { light: "#2f9e44", dark: "#8ce99a" }
-    chips: [{ field: role, tone: good }]
-  - id: value
-    label: Value object
-    plural: value objects
-    prefix: vo-
-    role: hierarchy
-    parents: [[partOf]]
-    color: { light: "#0b7285", dark: "#66d9e8" }
-    chips: []
-  - id: command
-    label: Command
-    plural: commands
-    prefix: cmd-
-    role: hierarchy
-    parents: [[partOf]]
-    color: { light: "#d9480f", dark: "#ffa94d" }
-    chips: []
-  - id: query
-    label: Query
-    plural: queries
-    prefix: qry-
-    role: hierarchy
-    parents: [[partOf]]
-    color: { light: "#e67700", dark: "#ffd43b" }
-    chips: []
-  - id: event
-    label: Event
-    plural: events
-    prefix: evt-
-    role: hierarchy
-    parents: [[partOf]]
-    color: { light: "#c2255c", dark: "#f783ac" }
-    chips: [{ field: trigger, template: "after {value}", tone: plain }]
+  - { id: zone, label: Zone, plural: zones, prefix: zone-, role: hierarchy, color: { light: "#5f3dc4", dark: "#b197fc" }, chips: [members] }
+  - { id: market, label: Market, plural: markets, prefix: mkt-, role: hierarchy, parents: [[inZone]], iri: "schema:Place", color: { light: "#1971c2", dark: "#74c0fc" }, chips: [lifecycle, members] }
+  - { id: authority, label: Authority, plural: authorities, prefix: auth-, role: linked, color: { light: "#495057", dark: "#adb5bd" }, chips: [] }
+  - { id: group, label: Group, plural: groups, prefix: grp-, role: hierarchy, iri: "schema:Organization", color: { light: "#862e9c", dark: "#e599f7" }, chips: [{ field: segment }, members] }
+  - { id: shop, label: Shop, plural: shops, prefix: shop-, role: hierarchy, parents: [[ownedBy]], iri: "schema:Store", color: { light: "#2f9e44", dark: "#8ce99a" }, chips: [{ field: segment }, lifecycle] }
+  - { id: marketplace, label: Marketplace, plural: marketplaces, prefix: mp-, role: linked, parents: [[ownedBy]], iri: "schema:Organization", color: { light: "#0b7285", dark: "#66d9e8" }, chips: [{ field: segment }, lifecycle] }
+  - { id: provider, label: Payment provider, plural: payment providers, prefix: prov-, role: linked, iri: "schema:Organization", color: { light: "#d9480f", dark: "#ffa94d" }, chips: [{ field: segment }, lifecycle] }
+  - { id: carrier, label: Carrier, plural: carriers, prefix: car-, role: linked, parents: [[ownedBy]], iri: "schema:Organization", color: { light: "#e67700", dark: "#ffd43b" }, chips: [{ field: segment }, lifecycle] }
+  - { id: category, label: Category, plural: categories, prefix: cat-, role: linked, parents: [[broader]], iri: "schema:Product", color: { light: "#c2255c", dark: "#f783ac" }, chips: [members] }
+  - { id: delivery, label: Delivery option, plural: delivery options, prefix: del-, role: linked, color: { light: "#087f5b", dark: "#63e6be" }, chips: [] }
+  - { id: method, label: Payment method, plural: payment methods, prefix: pay-, role: linked, color: { light: "#a61e4d", dark: "#faa2c1" }, chips: [] }
+  - { id: rule, label: Rule, plural: rules, prefix: rule-, role: hierarchy, iri: "schema:Legislation", color: { light: "#9c36b5", dark: "#da77f2" }, chips: [{ field: enacted, template: "since {value}" }, members] }
+  - { id: article, label: Article, plural: articles, prefix: art-, role: hierarchy, parents: [[inRule]], color: { light: "#6741d9", dark: "#b197fc" }, chips: [{ field: number, template: "Art. {value}" }] }
+  - { id: source, label: Source, plural: sources, prefix: src-, role: linked, color: { light: "#6c757d", dark: "#ced4da" }, chips: [] }
 edges:
-  partOf: { labels: [Part of, Contains], down: true }
-  emits: { labels: [Emits, Emitted by] }
-  handledBy: { labels: [Handled by, Handles] }
-  refs: { labels: [Refers to, Referred from] }
-links: [emits, handledBy]
-refs: { field: refs, target: to, note: relation }
-layout: { default: grouped, groupEdge: partOf }
+  ownedBy:
+    labels: [Owned by, Owns]
+    down: true
+    iri: "schema:parentOrganization"
+    from: [shop, marketplace, provider, carrier]
+    to: [group]
+    properties:
+      share: { type: number, required: true, iri: "ex:share" }
+      since: { type: date, required: true }
+  inZone:
+    labels: [In zone, Contains market]
+    down: true
+    iri: "schema:containedInPlace"
+    from: [market]
+    to: [zone]
+  supervisedBy:
+    labels: [Supervised by, Supervises]
+    from: [market]
+    to: [authority]
+    properties:
+      since: { type: date }
+  boundBy:
+    labels: [Bound by, Binds]
+    from: [market]
+    to: [rule]
+    properties:
+      since: { type: date, required: true }
+  broader:
+    labels: [Broader category, Narrower category]
+    down: true
+    iri: "skos:broader"
+    from: [category]
+    to: [category]
+  inRule:
+    labels: [Article of, Has article]
+    down: true
+    from: [article]
+    to: [rule]
+  operatesIn:
+    labels: [Operates in, Hosts]
+    from: [shop, marketplace, provider, carrier]
+    to: [market]
+    properties:
+      status: { type: string, vocabulary: status, required: true }
+      since: { type: date, required: true }
+  usesProvider:
+    labels: [Uses, Used by]
+    from: [shop, marketplace]
+    to: [provider, carrier]
+    properties:
+      since: { type: date, required: true }
+      share: { type: number }
+  offers:
+    labels: [Offers, Offered by]
+    from: [shop, marketplace, provider, carrier]
+    to: [category, delivery, method]
+    properties:
+      status: { type: string, vocabulary: status, required: true }
+  succeededBy:
+    labels: [Succeeded by, Succeeds]
+    from: [shop, carrier]
+    to: [shop, carrier]
+    properties:
+      date: { type: date, required: true }
+      reason: { type: string }
+  derivedFrom:
+    labels: [Derived from, Source of]
+    from: [zone, market, authority, group, shop, marketplace, provider, carrier, category, delivery, method, rule, article]
+    to: [source]
+links: [supervisedBy, boundBy, operatesIn, usesProvider, offers, succeededBy]
+layout: { default: grouped, groupEdge: inZone }
+vocabularies:
+  status: { file: vocabularies/status.yaml }
+  segment:
+    label: Segment
+    definition: The line of business of an organisation.
+    concepts:
+      - { code: retail, label: Retail, definition: The organisation sells goods to buyers., order: 1 }
+      - { code: fashion, label: Fashion retail, definition: The organisation sells clothes and shoes., broader: retail, order: 2 }
+      - { code: electronics, label: Electronics retail, definition: The organisation sells devices., broader: retail, order: 3 }
+      - { code: grocery, label: Grocery retail, definition: The organisation sells food and drink., broader: retail, order: 4 }
+      - { code: home, label: Home retail, definition: The organisation sells items for the home., broader: retail, order: 5 }
+      - { code: platform, label: Marketplace platform, definition: The organisation lets other sellers list goods., order: 6 }
+      - { code: infrastructure, label: Commerce infrastructure, definition: The organisation serves shops and marketplaces., order: 7 }
+      - { code: payments, label: Payment services, definition: The organisation moves payments between buyer and seller., broader: infrastructure, order: 8 }
+      - { code: logistics, label: Logistics, definition: The organisation moves parcels to the buyer., broader: infrastructure, order: 9 }
+      - { code: holding, label: Holding, definition: The organisation owns other organisations., order: 10 }
+  how:
+    label: How known
+    definition: How an editor learned a fact.
+    concepts:
+      - { code: verified, label: Verified, definition: The editor checked the fact in a source., order: 1 }
+      - { code: reported, label: Reported, definition: A source or a person reports the fact. The editor did not check it., order: 2 }
+      - { code: inferred, label: Inferred, definition: The editor worked out the fact from other facts., order: 3 }
+  zones:
+    label: Zone code
+    definition: The short code of a zone.
+    concepts:
+      - { code: nor, label: NOR, definition: The code of the Northern Belt., order: 1 }
+      - { code: cen, label: CEN, definition: The code of the Central Basin., order: 2 }
+      - { code: coa, label: COA, definition: The code of the Coastal Union., order: 3 }
+fieldVocabularies: { state: status, segment: segment, zoneCode: zones }
+provenance:
+  label: How known
+  marker: { field: how, vocabulary: how }
+  source: { field: source, kind: source }
+  retrieved: retrieved
+  agent: agent
+  note: remark
+  requireSource: [verified]
 fieldFilters:
-  - field: anchors
-    label: Standard
-    from: keys
-    values:
-      std-pay: Payment message standard
-      std-ccy: Currency code standard
-      std-geo: Postal address standard
-      std-card: Card number standard
-      std-code: Product code standard
-      std-ord: Order message standard
+  - { field: segment, label: Segment }
+  - { field: zoneCode, label: Zone }
+  - { field: basis, label: Kind of rule, from: keys, values: { statute: Statute, guideline: Guideline, ruling: Court ruling } }
+embedded:
+  - { owner: article, field: rule, kind: rule, edge: inRule }
 groups:
-  hierarchy: Domain tree
+  hierarchy: Market tree
 details:
   properties:
-    - { label: Avoid, field: avoid, format: list }
-  statementTitle: { default: Definition }
+    - { label: Segment, field: segment }
+    - { label: Zone code, field: zoneCode }
+    - { label: Enacted, field: enacted }
+    - { label: Article number, field: number }
+    - { label: Publisher, field: publisher }
+    - { label: Link, field: url }
+  statementTitle: { default: Description, article: Text }
   taggedLists:
-    - title: Standard anchors
-      field: anchors
+    - title: Basis
+      field: basis
       labels:
-        std-pay.element: Payment message element
-        std-ccy.element: Currency code element
-        std-geo.element: Address element
-        std-card.element: Card number element
-        std-code.element: Product code element
-        std-ord.element: Order message element
+        statute.year: Year of statute
+        guideline: Guideline of the authority
+        ruling.court: Court

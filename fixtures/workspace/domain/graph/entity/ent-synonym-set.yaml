@@ -1,8 +1,0 @@
-id: "ent-synonym-set"
-kind: "entity"
-term: "Synonym set"
-definition: "Words that mean the same thing for the search. It is the aggregate root."
-role: "Aggregate root"
-partOf: ["agg-synonyms"]
-refs:
-  - { to: vo-synonym, relation: "holds" }

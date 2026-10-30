@@ -1,7 +1,0 @@
-id: "qry-get-payment"
-kind: "query"
-term: "Get payment"
-definition: "Returns the state of a payment and its amount."
-partOf: ["agg-payment"]
-refs:
-  - { to: ent-payment, relation: "reads" }

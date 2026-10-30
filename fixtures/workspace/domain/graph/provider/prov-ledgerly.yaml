@@ -1,0 +1,14 @@
+id: "prov-ledgerly"
+kind: "provider"
+name: "Ledgerly"
+summary: "Provider of pay-by-invoice credit."
+segment: "payments"
+operatesIn:
+  - { id: "mkt-alderland", status: "active", since: "2020", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+  - { id: "mkt-calder", status: "active", since: "2021", how: "verified", source: "src-market-survey", retrieved: "2026-03-20", agent: "analyst-a" }
+offers:
+  - { id: "pay-invoice", status: "active", how: "verified", source: "src-provider-directory", retrieved: "2026-04-14", agent: "analyst-a" }
+how: "verified"
+source: "src-provider-directory"
+retrieved: "2026-03-20"
+agent: "analyst-a"

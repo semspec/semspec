@@ -25,10 +25,14 @@
           "contract": {}
         }
       ],
-      "terms": [
-        "ent-basket",
-        "ent-order",
-        "ent-payment"
+      "concerns": [
+        "pay-card",
+        "pay-wallet",
+        "pay-invoice",
+        "del-home",
+        "del-locker",
+        "rule-withdrawal",
+        "rule-price"
       ]
     },
     {
@@ -39,9 +43,11 @@
         "prd-shop"
       ],
       "status": "active",
-      "terms": [
-        "ent-product",
-        "qry-search-products"
+      "concerns": [
+        "cat-electronics",
+        "cat-fashion",
+        "cat-home",
+        "cat-grocery"
       ]
     },
     {
@@ -83,12 +89,11 @@
           ]
         }
       ],
-      "terms": [
-        "ent-payment",
-        "vo-card-details",
-        "cmd-capture-payment",
-        "evt-payment-captured",
-        "evt-payment-declined"
+      "concerns": [
+        "pay-card",
+        "prov-payvale",
+        "prov-tillpay",
+        "prov-quillpay"
       ]
     },
     {
@@ -105,10 +110,10 @@
           "plan": "plan-7"
         }
       ],
-      "terms": [
-        "ent-payment",
-        "cmd-capture-payment",
-        "evt-payment-declined"
+      "concerns": [
+        "pay-card",
+        "prov-payvale",
+        "prov-tillpay"
       ]
     },
     {
@@ -132,8 +137,10 @@
       "follows": [
         "story-pay-by-card"
       ],
-      "terms": [
-        "vo-card-details"
+      "concerns": [
+        "pay-card",
+        "prov-payvale",
+        "rule-data"
       ]
     },
     {
@@ -146,21 +153,20 @@
         "epic-search"
       ],
       "status": "active",
-      "terms": [
-        "ent-synonym-set",
-        "vo-synonym",
-        "cmd-define-synonyms",
-        "qry-search-products"
+      "concerns": [
+        "cat-phones",
+        "cat-laptops",
+        "cat-clothing"
       ]
     },
     {
       "id": "story-loose",
       "kind": "story",
       "summary": "A story with no epic.",
-      "terms": [
-        "ent-basket-line",
-        "vo-quantity",
-        "cmd-add-to-basket"
+      "concerns": [
+        "cat-running-shoes",
+        "cat-sofas",
+        "rule-price"
       ]
     },
     {
@@ -172,11 +178,12 @@
       "follows": [
         "story-loose"
       ],
-      "terms": [
-        "ent-order",
-        "cmd-cancel-order",
-        "evt-order-cancelled",
-        "cmd-issue-refund"
+      "concerns": [
+        "rule-refund",
+        "art-refund-time",
+        "art-refund-method",
+        "rule-withdrawal",
+        "pay-card"
       ]
     },
     {
@@ -191,7 +198,11 @@
           "text": "governs the epic"
         }
       ],
-      "replacedBy": "dec-use-two-psp"
+      "replacedBy": "dec-use-two-psp",
+      "concerns": [
+        "prov-payvale",
+        "pay-card"
+      ]
     },
     {
       "id": "dec-use-two-psp",
@@ -201,6 +212,11 @@
         {
           "ref": "story-pay-by-card"
         }
+      ],
+      "concerns": [
+        "prov-payvale",
+        "prov-tillpay",
+        "mp-bazaaro"
       ]
     },
     {

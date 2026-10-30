@@ -454,9 +454,9 @@
   },
   "crossLinks": [
     {
-      "field": "terms",
+      "field": "concerns",
       "graph": "domain",
-      "label": "Uses term"
+      "label": "Concerns"
     }
   ]
 }

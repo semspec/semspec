@@ -1,0 +1,12 @@
+id: "rule-withdrawal"
+kind: "rule"
+name: "Cooling-off Rule"
+summary: "The buyer can cancel a distance purchase within a fixed period."
+enacted: "2016"
+basis:
+  - { statute: { year: "2016" } }
+  - { guideline: {  } }
+how: "verified"
+source: "src-consumer-code"
+retrieved: "2026-01-15"
+agent: "analyst-a"

@@ -1,8 +1,0 @@
-id: "evt-payment-declined"
-kind: "event"
-term: "Payment declined"
-definition: "The card issuer refused the payment."
-trigger: "Capture payment"
-partOf: ["agg-payment"]
-anchors:
-  - std-pay: { element: "Result code" }

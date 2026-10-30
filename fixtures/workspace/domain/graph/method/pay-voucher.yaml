@@ -1,0 +1,8 @@
+id: "pay-voucher"
+kind: "method"
+name: "Voucher payment"
+summary: "The buyer pays with a prepaid code."
+how: "verified"
+source: "src-provider-directory"
+retrieved: "2026-04-09"
+agent: "analyst-a"
