@@ -2,7 +2,6 @@ id: req-mcp-serve
 kind: requirement
 title: Serve the graph over MCP
 state: draft
-priority: next
 statement: "The command semspec mcp serves a graph or a workspace over stdio with the Model Context Protocol."
 capabilities:
   - cap-mcp
@@ -11,10 +10,28 @@ area:
 acceptance:
   - id: stdio
     text: "The command semspec mcp --graph and --profile starts an MCP server on stdio for 1 graph."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/mcp.test.ts
+        name: serves 1 graph with the id "graph"
   - id: workspace
     text: "The command semspec mcp with a workspace folder serves all graphs of the workspace."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/mcp.test.ts
+        name: lists the tools and the resources, and answers each tool
+      - type: unit
+        file: test/mcp.test.ts
+        name: reads the inputs again on each call
   - id: no-stdout-noise
     text: "The server writes only MCP messages to stdout. It writes logs to stderr."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/mcp.test.ts
+        name: exits with a message on stderr and writes nothing to stdout
+      - type: unit
+        file: test/mcp.test.ts
+        name: refuses a missing option and a mix of options

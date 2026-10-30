@@ -36,6 +36,7 @@
     "requirements:build": "node bin/semspec.js build --graph requirements/graph --profile requirements/profile.yaml --out dist/requirements.html"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
     "ajv": "8.20.0",
     "yaml": "2.9.1"
   },

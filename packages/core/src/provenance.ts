@@ -118,12 +118,12 @@ export function profileProvenanceProblems(p: Profile): string[] {
   return out;
 }
 
-// The count of nodes that need a source, and how many of them have none. A node needs a source when
+// The nodes that need a source, and the ones among them that have none. A node needs a source when
 // its kind is not the source kind and its role is hierarchy or linked. A part and a check do not.
-export function missingSource(index: Index, ids: Iterable<string>): { missing: number; total: number } | null {
+export function sourceCheck(index: Index, ids: Iterable<string>): { missing: string[]; total: number } | null {
   const spec = index.profile.provenance;
   if (!spec?.source) return null;
-  let missing = 0;
+  const missing: string[] = [];
   let total = 0;
   for (const id of ids) {
     const n = index.byId.get(id);
@@ -131,9 +131,15 @@ export function missingSource(index: Index, ids: Iterable<string>): { missing: n
     const role = kindOf(index.profile, n.kind)?.role;
     if (role !== 'hierarchy' && role !== 'linked') continue;
     total++;
-    if (!present(getPath(n.d, spec.source.field))) missing++;
+    if (!present(getPath(n.d, spec.source.field))) missing.push(id);
   }
   return { missing, total };
+}
+
+// The count of nodes that need a source, and how many of them have none.
+export function missingSource(index: Index, ids: Iterable<string>): { missing: number; total: number } | null {
+  const found = sourceCheck(index, ids);
+  return found && { missing: found.missing.length, total: found.total };
 }
 
 // The label of the marker facet: the label of the profile, or the default.

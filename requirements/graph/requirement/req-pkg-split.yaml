@@ -11,11 +11,11 @@ area:
 acceptance:
   - id: four-packages
     text: "The repository has the 4 packages core, app, mcp and cli, each with its own package.json."
-    status: partial
+    status: verified
     tests:
       - type: unit
         file: test/packages.test.ts
-        name: has the packages core, app and cli, each with its own package.json
+        name: has the packages core, app, mcp and cli, each with its own package.json
   - id: dependency-direction
     text: "The packages app, mcp and cli depend on core. The package core depends on none of them."
     status: verified

@@ -15,6 +15,9 @@ acceptance:
     tests:
       - type: unit
         file: test/packages.test.ts
+        name: installs the run time dependencies of the mcp package
+      - type: unit
+        file: test/packages.test.ts
         name: is the package semspec with 1 bin that runs the built cli
       - type: unit
         file: test/packages.test.ts
@@ -24,7 +27,15 @@ acceptance:
         name: installs the run time dependencies of the cli
   - id: mcp-subcommand
     text: "The command semspec mcp starts the MCP server from the same binary."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/mcp.test.ts
+        name: lists the tools and the resources, and answers each tool
   - id: help
     text: "The command semspec --help lists mcp with the other subcommands."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/mcp.test.ts
+        name: lists mcp in the help text

@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: /^@semspec\/core$/, replacement: here('./packages/core/src/index.ts') },
+      { find: /^@semspec\/mcp$/, replacement: here('./packages/mcp/src/index.ts') },
       { find: /^@semspec\/app\//, replacement: here('./packages/app/src/') },
       { find: /^@\//, replacement: here('./packages/app/src/') },
     ],

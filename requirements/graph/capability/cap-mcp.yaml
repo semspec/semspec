@@ -2,7 +2,6 @@ id: cap-mcp
 kind: capability
 title: MCP server
 state: draft
-priority: next
 statement: An MCP server gives agents search and walk tools.
 features:
   - feat-navigate

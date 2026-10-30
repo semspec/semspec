@@ -39,7 +39,8 @@ const packageOf = (spec: string) => (spec.startsWith('@') ? spec.split('/').slic
 const allowed: Record<string, string[]> = {
   core: [],
   app: ['core'],
-  cli: ['core', 'app'],
+  mcp: ['core'],
+  cli: ['core', 'app', 'mcp'],
 };
 
 // The packages that the sources of a package import, as folder names.
@@ -64,8 +65,8 @@ afterAll(() => {
 });
 
 describe('the package layout', () => {
-  it('has the packages core, app and cli, each with its own package.json', () => {
-    expect(packageNames.sort()).toEqual(['app', 'cli', 'core']);
+  it('has the packages core, app, mcp and cli, each with its own package.json', () => {
+    expect(packageNames.sort()).toEqual(['app', 'cli', 'core', 'mcp']);
     for (const name of packageNames) expect(manifest(name).name).toBe(`@semspec/${name}`);
   });
 
@@ -148,7 +149,12 @@ describe('the root package', () => {
 
   it('installs the run time dependencies of the cli', () => {
     const cli = manifest('cli').dependencies;
-    for (const dep of ['ajv', 'yaml']) expect(root.dependencies[dep]).toBe(cli[dep]);
+    for (const dep of ['ajv', 'yaml', '@modelcontextprotocol/sdk']) expect(root.dependencies[dep]).toBe(cli[dep]);
+  });
+
+  it('installs the run time dependencies of the mcp package', () => {
+    const mcp = manifest('mcp').dependencies;
+    for (const dep of ['ajv', 'yaml', '@modelcontextprotocol/sdk']) expect(root.dependencies[dep]).toBe(mcp[dep]);
   });
 
   it('keeps the script names', () => {

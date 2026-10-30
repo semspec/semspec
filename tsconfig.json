@@ -15,6 +15,7 @@
     "paths": {
       "@/*": ["./packages/app/src/*"],
       "@semspec/core": ["./packages/core/src/index.ts"],
+      "@semspec/mcp": ["./packages/mcp/src/index.ts"],
       "@semspec/app/*": ["./packages/app/src/*"]
     }
   },

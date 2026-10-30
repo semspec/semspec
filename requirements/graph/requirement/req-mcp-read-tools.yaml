@@ -2,7 +2,6 @@ id: req-mcp-read-tools
 kind: requirement
 title: Read nodes with MCP tools
 state: draft
-priority: next
 statement: "The MCP server has the tools get, trace and impact."
 capabilities:
   - cap-mcp
@@ -11,16 +10,57 @@ area:
 acceptance:
   - id: get
     text: "The tool get returns 1 node with its fields, its edges with their properties, its provenance and its cross links."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/agent.test.ts
+        name: returns the node with status, edges, parents and cross links
+      - type: unit
+        file: test/agent.test.ts
+        name: returns edge properties, provenance and used-by links
+      - type: unit
+        file: test/mcp.test.ts
+        name: lists the tools and the resources, and answers each tool
   - id: trace-up
     text: "The tool trace returns the path from a node to the root."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/agent.test.ts
+        name: goes up to the root
+      - type: unit
+        file: test/agent.test.ts
+        name: goes up through 2 parent kinds in the domain graph
   - id: trace-down
     text: "The tool trace returns the tree below a node."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/agent.test.ts
+        name: goes down to a depth, marks a repeated node and counts the nodes below
+      - type: unit
+        file: test/agent.test.ts
+        name: cuts the tree at the limit
   - id: impact
     text: "The tool impact returns the nodes that depend on a node, across the workspace."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/agent.test.ts
+        name: groups nodes below, nodes that link in, and cross links in, by graph and kind
+      - type: unit
+        file: test/agent.test.ts
+        name: lists everything below a node in the scope
+      - type: unit
+        file: test/agent.test.ts
+        name: cuts a group at the limit
   - id: unknown-id
     text: "A tool call with an unknown id returns an error that names the id."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/mcp.test.ts
+        name: returns an error that names an unknown id, graph, tool or resource
+      - type: unit
+        file: test/agent.test.ts
+        name: names an unknown id and an unknown graph

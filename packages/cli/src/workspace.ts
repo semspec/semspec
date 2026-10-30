@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import Ajv from 'ajv/dist/2020.js';
-import { buildModel, checkCrossLinks, type WorkspaceData, type WorkspaceGraph } from '@semspec/core';
+import { buildModel, checkCrossLinks, type Graph, type Profile, type WorkspaceData, type WorkspaceGraph } from '@semspec/core';
 import { readInput } from './input';
 import { loadInputs } from './inputs';
 
@@ -29,7 +29,8 @@ export function validateWorkspace(file: unknown, schema: object = JSON.parse(rea
 }
 
 // Reads the workspace file and all graphs. It throws on an error and returns the warnings.
-export function loadWorkspace(path: string): { data: WorkspaceData; warnings: string[] } {
+// `sources` holds the raw graph and the profile of each graph, by graph id.
+export function loadWorkspace(path: string): { data: WorkspaceData; warnings: string[]; sources: Map<string, { graph: Graph; profile: Profile }> } {
   const file = readInput(path, 'workspace');
   const problems = validateWorkspace(file);
   if (problems.length) throw new Error(`The workspace "${path}" is not valid:\n  ${problems.join('\n  ')}`);
@@ -38,11 +39,13 @@ export function loadWorkspace(path: string): { data: WorkspaceData; warnings: st
   const errors: string[] = [];
   const warnings: string[] = [];
   const loaded: WorkspaceGraph[] = [];
+  const sources = new Map<string, { graph: Graph; profile: Profile }>();
   for (const g of graphs) {
     try {
       const inputs = loadInputs(resolve(base, g.graph), resolve(base, g.profile), g.exclude ?? []);
       warnings.push(...inputs.warnings.map((w) => `Graph "${g.id}": ${w}`));
       loaded.push({ id: g.id, label: g.label, model: buildModel(inputs.graph, inputs.profile) });
+      sources.set(g.id, { graph: inputs.graph, profile: inputs.profile });
     } catch (e) {
       errors.push(`Graph "${g.id}": ${(e as Error).message}`);
     }
@@ -53,5 +56,5 @@ export function loadWorkspace(path: string): { data: WorkspaceData; warnings: st
     warnings.push(...checked.warnings);
   }
   if (errors.length) throw new Error(`The workspace "${path}" is not valid:\n  ${errors.join('\n  ')}`);
-  return { data: { title, graphs: loaded }, warnings };
+  return { data: { title, graphs: loaded }, warnings, sources };
 }

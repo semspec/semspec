@@ -19,3 +19,5 @@ export * from './shacl.js';
 export * from './cypher.js';
 export * from './export.js';
 export * from './tree-groups.js';
+export * from './validate.js';
+export * from './agent.js';

@@ -2,7 +2,6 @@ id: req-mcp-check-tools
 kind: requirement
 title: Check the graph with MCP tools
 state: draft
-priority: next
 statement: "The MCP server has the tools gaps, validate and schema."
 capabilities:
   - cap-mcp
@@ -11,16 +10,54 @@ area:
 acceptance:
   - id: gaps-status
     text: "The tool gaps returns the nodes with a red or amber status."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/agent.test.ts
+        name: finds red nodes, parts with no check and unplaced nodes in the product graph
+      - type: unit
+        file: test/agent.test.ts
+        name: limits the scope to a node and adds the roll-up
   - id: gaps-checks
     text: "The tool gaps returns the requirements with a missing check."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/agent.test.ts
+        name: finds red nodes, parts with no check and unplaced nodes in the product graph
   - id: gaps-source
     text: "The tool gaps returns the facts that have no source."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/agent.test.ts
+        name: finds facts with no source in the domain graph
+      - type: unit
+        file: test/agent.test.ts
+        name: cuts a list at the limit
   - id: validate
     text: "The tool validate checks 1 YAML node against the profile and returns the errors. It does not write a file."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/agent.test.ts
+        name: accepts a valid node of the product profile and writes nothing
+      - type: unit
+        file: test/agent.test.ts
+        name: checks edge properties, vocabulary codes and provenance rules of the domain profile
+      - type: unit
+        file: test/agent.test.ts
+        name: rejects an edge that joins the wrong kinds
+      - type: unit
+        file: test/mcp.test.ts
+        name: lists the tools and the resources, and answers each tool
   - id: schema
     text: "The tool schema returns the kinds, the edges and the vocabularies of the profile."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/agent.test.ts
+        name: lists kinds, edges, vocabularies and cross links of the product profile
+      - type: unit
+        file: test/agent.test.ts
+        name: lists edge properties, vocabulary codes and provenance of the domain profile

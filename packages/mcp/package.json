@@ -1,0 +1,15 @@
+{
+  "name": "@semspec/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Semspec MCP server. It serves a graph or a workspace to an AI agent over stdio. The package cli bundles it.",
+  "license": "Apache-2.0",
+  "author": "The Semspec Authors",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@semspec/core": "0.1.0",
+    "ajv": "8.20.0",
+    "yaml": "2.9.1"
+  }
+}

@@ -32,7 +32,7 @@ await build({
   platform: 'node',
   format: 'esm',
   target: 'node20',
-  external: ['vite', 'ajv', 'ajv/dist/2020.js', 'yaml'],
+  external: ['vite', 'ajv', 'ajv/dist/2020.js', 'yaml', '@modelcontextprotocol/sdk', '@modelcontextprotocol/sdk/*'],
   define: {
     __SEMSPEC_VERSION__: JSON.stringify(version),
     __SEMSPEC_COMMIT__: JSON.stringify(commit),
