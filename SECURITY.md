@@ -2,7 +2,7 @@
 
 ## Report a problem
 
-Report a security problem only through GitHub private vulnerability reporting. Open the Security tab of the repository at https://github.com/radoystoyanov/semspec and select "Report a vulnerability".
+Report a security problem only through GitHub private vulnerability reporting. Open the Security tab of the repository at https://github.com/semspec/semspec and select "Report a vulnerability".
 
 Do not open a public issue for a security problem.
 
