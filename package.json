@@ -10,14 +10,19 @@
   },
   "files": [
     "bin",
-    "dist",
+    "dist/app",
+    "dist/cli",
     "schema",
     "LICENSE",
     "NOTICE",
     "AUTHORS",
     "README.md"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
+    "prepare": "npm run build",
     "build:app": "vite build",
     "build:cli": "node scripts/build-cli.mjs",
     "build": "npm run build:app && npm run build:cli",

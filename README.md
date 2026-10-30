@@ -15,6 +15,16 @@ What Semspec does today:
 
 The tool knows no project. Every kind, edge, field, colour and label comes from the profile.
 
+## Install
+
+Semspec is not on npm yet. Install it from GitHub:
+
+```
+npm install github:radoystoyanov/semspec#<commit or tag>
+```
+
+The install builds the tool. It needs Node 20 or later.
+
 ## Use
 
 ```
