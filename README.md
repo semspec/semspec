@@ -148,7 +148,8 @@ The profile is a JSON or YAML object. See `schema/profile.schema.json` and the 2
 | `lifecycle` | The field of the state, a fallback, a fallback for each kind, and the states that show muted. |
 | `kinds` | The node kinds: id, label, plural, role, colour for the light and the dark theme, parent field groups, a citation rule (with an optional `name` path for the display name of the source) and the chips of a summary. |
 | `edges` | A label pair for each edge name, and a `down` flag for an edge whose target is the more general node. |
-| `links`, `refs`, `supersededBy` | Link fields that are not parent fields. |
+| `links`, `supersededBy` | Link fields that are not parent fields. |
+| `refs` | A field that holds a list of objects: `field`, `target` (the key of the node id in an object) and `note` (the key of the edge note). Give 1 entry or a list of entries. Each `field` needs an entry in `edges`, which gives the labels of its edge. An entry can have `many`, the key of a boolean in an object. When the boolean is true, the edge note gets the suffix `[]`, so a note `lines` reads `lines[]`. |
 | `crossLinks` | Fields that hold node ids of another graph of a workspace: the field, the id of the target graph and a label. See "Cross links". |
 | `linkedScopeEdges` | The edges that pull a linked node into the scope of a node. |
 | `parts` | Which kinds own parts, in which field, and the fields of a part. |

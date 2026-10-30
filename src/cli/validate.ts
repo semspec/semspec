@@ -4,7 +4,7 @@
 // the names that the profile gives.
 import { readFileSync } from 'node:fs';
 import Ajv from 'ajv/dist/2020.js';
-import { embeddedObjects, getPath, parentFields, withDefaultKind, type Graph, type Profile } from '../core/index';
+import { embeddedObjects, getPath, parentFields, refsOf, withDefaultKind, type Graph, type Profile } from '../core/index';
 
 const schemaPath = new URL('../../schema/profile.schema.json', import.meta.url);
 
@@ -43,7 +43,7 @@ function crossCheckProfile(p: Profile): string[] {
   p.kinds.forEach((k) => (k.parents ?? []).forEach((g) => g.forEach((f) => needEdge(`kind ${k.id} parents`, f))));
   p.links?.forEach((f) => needEdge('links', f));
   needEdge('supersededBy', p.supersededBy);
-  needEdge('refs', p.refs?.field);
+  refsOf(p).forEach((r) => needEdge('refs', r.field));
   p.parts?.forEach((x) => needEdge('parts', x.edge));
   p.embedded?.forEach((x) => needEdge('embedded', x.edge));
   needEdge('layout groupEdge', p.layout?.groupEdge);

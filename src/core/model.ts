@@ -5,11 +5,11 @@
 //   parents: where the tree shows the node. The first group of parent fields that names a node wins.
 //   up:      every parent field of the kind. The scope and the group facet follow this list.
 // Edge direction follows the graph: from the specific node to the general node.
-import type { CrossLink, Graph, Index, Model, Profile, RawNode, VEdge, VNode } from './types';
-import { allLinkFields, embeddedObjects, firstOf, getPath, isMuted, kindOf, normalise, omitPath, withDefaultKind } from './profile';
+import type { CrossLink, Graph, Index, Model, ProfileInput, RawNode, VEdge, VNode } from './types';
+import { allLinkFields, embeddedObjects, firstOf, getPath, isMuted, kindOf, normalise, omitPath, refNote, withDefaultKind } from './profile';
 import { checkKey, checkTitle, citationTitle, deriveTitle, snippet, wordCasing } from './titles';
 
-export function buildModel(graph: Graph, input: Profile): Model {
+export function buildModel(graph: Graph, input: ProfileInput): Model {
   const P = normalise(input);
   const checks = P.checks!;
   const { id: idKey, kind: kindKey } = P.source;
@@ -163,7 +163,7 @@ export function buildModel(graph: Graph, input: Profile): Model {
     };
     for (const field of linkFields) for (const t of (n[field] as string[]) ?? []) link(field, t);
     if (P.supersededBy && n[P.supersededBy]) link(P.supersededBy, n[P.supersededBy]);
-    if (P.refs) for (const t of (n[P.refs.field] as Record<string, any>[]) ?? []) link(P.refs.field, t[P.refs.target], t[P.refs.note]);
+    for (const spec of P.refs!) for (const t of (n[spec.field] as Record<string, any>[]) ?? []) link(spec.field, t[spec.target], refNote(spec, t));
   }
 
   const crossLinks: CrossLink[] = [];

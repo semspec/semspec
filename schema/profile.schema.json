@@ -77,11 +77,8 @@
       }
     },
     "refs": {
-      "type": "object",
-      "required": ["field", "target", "note"],
-      "additionalProperties": false,
-      "description": "A field that holds a list of objects, each with the id of a node and a note.",
-      "properties": { "field": { "type": "string" }, "target": { "type": "string" }, "note": { "type": "string" } }
+      "description": "A field that holds a list of objects, each with the id of a node and a note. Give 1 entry or a list of entries. Each field needs an entry in edges, which gives the labels of the edge.",
+      "oneOf": [{ "$ref": "#/$defs/refs" }, { "type": "array", "items": { "$ref": "#/$defs/refs" } }]
     },
     "supersededBy": { "type": "string", "description": "The field that names the node that replaces this node." },
     "linkedScopeEdges": { "type": "array", "items": { "type": "string" }, "description": "The edges that pull a linked node into the scope of a node." },
@@ -477,6 +474,17 @@
     }
   },
   "$defs": {
+    "refs": {
+      "type": "object",
+      "required": ["field", "target", "note"],
+      "additionalProperties": false,
+      "properties": {
+        "field": { "type": "string", "description": "The field of a node that holds the list of objects." },
+        "target": { "type": "string", "description": "The key of the node id in an object." },
+        "note": { "type": "string", "description": "The key of the edge note in an object." },
+        "many": { "type": "string", "description": "The key of a boolean in an object. When it is true, the edge note gets the suffix [], for example lines[]." }
+      }
+    },
     "chip": {
       "oneOf": [
         { "enum": ["lifecycle", "members", "coverage", "verified", "verifyTypes", "checkType"] },

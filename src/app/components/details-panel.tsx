@@ -168,7 +168,7 @@ export function DetailsPanel({ v }: { v: Viewer }) {
   const out = index.out.get(n.id)!;
   const inc = index.inc.get(n.id)!;
   const other = (e: VEdge) => (e.s === n.id ? e.t : e.s);
-  const linkEdges = new Set([...(P.linkedScopeEdges ?? []), ...(P.refs ? [P.refs.field] : [])]);
+  const linkEdges = new Set([...(P.linkedScopeEdges ?? []), ...(P.refs ?? []).map((r) => r.field)]);
   const linked = (kind: string) => [...out, ...inc].filter((e) => index.byId.get(other(e))?.kind === kind && linkEdges.has(e.k));
   const summary = Core.summaryOf(index, n);
   const canScope = Core.HIERARCHY_KINDS.includes(n.kind) || Core.LINKED_KINDS.includes(n.kind);

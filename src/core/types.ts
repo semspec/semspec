@@ -140,6 +140,18 @@ export interface CrossLinkSpec {
   label: string;
 }
 
+// One refs field. `target` is the key of the node id in an item and `note` is the key of the edge
+// note. `many` is the key of a boolean in an item. When it is true, the note gets the suffix `[]`.
+export interface RefsSpec {
+  field: string;
+  target: string;
+  note: string;
+  many?: string;
+}
+
+// A profile as a file holds it: `refs` is 1 entry or a list.
+export type ProfileInput = Omit<Profile, 'refs'> & { refs?: RefsSpec | RefsSpec[] };
+
 export interface Profile {
   // The name of the project, shown as secondary text.
   project: string;
@@ -159,7 +171,9 @@ export interface Profile {
   links?: string[];
   // Links into other graphs. They are not edges of this graph.
   crossLinks?: CrossLinkSpec[];
-  refs?: { field: string; target: string; note: string };
+  // Fields that hold a list of objects, each with the id of a node and a note. A profile file holds
+  // 1 entry or a list of entries. `normalise` makes the list.
+  refs?: RefsSpec[];
   supersededBy?: string;
   linkedScopeEdges?: string[];
   parts?: PartSpec[];

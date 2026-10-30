@@ -2,7 +2,8 @@
 // Copyright 2026 The Semspec Authors
 // Derives 1 JSON Schema (draft 2020-12) for each kind from the profile. The schema holds only what
 // the profile knows. It allows any other field, because a profile does not name every field.
-import type { Profile } from './types';
+import { normalise } from './profile';
+import type { Profile, ProfileInput } from './types';
 
 export type JsonSchema = Record<string, unknown>;
 
@@ -38,7 +39,8 @@ function partProperty(profile: Profile, field: { id: string; text: string }): Js
   return { type: 'array', items: { type: 'object', properties, additionalProperties: true } };
 }
 
-export function kindSchemas(profile: Profile): Record<string, JsonSchema> {
+export function kindSchemas(input: ProfileInput): Record<string, JsonSchema> {
+  const profile = normalise(input);
   const { id: idKey, kind: kindKey } = profile.source;
   const result: Record<string, JsonSchema> = {};
   for (const kind of profile.kinds) {
@@ -49,9 +51,10 @@ export function kindSchemas(profile: Profile): Record<string, JsonSchema> {
     [...profile.fields.title, ...profile.fields.statement, profile.lifecycle.field].forEach((f) => (properties[f] = text));
     (kind.parents ?? []).forEach((group) => group.forEach((f) => (properties[f] = list)));
     (profile.links ?? []).forEach((f) => (properties[f] = list));
-    if (profile.refs) {
-      const { field, target, note } = profile.refs;
-      properties[field] = { type: 'array', items: { type: 'object', properties: { [target]: text, [note]: text }, required: [target], additionalProperties: true } };
+    for (const { field, target, note, many } of profile.refs!) {
+      const item: Record<string, JsonSchema> = { [target]: text, [note]: text };
+      if (many) item[many] = { type: 'boolean' };
+      properties[field] = { type: 'array', items: { type: 'object', properties: item, required: [target], additionalProperties: true } };
     }
     if (profile.supersededBy) properties[profile.supersededBy] = text;
     (profile.parts ?? []).filter((p) => p.owner === kind.id).forEach((p) => (properties[p.field] = partProperty(profile, p)));

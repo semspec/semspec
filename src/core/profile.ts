@@ -1,15 +1,28 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 // Helpers that read a profile. The core knows no kind and no field. It asks the profile.
-import type { CheckSpec, EmbeddedSpec, KindSpec, Profile, Role } from './types';
+import type { CheckSpec, EmbeddedSpec, KindSpec, Profile, ProfileInput, RefsSpec, Role } from './types';
 
 // A profile without checks gets a check definition that no node uses.
 const NO_CHECKS: CheckSpec = { kind: '__no_check_kind', field: '__no_check_field', edge: '__no_check_edge', typeField: 'type', types: {} };
 
+// The refs entries of a profile as a list. A profile file holds 1 entry or a list.
+export function refsOf(p: Pick<ProfileInput, 'refs'>): RefsSpec[] {
+  return p.refs === undefined ? [] : Array.isArray(p.refs) ? p.refs : [p.refs];
+}
+
+// The text of an edge note. A list item gets the suffix `[]`.
+export function refNote(spec: RefsSpec, item: Record<string, any>): string | undefined {
+  const note = item[spec.note];
+  const text = note === undefined || note === null || note === '' ? '' : String(note);
+  return spec.many && item[spec.many] === true ? `${text}[]` : text || undefined;
+}
+
 // Fills the optional parts of a profile, so the rest of the core reads no missing value.
-export function normalise(p: Profile): Profile {
+export function normalise(p: ProfileInput): Profile {
   return {
     ...p,
+    refs: refsOf(p),
     links: p.links ?? [],
     parts: p.parts ?? [],
     embedded: p.embedded ?? [],

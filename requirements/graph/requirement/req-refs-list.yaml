@@ -1,0 +1,58 @@
+id: req-refs-list
+kind: requirement
+title: Allow several refs fields
+statement: A profile can name 1 refs field or a list of refs fields. Each field makes edges with its own labels.
+capabilities:
+  - cap-nodes
+  - cap-validate
+  - cap-schemas
+area:
+  - core
+acceptance:
+  - id: old-form
+    text: A profile with 1 refs object works as before. The model has it as a list of 1 entry.
+    status: verified
+    tests:
+      - type: unit
+        file: test/refs.test.ts
+        name: keep the old form, where 1 object becomes a list of 1
+  - id: list
+    text: A profile can hold a list of refs entries. Every entry makes its edges.
+    status: verified
+    tests:
+      - type: unit
+        file: test/refs.test.ts
+        name: accept a list and keep the order
+      - type: unit
+        file: test/refs.test.ts
+        name: make the edges of every entry, and the model of the old form stays the same
+  - id: many
+    text: When the item has the many key set to true, the edge note gets the suffix `[]`.
+    status: verified
+    tests:
+      - type: unit
+        file: test/refs.test.ts
+        name: "append [] to the note of an item that is marked many"
+      - type: unit
+        file: test/refs.test.ts
+        name: "give a many item with no note the note []"
+      - type: unit
+        file: test/refs.test.ts
+        name: ignore the many key when the entry has none
+  - id: schema
+    text: The schema of a kind types the field of every entry, and the many key as a boolean.
+    status: verified
+    tests:
+      - type: unit
+        file: test/refs.test.ts
+        name: type the field of every entry in the schema of a kind, with a boolean for the many key
+  - id: validate
+    text: The profile check refuses an entry whose field has no entry in edges, and an entry with a missing key, an unknown key or a many key that is not text.
+    status: verified
+    tests:
+      - type: unit
+        file: test/refs.test.ts
+        name: refuse an entry whose field has no entry in edges, in the list form and in the old form
+      - type: unit
+        file: test/refs.test.ts
+        name: refuse an entry with a missing key, an unknown key or a many key that is not text

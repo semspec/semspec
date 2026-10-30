@@ -57,7 +57,7 @@ export function computeScope(index: Index, spec: ScopeSpec): { ids: Set<string>;
       }
       for (const e of index.inc.get(id)!) {
         const s = index.byId.get(e.s);
-        if (s && linked.includes(s.kind) && P.refs && e.k === P.refs.field) all.add(s.id);
+        if (s && linked.includes(s.kind) && P.refs!.some((r) => r.field === e.k)) all.add(s.id);
       }
     }
   }
