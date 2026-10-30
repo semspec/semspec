@@ -1,0 +1,4 @@
+title: Semspec docs and requirements
+graphs:
+  - { id: req, label: Requirements, graph: ../requirements/graph, profile: ../requirements/profile.yaml }
+  - { id: docs, label: Docs, graph: ., profile: profile.yaml, exclude: [profile.yaml, workspace.yaml] }

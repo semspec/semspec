@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 // Builds the RDF of a graph: its nodes and edges, its vocabularies (SKOS), its provenance (PROV-O) and
-// its profile as an ontology (OWL). The README lists the mapping.
+// its profile as an ontology (OWL). docs/reference/export.md lists the mapping.
 import { structuralFields } from './export-fields';
 import { isIsoDate } from './edges';
 import { iriMap, type IriMap } from './iri';

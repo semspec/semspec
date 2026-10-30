@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The Semspec Authors
+project: Semspec docs
+source: { nodes: nodes, id: id, kind: kind, markdown: { body: body } }
+fields:
+  title: [title]
+  statement: [description]
+lifecycle:
+  field: state
+  fallback: current
+kinds:
+  - { id: guide, label: Guide, plural: guides, role: hierarchy, color: { light: "#1971c2", dark: "#74c0fc" }, chips: [lifecycle] }
+  - { id: concept, label: Concept, plural: concepts, role: hierarchy, color: { light: "#d9480f", dark: "#ffa94d" }, chips: [lifecycle] }
+  - { id: reference, label: Reference, plural: references, role: hierarchy, color: { light: "#0b7285", dark: "#66d9e8" }, chips: [lifecycle] }
+edges:
+  related: { labels: [Related to, Related from] }
+links: [related]
+crossLinks:
+  - { field: documents, graph: req, label: Documents }
+details:
+  properties:
+    - { label: Order, field: order }
+  statementTitle: { default: Description }
+  textSections:
+    - { title: Page, field: body }

@@ -41,9 +41,9 @@ The graph is a JSON file, a YAML file or a folder of YAML files. The profile is 
 --exclude skips the folders and files of a graph folder that match a pattern. The option can repeat.
 A pattern matches a path relative to the graph folder. It supports *, ** and ?.
 --workspace reads a workspace file that lists several graphs. It cannot combine with --graph, --profile or --exclude.
-The schema command writes 1 JSON Schema for each kind of the profile. See the README for the formats.
+The schema command writes 1 JSON Schema for each kind of the profile. See docs/reference/schemas.md.
 The export command writes the graph as RDF (turtle, jsonld), as SHACL shapes (shacl) or as a Cypher script (cypher).
-With --workspace, it writes all graphs into 1 file. See "Export" in the README.`;
+With --workspace, it writes all graphs into 1 file. See docs/reference/export.md.`;
 
 // Writes 1 JSON Schema for each kind of the profile. It returns the paths.
 export function writeSchemas(profilePath: string, outDir: string): string[] {
