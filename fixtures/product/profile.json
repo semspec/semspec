@@ -44,6 +44,7 @@
       "chips": [{ "field": "clause", "template": "Clause {value}" }]
     },
     { "id": "body", "label": "Body", "plural": "bodies", "role": "linked", "color": { "light": "#0b7285", "dark": "#66d9e8" }, "chips": [] },
+    { "id": "source", "label": "Source", "plural": "sources", "prefix": "src-", "role": "linked", "color": { "light": "#2b8a3e", "dark": "#8ce99a" }, "chips": [] },
     { "id": "test", "label": "Test", "plural": "tests", "role": "check", "color": { "light": "#6c757d", "dark": "#ced4da" }, "chips": ["checkType"] }
   ],
   "edges": {
@@ -116,6 +117,15 @@
         { "code": "replaced", "label": "Replaced", "definition": "Another node took its place.", "altLabels": ["superseded"], "order": 4 }
       ]
     },
+    "how": {
+      "label": "How",
+      "definition": "How a fact was obtained.",
+      "concepts": [
+        { "code": "verified", "label": "Read in a source", "definition": "Someone read the fact in the source.", "order": 1 },
+        { "code": "inferred", "label": "Inferred", "definition": "Someone worked the fact out from other facts.", "order": 2 },
+        { "code": "reported", "label": "Reported by a person", "definition": "A person told the fact.", "order": 3 }
+      ]
+    },
     "force": {
       "label": "Force",
       "definition": "How strongly a decision binds the node it notes.",
@@ -126,6 +136,15 @@
     }
   },
   "fieldVocabularies": { "priority": "priority", "status": "lifecycle" },
+  "provenance": {
+    "label": "How known",
+    "marker": { "field": "how", "vocabulary": "how" },
+    "source": { "field": "source", "kind": "source" },
+    "retrieved": "retrieved",
+    "agent": "agent",
+    "note": "remark",
+    "requireSource": ["verified"]
+  },
   "fieldFilters": [{ "field": "teams", "label": "Team", "values": { "web": "Web shop" } }, { "field": "priority", "label": "Priority" }, { "field": "basis", "label": "Basis", "from": "keys", "values": { "law": "Law", "contract": "Contract" } }],
   "facets": { "groupKind": "epic", "groupLabel": "Epic" },
   "entry": { "kind": "epic", "childKind": "story", "title": "Pick an epic to see what it contains", "countLabel": "stories" },

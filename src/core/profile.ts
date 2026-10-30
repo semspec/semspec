@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 // Helpers that read a profile. The core knows no kind and no field. It asks the profile.
+import { DEFAULT_DERIVED_EDGE, DEFAULT_DERIVED_LABELS } from './provenance';
 import type { CheckSpec, EmbeddedSpec, KindSpec, Profile, ProfileInput, RefsSpec, Role, Vocabulary } from './types';
 
 // A profile without checks gets a check definition that no node uses.
@@ -29,8 +30,12 @@ function inlineVocabularies(p: ProfileInput): Record<string, Vocabulary> | undef
 
 // Fills the optional parts of a profile, so the rest of the core reads no missing value.
 export function normalise(p: ProfileInput): Profile {
+  // A source node needs an edge. A profile that names no entry for it gets the default labels.
+  const derived = p.provenance?.source?.kind === undefined ? undefined : p.provenance.source.edge ?? DEFAULT_DERIVED_EDGE;
+  const edges = derived === undefined || p.edges[derived] ? p.edges : { ...p.edges, [derived]: { labels: DEFAULT_DERIVED_LABELS } };
   return {
     ...p,
+    edges,
     refs: refsOf(p),
     vocabularies: inlineVocabularies(p),
     links: p.links ?? [],

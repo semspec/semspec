@@ -44,6 +44,7 @@ const EDGES: Record<string, [string, string, string][]> = {
     ['story-pay-by-card#charged', 'story-pay-by-card', 'scenario'],
     ['story-pay-by-card#declined', 'unit:tests/pay.test.ts#showsDeclineMessage', 'tested'],
     ['story-pay-by-card-3ds', 'manual:plan-7', 'tested'],
+    ['story-pay-by-card', 'src-market-study', 'derivedFrom'],
     ['std-card-data', 'card-data-standard', 'issuedBy'],
     ['std-card-storage', 'card-data-standard', 'issuedBy'],
     ['std-privacy-notice', 'privacy-rules', 'issuedBy'],

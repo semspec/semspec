@@ -18,3 +18,7 @@ origin:
   - primer:
       kind: Book
       chapter: "3"
+method: quoted
+cite: https://example.org/primer
+seen: "2025-11-02"
+editor: Mia

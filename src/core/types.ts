@@ -156,6 +156,23 @@ export interface EdgeSpec {
   properties?: Record<string, { type: PropertyType; required?: boolean; vocabulary?: string }>;
 }
 
+// Provenance: where a fact comes from. The same fields apply to a node, to an edge property and to a
+// refs item. See provenance.ts for the mapping to W3C PROV-O. Every part is optional.
+export interface ProvenanceSpec {
+  // The label of the filter by marker. The default is "Provenance".
+  label?: string;
+  // The field of the marker, and the vocabulary that holds its codes.
+  marker?: { field: string; vocabulary: string };
+  // The field of the source. With `kind`, the field holds the id of a node of that kind, and the model makes
+  // an edge from the node to the source node. `edge` names that edge (default "derivedFrom").
+  source?: { field: string; kind?: string; edge?: string };
+  retrieved?: string;
+  agent?: string;
+  note?: string;
+  // The marker codes whose node or edge must have a source.
+  requireSource?: string[];
+}
+
 // A concept of a vocabulary. It maps to skos:Concept: `code` to skos:notation, `label` to
 // skos:prefLabel, `definition` to skos:definition, `broader` to skos:broader (the code of another
 // concept of the scheme) and `altLabels` to skos:altLabel. Only a code is a valid value of a field.
@@ -225,6 +242,7 @@ export interface Profile {
   vocabularies?: Record<string, Vocabulary>;
   // The scheme of a field, by field path. The field is a node field, the lifecycle field or a field filter field.
   fieldVocabularies?: Record<string, string>;
+  provenance?: ProvenanceSpec;
   facets?: { groupKind: string; groupLabel: string };
   entry?: { kind: string; childKind: string; title: string; countLabel: string };
   groups?: { hierarchy: string };
@@ -310,6 +328,8 @@ export interface Filters {
   deliveries: string[];
   modules: string[];
   statuses: string[];
+  // The selected markers of the provenance filter. '' selects the nodes without a marker.
+  markers?: string[];
   // The selected values of each field filter, by field. '' selects the nodes without a value.
   fields?: Record<string, string[]>;
 }

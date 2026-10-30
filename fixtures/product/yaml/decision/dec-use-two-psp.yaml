@@ -3,3 +3,7 @@ kind: decision
 summary: Two PSPs share the load.
 notes:
   - ref: story-pay-by-card
+    text: limits the load
+    how: reported
+    agent: Ana
+    retrieved: "2026-03-01"

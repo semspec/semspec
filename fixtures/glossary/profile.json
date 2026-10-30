@@ -22,6 +22,15 @@
   },
   "vocabularies": {
     "state": { "file": "vocabularies/state.yaml" },
+    "method": {
+      "label": "Method",
+      "definition": "How an editor learned a fact.",
+      "concepts": [
+        { "code": "quoted", "label": "Quoted from a text", "definition": "The editor copied the fact from a text.", "order": 1 },
+        { "code": "derived", "label": "Worked out by the editor", "definition": "The editor reached the fact from other facts.", "order": 2 },
+        { "code": "told", "label": "Told by a person", "definition": "A person told the editor.", "order": 3 }
+      ]
+    },
     "role": {
       "label": "Role",
       "definition": "What a term does for the term it relates to.",
@@ -32,6 +41,13 @@
     }
   },
   "fieldVocabularies": { "state": "state" },
+  "provenance": {
+    "marker": { "field": "method", "vocabulary": "method" },
+    "source": { "field": "cite" },
+    "retrieved": "seen",
+    "agent": "editor",
+    "requireSource": ["quoted"]
+  },
   "refs": { "field": "relations", "target": "to", "note": "relation" },
   "layout": { "default": "force" },
   "embedded": [{ "owner": "term", "field": "owner", "kind": "group", "edge": "inGroup" }],

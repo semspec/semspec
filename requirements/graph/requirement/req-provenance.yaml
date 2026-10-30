@@ -1,0 +1,127 @@
+id: req-provenance
+kind: requirement
+title: Record where a fact comes from
+statement: A node and an edge can carry a marker (how the fact was obtained), a source, the date it was read, an agent and a note. The profile names the fields. The shape follows W3C PROV-O.
+capabilities:
+  - cap-nodes
+  - cap-validate
+  - cap-filters
+area:
+  - core
+  - cli
+  - app
+acceptance:
+  - id: parts
+    text: The profile names the fields of the marker, the source, the date, the agent and the note. The same fields apply to a node, to a link object and to a refs item.
+    status: verified
+    tests:
+      - type: unit
+        file: test/provenance.test.ts
+        name: reads the marker, the source, the date and the agent of a node under the fields of the profile
+      - type: unit
+        file: test/provenance.test.ts
+        name: reads the same fields from the properties of an edge
+      - type: unit
+        file: test/provenance.test.ts
+        name: gives nothing for a part that the profile or the record lacks
+  - id: date
+    text: The date is YYYY, YYYY-MM or YYYY-MM-DD and is not after the date of the run. Anything else is an error.
+    status: verified
+    tests:
+      - type: unit
+        file: test/provenance.test.ts
+        name: takes YYYY, YYYY-MM and YYYY-MM-DD in the past and today
+      - type: unit
+        file: test/provenance.test.ts
+        name: is an error when it is not an ISO date
+      - type: unit
+        file: test/provenance.test.ts
+        name: is an error when it is in the future
+      - type: unit
+        file: test/provenance.test.ts
+        name: is checked on an edge too
+      - type: unit
+        file: test/provenance.test.ts
+        name: compares by the part of today that the value has
+  - id: marker
+    text: A marker value must be a code of its vocabulary.
+    status: verified
+    tests:
+      - type: unit
+        file: test/provenance.test.ts
+        name: is an error when the value is not a code of the vocabulary, on a node and on an edge
+      - type: unit
+        file: test/provenance.test.ts
+        name: is an error when the value is not text
+  - id: source
+    text: When the profile names a source kind, a source must be the id of a node of that kind. A missing node and a node of another kind are errors. Without a source kind, the source is free text.
+    status: verified
+    tests:
+      - type: unit
+        file: test/provenance.test.ts
+        name: is a node of the source kind, so a missing id and a node of another kind are errors
+      - type: unit
+        file: test/provenance.test.ts
+        name: is checked on an edge too
+      - type: unit
+        file: test/provenance.test.ts
+        name: is free text when the profile names no source kind
+  - id: require
+    text: A node or an edge with a marker in requireSource must have a source. Other markers need none.
+    status: verified
+    tests:
+      - type: unit
+        file: test/provenance.test.ts
+        name: is an error for a node and for an edge with a marker that needs a source
+      - type: unit
+        file: test/provenance.test.ts
+        name: is no error for a marker that needs none
+      - type: unit
+        file: test/provenance.test.ts
+        name: is no error when the node has the source, and no check runs without the rule
+  - id: derived
+    text: A source that is a node makes an edge from the node to the source node. The profile can name the edge. The default is derivedFrom, with default labels.
+    status: verified
+    tests:
+      - type: unit
+        file: test/provenance.test.ts
+        name: goes from the node to the source node, with the default name and labels
+      - type: unit
+        file: test/provenance.test.ts
+        name: uses the edge name and the labels of the profile
+      - type: unit
+        file: test/provenance.test.ts
+        name: is made for each node with a source, and a source that names no node is unresolved
+  - id: profile
+    text: The profile checks name a known vocabulary, known marker codes and a known source kind. A rule that needs a part the profile lacks is an error.
+    status: verified
+    tests:
+      - type: unit
+        file: test/provenance.test.ts
+        name: are the vocabulary of the marker, the codes of requireSource and the source kind
+      - type: unit
+        file: test/provenance.test.ts
+        name: are an edge name with no source kind, a field used twice and an unknown key
+  - id: filter
+    text: A filter by marker lists the marker values with counts. It exists only when the profile has a marker.
+    status: verified
+    tests:
+      - type: unit
+        file: test/provenance.test.ts
+        name: counts the nodes for each marker value, and the nodes with no marker under the empty value
+      - type: unit
+        file: test/provenance.test.ts
+        name: keeps the nodes with one of the selected markers, and the nodes with no marker for the empty value
+  - id: missing
+    text: The status bar shows how many nodes of the scope have no source, when the profile has a source field.
+    status: verified
+    tests:
+      - type: unit
+        file: test/provenance.test.ts
+        name: counts the nodes of the scope that have no source, and leaves out source nodes, parts and checks
+      - type: unit
+        file: test/provenance.test.ts
+        name: is null when the profile has no source field, and counts a node with an empty source as missing
+  - id: panel
+    text: The details panel of a node and of an edge has a Provenance section with the marker label, the source, the date and the agent. An edge in a list has a small marker badge.
+    status: partial

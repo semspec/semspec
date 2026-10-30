@@ -131,14 +131,59 @@ function CheckList({ list }: { list: Record<string, any>[] }) {
   );
 }
 
-function NodeButton({ v, id, note, props, edge }: { v: Viewer; id: string; note?: string; props?: VEdge['p']; edge?: string }) {
+// The label of the marker of a record, or undefined when it has none.
+function markerLabel(record: Record<string, unknown> | undefined): string | undefined {
+  const marker = Core.provenanceOf(record).marker;
+  if (typeof marker !== 'string') return undefined;
+  return Core.markerConcept(marker)?.label ?? marker;
+}
+
+// The provenance of a node or of an edge: the marker, the source, the date, the agent and the note.
+// A source that is a node shows as a node button. Other text shows as a link when it is a URL.
+function ProvenanceSection({ v, record }: { v: Viewer; record: Record<string, unknown> | undefined }) {
+  const spec = Core.provenance;
+  const p = Core.provenanceOf(record);
+  if (!spec || !Object.keys(p).length) return null;
+  const marker = typeof p.marker === 'string' ? Core.markerConcept(p.marker) : undefined;
+  const source = p.source === undefined ? undefined : String(p.source);
+  return (
+    <>
+      <Separator />
+      <Section title="Provenance">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]" data-testid="provenance">
+          <Prop label="How">{marker ? <Coded concept={marker} /> : p.marker === undefined ? '' : String(p.marker)}</Prop>
+          <Prop label="Source">
+            {source === undefined ? '' : spec.source?.kind !== undefined && v.index.byId.has(source) ? <NodeButton v={v} id={source} /> : <SourceText text={source} />}
+          </Prop>
+          <Prop label="Retrieved">{p.retrieved === undefined ? '' : String(p.retrieved)}</Prop>
+          <Prop label="Agent">{p.agent === undefined ? '' : String(p.agent)}</Prop>
+          <Prop label="Note">{p.note === undefined ? '' : String(p.note)}</Prop>
+        </dl>
+      </Section>
+    </>
+  );
+}
+
+// Free text of a source: a link when it is a URL, else plain text.
+function SourceText({ text }: { text: string }) {
+  return safeUrl(text) ? <ExtLink url={text} /> : <span>{text}</span>;
+}
+
+function NodeButton({ v, id, note, props, edge, marker }: { v: Viewer; id: string; note?: string; props?: VEdge['p']; edge?: string; marker?: string }) {
   const n = v.index.byId.get(id);
   if (!n) return <code>{id}</code>;
   return (
     <button type="button" onClick={() => v.select(id)} title={n.id} className="flex w-full items-start gap-2 rounded px-1 py-0.5 text-left text-[13px] hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
       <KindDot kind={n.kind} className="mt-1.5" />
       <span className="min-w-0">
-        <span className="block break-words">{n.title}</span>
+        <span className="block break-words">
+          {n.title}
+          {marker && (
+            <Badge variant="outline" className="ml-1.5 h-4 px-1.5 align-middle text-[10px]" data-testid="edge-marker">
+              {marker}
+            </Badge>
+          )}
+        </span>
         {note && <span className="block text-xs break-words text-muted-foreground">{note}</span>}
         {props && <span className="block text-xs break-words text-muted-foreground">{Core.formatEdgeProps(props, edge)}</span>}
       </span>
@@ -147,14 +192,14 @@ function NodeButton({ v, id, note, props, edge }: { v: Viewer; id: string; note?
 }
 
 // A linked node with its citation, when the profile gives its kind a citation section.
-function LinkedCard({ v, id, props, edge }: { v: Viewer; id: string; props?: VEdge['p']; edge?: string }) {
+function LinkedCard({ v, id, props, edge, marker }: { v: Viewer; id: string; props?: VEdge['p']; edge?: string; marker?: string }) {
   const o = v.index.byId.get(id)!;
   const spec = (Core.profile.details?.citations ?? []).find((c) => c.kind === o.kind);
   const anchor = spec?.anchor ? Core.getPath(o.d, spec.anchor) : undefined;
   const url = spec?.url ? Core.getPath(o.d, spec.url) : undefined;
   return (
     <div className="flex flex-col gap-1 rounded-md border px-2.5 py-2">
-      <NodeButton v={v} id={id} props={props} edge={edge} />
+      <NodeButton v={v} id={id} props={props} edge={edge} marker={marker} />
       {o.sub && <div className="pl-5 text-xs text-muted-foreground">{o.sub}</div>}
       {Boolean(anchor || url) && (
         <div className="pl-5 text-xs">
@@ -169,7 +214,7 @@ function LinkedCard({ v, id, props, edge }: { v: Viewer; id: string; props?: VEd
 // The details of a selected edge: its kind, its 2 nodes, its note and its properties.
 function EdgeDetails({ v, edge }: { v: Viewer; edge: VEdge }) {
   const labels = Core.EDGE_LABEL[edge.k];
-  const props = Object.entries(edge.p ?? {});
+  const props = Object.entries(Core.withoutProvenance(edge.p) ?? {});
   return (
     <div className="px-4 pb-6" data-testid="edge-details">
       <div className="flex flex-col gap-2 pt-3 pb-3">
@@ -203,6 +248,7 @@ function EdgeDetails({ v, edge }: { v: Viewer; edge: VEdge }) {
           </Section>
         </>
       )}
+      <ProvenanceSection v={v} record={edge.p} />
       <Separator />
       <Section title="Properties" count={props.length}>
         {!props.length && <span className="text-xs text-muted-foreground">None.</span>}
@@ -340,6 +386,8 @@ export function DetailsPanel({ v }: { v: Viewer }) {
           </Section>
         </>
       )}
+
+      <ProvenanceSection v={v} record={d} />
 
       {isPart && (
         <>
@@ -503,7 +551,7 @@ export function DetailsPanel({ v }: { v: Viewer }) {
             <Divider />
             <Section title={capitalise(Core.KIND_PLURAL[kind])} count={edges.length}>
               {edges.map((e, i) =>
-                (D.citations ?? []).some((c) => c.kind === kind) ? <LinkedCard key={i} v={v} id={other(e)} props={e.p} edge={e.k} /> : <NodeButton key={i} v={v} id={other(e)} note={e.n} props={e.p} edge={e.k} />,
+                (D.citations ?? []).some((c) => c.kind === kind) ? <LinkedCard key={i} v={v} id={other(e)} props={e.p} edge={e.k} marker={markerLabel(e.p)} /> : <NodeButton key={i} v={v} id={other(e)} note={e.n} props={e.p} edge={e.k} marker={markerLabel(e.p)} />,
               )}
             </Section>
           </div>
@@ -526,7 +574,7 @@ export function DetailsPanel({ v }: { v: Viewer }) {
                   {g.label} · {g.list.length}
                 </div>
                 {g.list.map((e, i) => (
-                  <NodeButton key={i} v={v} id={other(e)} note={e.n} props={e.p} edge={e.k} />
+                  <NodeButton key={i} v={v} id={other(e)} note={e.n} props={e.p} edge={e.k} marker={markerLabel(e.p)} />
                 ))}
               </div>
             ))}

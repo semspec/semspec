@@ -4,6 +4,7 @@
 import type { Chip, Filters, Groups, Index, NodeStatus, Summary, VEdge, VNode, Walk } from './types';
 import { filterValues } from './tagged';
 import { fieldLabel } from './vocabulary';
+import { markerOf } from './provenance';
 import { getPath, isMuted, kindLabel, kindOf, kindPlural, linkedKinds, treeKinds } from './profile';
 
 // ---------- scope ----------
@@ -234,13 +235,14 @@ export function statusOf(index: Index, id: string, fields?: Filters['fields']): 
 
 // ---------- filters ----------
 
-type FacetKey = 'kinds' | 'lifecycles' | 'deliveries' | 'modules' | 'statuses';
+type FacetKey = 'kinds' | 'lifecycles' | 'deliveries' | 'modules' | 'statuses' | 'markers';
 const NODE_FIELD = { kinds: 'kind', lifecycles: 'lifecycle', deliveries: 'delivery' } as const;
-const FACET_KEYS: FacetKey[] = ['kinds', 'lifecycles', 'deliveries', 'modules', 'statuses'];
+const FACET_KEYS: FacetKey[] = ['kinds', 'lifecycles', 'deliveries', 'modules', 'statuses', 'markers'];
 
 function facetValues(index: Index, n: VNode, key: string, f: Filters, skip?: string): string[] {
   if (key.startsWith('field:')) return Array.from(fieldValues(index, key.slice(6), n.id));
   if (key === 'modules') return Array.from(groupsOf(index, n.id));
+  if (key === 'markers') return [markerOf(index.profile.provenance, n.d)];
   if (key === 'statuses') return [statusOf(index, n.id, Object.fromEntries(activeOf(f.fields, skip))).value ?? ''];
   return [(n[NODE_FIELD[key as keyof typeof NODE_FIELD]] as string) || ''];
 }

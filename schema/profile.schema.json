@@ -210,6 +210,39 @@
       "description": "The vocabulary of a field, by field path. The field is a node field, the lifecycle field or the field of a field filter. A value that is not a code of the vocabulary is an error.",
       "additionalProperties": { "type": "string", "description": "The id of a vocabulary." }
     },
+    "provenance": {
+      "type": "object",
+      "description": "Where a fact comes from, in the shape of W3C PROV-O. The fields apply to a node, to an edge property and to a refs item. Every part is optional.",
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string", "description": "The label of the filter by marker. The default is Provenance." },
+        "marker": {
+          "type": "object",
+          "required": ["field", "vocabulary"],
+          "additionalProperties": false,
+          "description": "How the fact was obtained. The value is a code of the vocabulary. It maps to the type of the prov:Activity that generated the fact.",
+          "properties": {
+            "field": { "type": "string", "description": "The field of the marker." },
+            "vocabulary": { "type": "string", "description": "The id of the vocabulary that holds the codes." }
+          }
+        },
+        "source": {
+          "type": "object",
+          "required": ["field"],
+          "additionalProperties": false,
+          "description": "Where the fact was read. It maps to prov:wasDerivedFrom.",
+          "properties": {
+            "field": { "type": "string", "description": "The field of the source." },
+            "kind": { "type": "string", "description": "The kind of a source node. When set, the field holds the id of a node of this kind, and the explorer makes an edge from the node to the source node." },
+            "edge": { "type": "string", "description": "The name of the edge to the source node. The default is derivedFrom." }
+          }
+        },
+        "retrieved": { "type": "string", "description": "The field of the date when the fact was read: YYYY, YYYY-MM or YYYY-MM-DD, not in the future. It maps to prov:generatedAtTime." },
+        "agent": { "type": "string", "description": "The field of the person or system that is responsible for the fact. It maps to prov:wasAttributedTo." },
+        "note": { "type": "string", "description": "The field of a free note on the origin." },
+        "requireSource": { "type": "array", "items": { "type": "string" }, "description": "Marker codes. A node or an edge with one of these markers must have a source. Needs marker and source." }
+      }
+    },
     "fieldFilters": {
       "type": "array",
       "description": "Filters on a list field or a text field of a node. A node of a kind with no such field takes the values of the nodes above or below it.",

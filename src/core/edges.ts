@@ -60,14 +60,14 @@ export function hasType(type: PropertyType, v: unknown): boolean {
 // The problems of the properties of 1 edge against its declaration. An edge name with no `properties`
 // declaration has no problem. An undeclared property is a warning. A missing required property and a
 // wrong type are errors. A value that is not a code of the vocabulary of its property is an error too.
-export function propertyProblems(spec: EdgeSpec | undefined, p: Record<string, unknown> | undefined, vocabularies?: Record<string, Vocabulary>): { errors: string[]; warnings: string[] } {
+export function propertyProblems(spec: EdgeSpec | undefined, p: Record<string, unknown> | undefined, vocabularies?: Record<string, Vocabulary>, exempt: string[] = []): { errors: string[]; warnings: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
   const declared = spec?.properties;
   if (!declared) return { errors, warnings };
   for (const [name, value] of Object.entries(p ?? {})) {
     const d = declared[name];
-    if (!d) warnings.push(`has the property "${name}", which the profile does not declare`);
+    if (!d) exempt.includes(name) || warnings.push(`has the property "${name}", which the profile does not declare`);
     else if (!hasType(d.type, value)) errors.push(`has the property "${name}" with the value ${JSON.stringify(value)}, which is not of the type ${d.type}`);
     else if (d.vocabulary !== undefined && Array.isArray(vocabularies?.[d.vocabulary]?.concepts)) {
       const problem = codeProblem(d.vocabulary, vocabularies![d.vocabulary], value);

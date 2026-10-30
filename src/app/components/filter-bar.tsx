@@ -16,7 +16,7 @@ import { Core, type Filters, type Kind, type StatusTone, type Vocabulary } from 
 import { EMPTY_FILTERS, type Viewer } from '@/lib/use-viewer';
 
 // A built-in facet, or "field:" and the field of a field filter of the profile.
-type FacetKey = 'kinds' | 'lifecycles' | 'deliveries' | 'modules' | 'statuses' | `field:${string}`;
+type FacetKey = 'kinds' | 'lifecycles' | 'deliveries' | 'modules' | 'statuses' | 'markers' | `field:${string}`;
 interface Option {
   value: string;
   label: string;
@@ -32,7 +32,7 @@ const fieldOf = (key: FacetKey) => (key.startsWith('field:') ? key.slice(6) : nu
 // The selected values of a facet.
 function selectedOf(filters: Filters, key: FacetKey): string[] {
   const field = fieldOf(key);
-  return field ? filters.fields?.[field] ?? [] : filters[key as Exclude<FacetKey, `field:${string}`>];
+  return field ? filters.fields?.[field] ?? [] : filters[key as Exclude<FacetKey, `field:${string}`>] ?? [];
 }
 
 function withSelected(filters: Filters, key: FacetKey, list: string[]): Filters {
@@ -65,6 +65,7 @@ const BASE_FACETS: { key: FacetKey; label: string }[] = [
   { key: 'deliveries', label: 'Delivery' },
   { key: 'modules', label: 'Group' },
   { key: 'statuses', label: 'Status' },
+  { key: 'markers', label: 'Provenance' },
 ];
 
 export function FilterBar({ v }: { v: Viewer }) {
@@ -73,11 +74,13 @@ export function FilterBar({ v }: { v: Viewer }) {
   const group = v.model.profile.facets;
   // The status facet is named by the profile too.
   const status = v.model.profile.status;
+  // The marker facet exists when the profile names a marker.
+  const provenance = v.model.profile.provenance;
   // The profile can add a filter for any list field or text field.
   const fieldFilters = v.model.profile.fieldFilters ?? [];
   const FACETS: { key: FacetKey; label: string }[] = [
-    ...BASE_FACETS.filter((f) => (f.key !== 'modules' || group) && (f.key !== 'statuses' || status)).map((f) =>
-      f.key === 'modules' && group ? { ...f, label: group.groupLabel } : f.key === 'statuses' && status ? { ...f, label: status.label } : f,
+    ...BASE_FACETS.filter((f) => (f.key !== 'modules' || group) && (f.key !== 'statuses' || status) && (f.key !== 'markers' || provenance?.marker)).map((f) =>
+      f.key === 'modules' && group ? { ...f, label: group.groupLabel } : f.key === 'statuses' && status ? { ...f, label: status.label } : f.key === 'markers' ? { ...f, label: Core.provenanceLabel() } : f,
     ),
     ...fieldFilters.map((f) => ({ key: `field:${f.field}` as FacetKey, label: f.label })),
   ];
@@ -111,6 +114,8 @@ export function FilterBar({ v }: { v: Viewer }) {
         list = [...status!.values.map((x) => ({ value: x.value, label: x.label, tone: x.tone })), { value: '', label: 'None', tone: null }]
           .filter((x) => values.has(x.value))
           .map((x) => ({ ...x, count: counts.get(x.value) ?? 0 }));
+      } else if (key === 'markers' && Core.markerScheme()) {
+        list = codedList(Core.markerScheme()!, Array.from(values), counts);
       } else if (key === 'lifecycles' && Core.schemeOf(v.model.profile.lifecycle.field)) {
         list = codedList(Core.schemeOf(v.model.profile.lifecycle.field)!.scheme, Array.from(values), counts);
       } else if (fieldOf(key)) {

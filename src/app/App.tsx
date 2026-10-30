@@ -216,7 +216,9 @@ function GraphApp({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus]);
   const active = v.scope || v.walk;
-  const status = `${v.canvasIds.length} nodes · ${v.canvasEdges.length} edges${v.walk ? ' · walk' : ''}`;
+  // The nodes of the scope that have no source, when the profile has a source field.
+  const noSource = active ? Core.missingSource(v.index, v.baseIds) : null;
+  const status = `${v.canvasIds.length} nodes · ${v.canvasEdges.length} edges${v.walk ? ' · walk' : ''}${noSource ? ` · ${noSource.missing} of ${noSource.total} without a source` : ''}`;
 
   return (
     <WorkspaceContext.Provider value={ws}>

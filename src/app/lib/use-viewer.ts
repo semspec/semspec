@@ -9,7 +9,7 @@ export type View = 'graph' | 'cards' | 'table';
 export type Scope = { type: 'node'; id: string } | { type: 'all' } | null;
 export type Panel = 'details' | 'expand';
 
-export const EMPTY_FILTERS: Filters = { q: '', kinds: [], lifecycles: [], deliveries: [], modules: [], statuses: [], fields: {} };
+export const EMPTY_FILTERS: Filters = { q: '', kinds: [], lifecycles: [], deliveries: [], modules: [], statuses: [], markers: [], fields: {} };
 
 // The tree group that holds a node. A reveal opens it.
 function groupOf(index: Index, id: string): string {

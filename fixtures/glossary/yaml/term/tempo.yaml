@@ -6,6 +6,10 @@ relations:
   - to: beat
     relation: sets the speed of
     weight: 1
+    method: told
+    editor: Jo
 origin:
   - primer:
       kind: Article
+method: told
+editor: Jo

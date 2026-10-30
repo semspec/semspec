@@ -21,6 +21,14 @@ export function setProfile(p: Profile) {
   edgeLabels = Object.fromEntries(Object.entries(p.edges).map(([k, v]) => [k, v.labels]));
 }
 
+// The properties of an edge without the fields that the profile names for provenance.
+function withoutProvenance(p: VEdge['p']): VEdge['p'] {
+  if (!p) return p;
+  const drop = C.provenanceFields(profile.provenance);
+  const rest = Object.fromEntries(Object.entries(p).filter(([k]) => !drop.includes(k)));
+  return Object.keys(rest).length ? rest : undefined;
+}
+
 export const Core = {
   get profile() {
     return profile;
@@ -65,7 +73,9 @@ export const Core = {
   getPath: C.getPath,
   taggedLines: C.taggedLines,
   // The properties of an edge as a line. A code shows as its label.
-  formatEdgeProps: (p: VEdge['p'], edge?: string) => C.formatEdgeProps(p, edge === undefined ? undefined : (k, v) => C.propertyLabel(profile, edge, k, v)),
+  formatEdgeProps: (p: VEdge['p'], edge?: string) => C.formatEdgeProps(withoutProvenance(p), edge === undefined ? undefined : (k, v) => C.propertyLabel(profile, edge, k, v)),
+  // The properties of an edge without the provenance parts. The panel shows those in their own section.
+  withoutProvenance: (p: VEdge['p']) => withoutProvenance(p),
   propertyLabel: (edge: string, property: string, value: unknown) => C.propertyLabel(profile, edge, property, value),
   // Vocabularies. A field with no scheme gives undefined.
   schemeOf: (field: string) => C.schemeOfField(profile, field),
@@ -77,6 +87,23 @@ export const Core = {
     const scheme = id === undefined ? undefined : profile.vocabularies?.[id];
     return scheme && typeof value === 'string' ? C.conceptOf(scheme, value) : undefined;
   },
+  // Provenance. The profile names the fields. The marker shows as the label of its code.
+  get provenance() {
+    return profile.provenance;
+  },
+  provenanceOf: (record: Record<string, unknown> | undefined) => C.provenanceOf(profile.provenance, record),
+  markerConcept: (marker: unknown) => {
+    const spec = profile.provenance?.marker;
+    const scheme = spec ? profile.vocabularies?.[spec.vocabulary] : undefined;
+    return scheme && Array.isArray(scheme.concepts) && typeof marker === 'string' ? C.conceptOf(scheme, marker) : undefined;
+  },
+  markerScheme: () => {
+    const spec = profile.provenance?.marker;
+    const scheme = spec ? profile.vocabularies?.[spec.vocabulary] : undefined;
+    return scheme && Array.isArray(scheme.concepts) ? scheme : undefined;
+  },
+  provenanceLabel: () => C.provenanceLabel(profile),
+  missingSource: C.missingSource,
   filterValues: C.filterValues,
   kindSpec: (id: string) => C.kindOf(profile, id),
 };

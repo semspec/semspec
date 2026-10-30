@@ -69,6 +69,20 @@ function partProperty(profile: Profile, field: { id: string; text: string }): Js
   return { type: 'array', items: { type: 'object', properties, additionalProperties: true } };
 }
 
+// The provenance fields: the marker takes the codes of its scheme, and the date is an ISO date.
+function provenanceProperties(profile: Profile): Record<string, JsonSchema> {
+  const spec = profile.provenance;
+  const out: Record<string, JsonSchema> = {};
+  if (!spec) return out;
+  const scheme = spec.marker ? profile.vocabularies?.[spec.marker.vocabulary] : undefined;
+  if (spec.marker) out[spec.marker.field] = scheme ? codeSchema(scheme) : text;
+  if (spec.source) out[spec.source.field] = text;
+  if (spec.retrieved) out[spec.retrieved] = { type: 'string', pattern: DATE_PATTERN };
+  if (spec.agent) out[spec.agent] = text;
+  if (spec.note) out[spec.note] = text;
+  return out;
+}
+
 export function kindSchemas(input: ProfileInput): Record<string, JsonSchema> {
   const profile = normalise(input);
   const { id: idKey, kind: kindKey } = profile.source;
@@ -93,6 +107,8 @@ export function kindSchemas(input: ProfileInput): Record<string, JsonSchema> {
       if (f.field in properties) return;
       properties[f.field] = f.from === 'keys' ? { type: 'array', items: { type: 'object', minProperties: 1 } } : { anyOf: [text, list] };
     });
+    // The provenance parts. They apply to a node and to the properties of an edge.
+    Object.assign(properties, provenanceProperties(profile));
     // A field with a vocabulary takes the codes of the scheme. A field of a dotted path gets no enum.
     for (const [field, id] of Object.entries(profile.fieldVocabularies ?? {})) {
       const scheme = profile.vocabularies?.[id];

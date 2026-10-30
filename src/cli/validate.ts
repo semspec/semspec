@@ -4,7 +4,7 @@
 // the names that the profile gives.
 import { readFileSync } from 'node:fs';
 import Ajv from 'ajv/dist/2020.js';
-import { buildModel, embeddedObjects, endProblems, getPath, linkTargetKey, parentFields, nodeCodeProblems, profileVocabularyProblems, propertyProblems, readLinkItem, refsOf, withDefaultKind, type Graph, type Profile } from '../core/index';
+import { buildModel, embeddedObjects, endProblems, getPath, linkTargetKey, parentFields, nodeCodeProblems, profileProvenanceProblems, profileVocabularyProblems, propertyProblems, provenanceFields, provenanceProblems, readLinkItem, refsOf, withDefaultKind, type Graph, type Profile } from '../core/index';
 
 const schemaPath = new URL('../../schema/profile.schema.json', import.meta.url);
 
@@ -30,6 +30,7 @@ function crossCheckProfile(p: Profile): string[] {
     need(`embedded ${x.field} owner`, x.owner);
   });
   errors.push(...profileVocabularyProblems(p));
+  errors.push(...profileProvenanceProblems(p));
   need('source defaultKind', p.source.defaultKind);
   need('checks kind', p.checks?.kind);
   need('facets groupKind', p.facets?.groupKind);
@@ -71,7 +72,7 @@ function crossCheckProfile(p: Profile): string[] {
 
 // Returns the errors, and the warnings. A warning does not stop the build.
 // `labels` names the source of each node, for example its file. A message then uses the label.
-export function validateGraph(graph: Graph, profile: Profile, labels?: string[]): { errors: string[]; warnings: string[] } {
+export function validateGraph(graph: Graph, profile: Profile, labels?: string[], today?: string): { errors: string[]; warnings: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
   const rawList = graph[profile.source.nodes];
@@ -148,11 +149,15 @@ export function validateGraph(graph: Graph, profile: Profile, labels?: string[])
       const i = list.findIndex((x) => x[profile.source.id] === id);
       return i >= 0 ? label(i, id) : `Node ${id}`;
     };
+    // The provenance of a node of the graph. A source must be a node of the kind that the profile names.
+    list.forEach((n, i) => provenanceProblems(profile, n, kindOfNode, today).forEach((m) => errors.push(`${label(i, n[profile.source.id])} ${m}`)));
+    const exempt = provenanceFields(profile.provenance);
     for (const e of model.edges) {
       const spec = profile.edges[e.k];
       const head = `${where(e.s)}, edge "${e.k}" to "${e.t}"`;
       endProblems(spec, kindOfNode.get(e.s), kindOfNode.get(e.t)).forEach((m) => errors.push(`${head} ${m}`));
-      const found = propertyProblems(spec, e.p, profile.vocabularies);
+      provenanceProblems(profile, e.p, kindOfNode, today).forEach((m) => errors.push(`${head} ${m}`));
+      const found = propertyProblems(spec, e.p, profile.vocabularies, exempt);
       found.errors.forEach((m) => errors.push(`${head} ${m}`));
       found.warnings.forEach((m) => warnings.push(`${head} ${m}`));
     }

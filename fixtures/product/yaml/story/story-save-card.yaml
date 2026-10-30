@@ -9,6 +9,12 @@ release: r2
 epics:
   - epic-checkout
 follows:
-  - story-pay-by-card
+  - id: story-pay-by-card
+    how: inferred
+    agent: Ben
+    retrieved: "2026-01"
 basis:
   - contract: {}
+how: inferred
+agent: Ben
+remark: Worked out from the support log.

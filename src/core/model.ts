@@ -10,6 +10,7 @@
 import type { CrossLink, Graph, Index, Model, ProfileInput, RawNode, VEdge, VNode } from './types';
 import { allLinkFields, embeddedObjects, firstOf, getPath, isMuted, kindOf, normalise, omitPath, refNote, withDefaultKind } from './profile';
 import { propsKey, readLinkItem, refProps, linkTargetKey } from './edges';
+import { derivedEdgeName } from './provenance';
 import { checkKey, checkTitle, citationTitle, deriveTitle, snippet, wordCasing } from './titles';
 
 // The items of a link field. A value that is not a list has none.
@@ -176,6 +177,10 @@ export function buildModel(graph: Graph, input: ProfileInput): Model {
     }
     if (P.supersededBy && n[P.supersededBy]) link(P.supersededBy, n[P.supersededBy]);
     for (const spec of P.refs!) for (const t of (n[spec.field] as Record<string, any>[]) ?? []) link(spec.field, t[spec.target], refNote(spec, t), refProps(spec, t));
+    // A source that is a node makes an edge from the node to the source node.
+    const source = P.provenance?.source;
+    const sourceId = source?.kind === undefined ? undefined : n[source.field];
+    if (source && typeof sourceId === 'string' && sourceId) link(derivedEdgeName(P.provenance!), sourceId);
   }
 
   const crossLinks: CrossLink[] = [];
