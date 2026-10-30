@@ -52,7 +52,7 @@ describe('the workspace file', () => {
     expect(links.length).toBe(37);
     expect(links.filter((c) => c.s === 'story-pay-by-card').map((c) => c.t)).toEqual(['pay-card', 'prov-payvale', 'prov-tillpay', 'prov-quillpay']);
     expect(links.every((c) => c.field === 'concerns' && c.graph === 'domain')).toBe(true);
-    expect(data.graphs[1].model.crossLinks).toEqual([]);
+    expect(data.graphs[1].model.crossLinks.every((c) => c.field === 'area' && c.graph === 'req')).toBe(true);
   });
   it('refuses a graph id that appears twice', () => {
     const file = copyWorkspace((ws) => (ws.graphs[1].id = 'req'));
@@ -110,11 +110,11 @@ describe('the retail market model of the workspace', () => {
   const index = buildIndex(domain.model);
   const edge = (s: string, k: string, t: string) => index.out.get(s)!.find((e) => e.k === k && e.t === t);
 
-  it('has 78 nodes in 14 kinds and no validation warning', () => {
+  it('has 80 nodes in 15 kinds and no validation warning', () => {
     expect(warnings).toEqual([]);
-    expect(domain.model.nodes.length).toBe(78);
-    const kinds = ['group', 'shop', 'marketplace', 'provider', 'carrier', 'zone', 'market', 'authority', 'category', 'delivery', 'method', 'rule', 'article', 'source'];
-    expect(kinds.map(count)).toEqual([3, 6, 2, 4, 3, 3, 6, 3, 12, 4, 4, 6, 14, 8]);
+    expect(domain.model.nodes.length).toBe(80);
+    const kinds = ['group', 'shop', 'marketplace', 'provider', 'carrier', 'zone', 'market', 'authority', 'category', 'delivery', 'method', 'rule', 'article', 'source', 'area'];
+    expect(kinds.map(count)).toEqual([3, 6, 2, 4, 3, 3, 6, 3, 12, 4, 4, 6, 14, 8, 2]);
     expect(domain.model.unresolved).toEqual([]);
   });
   it('shows the zones as containers of the markets in the grouped layout', () => {
@@ -158,7 +158,7 @@ describe('the retail market model of the workspace', () => {
     expect(propertyLabel(profile, 'operatesIn', 'status', 'suspended')).toBe('Suspended');
   });
   it('records the provenance marker of the nodes, and gives each verified fact a source', () => {
-    const marked = domain.model.nodes.filter((n) => n.kind !== 'source');
+    const marked = domain.model.nodes.filter((n) => n.kind !== 'source' && n.kind !== 'area');
     const by = (how: string) => marked.filter((n) => n.d.how === how);
     expect(by('verified').length + by('reported').length + by('inferred').length).toBe(marked.length);
     expect(by('verified').length).toBeGreaterThan(by('reported').length);
@@ -202,7 +202,7 @@ describe('the cross links in the model', () => {
     expect(card.map((c) => c.s)).toEqual(['epic-checkout', 'story-pay-by-card', 'story-pay-by-card-3ds', 'story-save-card', 'story-loose-child', 'dec-use-psp']);
     expect(incoming.get('domain')!.get('rule-warranty')).toBeUndefined();
     expect(incoming.get('domain')!.size).toBeGreaterThanOrEqual(20);
-    expect(incoming.get('req')!.size).toBe(0);
+    expect(incoming.get('req')!.size).toBe(2);
   });
   it('leave a link to a missing node out of the incoming links and report it as a warning', () => {
     const graph = json<{ nodes: Record<string, unknown>[] }>('product/graph.json');
@@ -228,9 +228,32 @@ describe('the cross link fields in the inputs', () => {
     const bad = { ...profile, crossLinks: [{ field: 'complies', graph: 'domain', label: 'x' }] };
     expect(validateProfile(bad).join()).toMatch(/also a parent or link field/);
   });
-  it('refuse a cross link field that is not a list of ids', () => {
+  it('refuse a cross link field that is not an id or a list of ids', () => {
+    const graph: Graph = { nodes: [{ id: 'a', kind: 'epic', concerns: 42 }] };
+    expect(validateGraph(graph, profile).errors.join()).toMatch(/Cross link field "concerns" of "a" is not an id or a list of ids/);
+  });
+  it('accept a cross link field with 1 id', () => {
     const graph: Graph = { nodes: [{ id: 'a', kind: 'epic', concerns: 'pay-card' }] };
-    expect(validateGraph(graph, profile).errors.join()).toMatch(/Cross link field "concerns" of "a" is not a list of ids/);
+    expect(validateGraph(graph, profile).errors).toEqual([]);
+  });
+  it('refuse a cross link field that is a parent field, and accept one that is an embedded field', () => {
+    const domain = loadWorkspace(workspacePath).data.graphs[1].model.profile;
+    expect(domain.crossLinks).toEqual([{ field: 'area', graph: 'req', label: 'Area in the requirements' }]);
+    expect(domain.embedded!.some((e) => e.field === 'area')).toBe(true);
+    for (const field of ['inArea', 'ownedBy', 'supervisedBy']) {
+      expect(validateProfile({ ...domain, crossLinks: [{ field, graph: 'req', label: 'x' }] }).join(), field).toMatch(/also a parent or link field/);
+    }
+  });
+  it('make the group node and its members point at the same node of the other graph', () => {
+    const { data } = loadWorkspace(workspacePath);
+    const [req, domain] = data.graphs;
+    const links = domain.model.crossLinks.map((c) => `${c.s}>${c.t}`).sort();
+    expect(links).toEqual(['auth-central>epic-search', 'auth-coast>epic-checkout', 'auth-north>epic-checkout', 'epic-checkout>epic-checkout', 'epic-search>epic-search']);
+    expect(domain.model.nodes.find((n) => n.id === 'epic-checkout')!.kind).toBe('area');
+    expect(domain.model.nodes.find((n) => n.id === 'auth-north')!.d).not.toHaveProperty('area');
+    const used = incomingCrossLinks(data.graphs).get('req')!.get('epic-checkout')!;
+    expect(used.map((c) => c.s).sort()).toEqual(['auth-coast', 'auth-north', 'epic-checkout']);
+    expect(req.model.nodes.some((n) => n.id === 'epic-checkout')).toBe(true);
   });
 });
 

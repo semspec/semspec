@@ -1,7 +1,7 @@
 id: req-cross-links
 kind: requirement
 title: Link a node to a node of another graph
-statement: A profile declares cross link fields with the id of the target graph and a label. A field holds a list of node ids of the target graph. A cross link is not an edge of the graph. The details panel shows the outgoing cross links, and the incoming ones as Used by. A click on an entry shows the target node in its graph.
+statement: A profile declares cross link fields with the id of the target graph and a label. A field holds 1 node id or a list of node ids of the target graph. The field can also be an embedded field. Then the group node that the embedded field makes has the same cross link. A cross link is not an edge of the graph. The details panel shows the outgoing cross links, and the incoming ones as Used by. A click on an entry shows the target node in its graph.
 capabilities:
   - cap-workspace
 area:
@@ -43,12 +43,37 @@ acceptance:
         file: test/workspace.test.ts
         name: leave a link to a missing node out of the incoming links and report it as a warning
   - id: field-shape
-    text: A cross link field is a list of ids, and it is not a parent or link field.
+    text: A cross link field is 1 id or a list of ids, and it is not a parent or link field.
     status: verified
     tests:
       - type: unit
         file: test/workspace.test.ts
-        name: refuse a cross link field that is not a list of ids
+        name: refuse a cross link field that is not an id or a list of ids
+      - type: unit
+        file: test/workspace.test.ts
+        name: accept a cross link field with 1 id
+      - type: unit
+        file: test/core.test.ts
+        name: reads a single string as a list of 1 id, and drops other values
       - type: unit
         file: test/workspace.test.ts
         name: refuse a crossLinks entry that is also a link field
+  - id: embedded-field
+    text: A field can be an embedded field and a cross link field. The member and the group node of the embedded field both have the cross link, and the target node shows both as Used by. A parent or link field is still refused.
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: keeps the group node, the edge and a cross link from each member and from the group node
+      - type: unit
+        file: test/core.test.ts
+        name: shows the members and the group node as Used by on the target node
+      - type: unit
+        file: test/core.test.ts
+        name: adds no cross link to the group node of an object value
+      - type: unit
+        file: test/workspace.test.ts
+        name: refuse a cross link field that is a parent field, and accept one that is an embedded field
+      - type: unit
+        file: test/workspace.test.ts
+        name: make the group node and its members point at the same node of the other graph

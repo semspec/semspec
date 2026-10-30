@@ -111,12 +111,13 @@ export function validateGraph(graph: Graph, profile: Profile, labels?: string[],
       }
     });
   });
-  // A cross link field holds a list of node ids of another graph.
+  // A cross link field holds 1 node id or a list of node ids of another graph.
   list.forEach((n: Record<string, unknown>, i: number) => {
     for (const c of profile.crossLinks ?? []) {
       const v = n[c.field];
       if (v === undefined) continue;
-      if (!Array.isArray(v) || v.some((t) => typeof t !== 'string')) errors.push(`Cross link field "${c.field}" of "${String(n[profile.source.id])}" is not a list of ids${labels ? ` (${label(i, n[profile.source.id])})` : ''}`);
+      if (typeof v === 'string') continue;
+      if (!Array.isArray(v) || v.some((t) => typeof t !== 'string')) errors.push(`Cross link field "${c.field}" of "${String(n[profile.source.id])}" is not an id or a list of ids${labels ? ` (${label(i, n[profile.source.id])})` : ''}`);
     }
   });
   // A field with a vocabulary holds codes of the scheme.

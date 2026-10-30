@@ -124,6 +124,12 @@ export function embeddedObjects(spec: EmbeddedSpec, nodes: Record<string, any>[]
   return [...found.values()];
 }
 
+// The node ids that a cross link field holds. The field holds 1 id or a list of ids. Any other item is dropped.
+export function crossLinkTargets(value: unknown): string[] {
+  if (typeof value === 'string') return [value];
+  return Array.isArray(value) ? value.filter((t): t is string => typeof t === 'string') : [];
+}
+
 // A copy of the object with the value at the dotted path removed. The input stays as it is.
 export function omitPath<T extends Record<string, any>>(obj: T, path: string): T {
   const [head, ...rest] = path.split('.');

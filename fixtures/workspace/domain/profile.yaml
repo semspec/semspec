@@ -17,7 +17,7 @@ lifecycle:
 kinds:
   - { id: zone, label: Zone, plural: zones, prefix: zone-, role: hierarchy, color: { light: "#5f3dc4", dark: "#b197fc" }, chips: [members] }
   - { id: market, label: Market, plural: markets, prefix: mkt-, role: hierarchy, parents: [[inZone]], iri: "schema:Place", color: { light: "#1971c2", dark: "#74c0fc" }, chips: [lifecycle, members] }
-  - { id: authority, label: Authority, plural: authorities, prefix: auth-, role: linked, color: { light: "#495057", dark: "#adb5bd" }, chips: [] }
+  - { id: authority, label: Authority, plural: authorities, prefix: auth-, role: linked, parents: [[inArea]], color: { light: "#495057", dark: "#adb5bd" }, chips: [] }
   - { id: group, label: Group, plural: groups, prefix: grp-, role: hierarchy, iri: "schema:Organization", color: { light: "#862e9c", dark: "#e599f7" }, chips: [{ field: segment }, members] }
   - { id: shop, label: Shop, plural: shops, prefix: shop-, role: hierarchy, parents: [[ownedBy]], iri: "schema:Store", color: { light: "#2f9e44", dark: "#8ce99a" }, chips: [{ field: segment }, lifecycle] }
   - { id: marketplace, label: Marketplace, plural: marketplaces, prefix: mp-, role: linked, parents: [[ownedBy]], iri: "schema:Organization", color: { light: "#0b7285", dark: "#66d9e8" }, chips: [{ field: segment }, lifecycle] }
@@ -26,6 +26,7 @@ kinds:
   - { id: category, label: Category, plural: categories, prefix: cat-, role: linked, parents: [[broader]], iri: "schema:Product", color: { light: "#c2255c", dark: "#f783ac" }, chips: [members] }
   - { id: delivery, label: Delivery option, plural: delivery options, prefix: del-, role: linked, color: { light: "#087f5b", dark: "#63e6be" }, chips: [] }
   - { id: method, label: Payment method, plural: payment methods, prefix: pay-, role: linked, color: { light: "#a61e4d", dark: "#faa2c1" }, chips: [] }
+  - { id: area, label: Area, plural: areas, prefix: epic-, role: hierarchy, color: { light: "#5c7cfa", dark: "#91a7ff" }, chips: [members] }
   - { id: rule, label: Rule, plural: rules, prefix: rule-, role: hierarchy, iri: "schema:Legislation", color: { light: "#9c36b5", dark: "#da77f2" }, chips: [{ field: enacted, template: "since {value}" }, members] }
   - { id: article, label: Article, plural: articles, prefix: art-, role: hierarchy, parents: [[inRule]], color: { light: "#6741d9", dark: "#b197fc" }, chips: [{ field: number, template: "Art. {value}" }] }
   - { id: source, label: Source, plural: sources, prefix: src-, role: linked, color: { light: "#6c757d", dark: "#ced4da" }, chips: [] }
@@ -45,6 +46,11 @@ edges:
     iri: "schema:containedInPlace"
     from: [market]
     to: [zone]
+  inArea:
+    labels: [In area, Has authority]
+    down: true
+    from: [authority]
+    to: [area]
   supervisedBy:
     labels: [Supervised by, Supervises]
     from: [market]
@@ -146,6 +152,9 @@ fieldFilters:
   - { field: basis, label: Kind of rule, from: keys, values: { statute: Statute, guideline: Guideline, ruling: Court ruling } }
 embedded:
   - { owner: article, field: rule, kind: rule, edge: inRule }
+  - { owner: authority, field: area, kind: area, edge: inArea }
+crossLinks:
+  - { field: area, graph: req, label: Area in the requirements }
 groups:
   hierarchy: Market tree
 details:

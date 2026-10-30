@@ -134,8 +134,8 @@ export interface DetailsSpec {
   }[];
 }
 
-// A field that points into another graph of the workspace. The field holds a list of node ids
-// of the target graph. `graph` is the id of the target graph in the workspace file.
+// A field that points into another graph of the workspace. The field holds 1 node id or a list of node ids
+// of the target graph. The field can also be an `embedded` field. `graph` is the id of the target graph in the workspace file.
 export interface CrossLinkSpec {
   field: string;
   graph: string;

@@ -8,7 +8,7 @@
 // An edge has a kind, an optional note and optional properties. The model keeps parallel edges (the same
 // source, target and kind) when their properties differ, and keeps 1 edge when the properties are equal.
 import type { CrossLink, Graph, Index, Model, ProfileInput, RawNode, VEdge, VNode } from './types';
-import { allLinkFields, embeddedObjects, firstOf, getPath, isMuted, kindOf, normalise, omitPath, refNote, withDefaultKind } from './profile';
+import { allLinkFields, crossLinkTargets, embeddedObjects, firstOf, getPath, isMuted, kindOf, normalise, omitPath, refNote, withDefaultKind } from './profile';
 import { propsKey, readLinkItem, refProps, linkTargetKey } from './edges';
 import { derivedEdgeName } from './provenance';
 import { checkKey, checkTitle, citationTitle, deriveTitle, snippet, wordCasing } from './titles';
@@ -183,12 +183,20 @@ export function buildModel(graph: Graph, input: ProfileInput): Model {
     if (source && typeof sourceId === 'string' && sourceId) link(derivedEdgeName(P.provenance!), sourceId);
   }
 
+  // A cross link reads the value of the node as it is in the graph, so an embedded field can also be a cross link field.
   const crossLinks: CrossLink[] = [];
   for (const n of graphNodes) {
     for (const spec of P.crossLinks ?? []) {
-      const value = n[spec.field];
-      if (!Array.isArray(value)) continue;
-      for (const t of value) if (typeof t === 'string') crossLinks.push({ s: n[idKey], field: spec.field, graph: spec.graph, t });
+      for (const t of crossLinkTargets(n[spec.field])) crossLinks.push({ s: n[idKey], field: spec.field, graph: spec.graph, t });
+    }
+  }
+  // The group node of an embedded plain id gets the cross link of the field. Its id is the id in the target graph.
+  for (const e of P.embedded!) {
+    for (const spec of (P.crossLinks ?? []).filter((c) => c.field === e.field)) {
+      for (const { id, object } of embeddedObjects(e, graphNodes, idKey, kindKey)) {
+        const plain = Object.keys(object).length === 0;
+        if (plain && !graphNodes.some((n) => n[idKey] === id)) crossLinks.push({ s: id, field: spec.field, graph: spec.graph, t: id });
+      }
     }
   }
 

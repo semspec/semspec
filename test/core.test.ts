@@ -14,7 +14,9 @@ import {
   deriveTitle,
   facetCounts,
   fieldValues,
+  checkCrossLinks,
   humanise,
+  incomingCrossLinks,
   kindSchemas,
   neighbourGroups,
   neighbourIds,
@@ -604,5 +606,93 @@ describe('the groups in the scope', () => {
   it('links the terms through the refs', () => {
     expect(gModel.edges.filter((e) => e.k === 'relations').map((e) => `${e.s}>${e.t}:${e.n}`).sort()).toEqual(['chord>scale:is built from', 'scale>chord:chords are built from it', 'tempo>beat:sets the speed of']);
     expect(gModel.unresolved).toEqual([]);
+  });
+});
+
+describe('a cross link field with 1 id', () => {
+  const FIXTURES = [
+    { name: 'product', ...product },
+    { name: 'safety', ...safety },
+  ];
+  it('reads a single string as a list of 1 id, and drops other values', () => {
+    for (const f of FIXTURES) {
+      const profile: Profile = { ...f.profile, crossLinks: [{ field: 'ref', graph: 'other', label: 'Ref' }] };
+      const graph = structuredClone(f.graph) as Record<string, any>;
+      const list = graph[f.profile.source.nodes] as Record<string, any>[];
+      list[0].ref = 'x-1';
+      list[1].ref = ['x-2', 'x-3'];
+      list[2].ref = 42;
+      const model = buildModel(graph, profile);
+      const id = (i: number) => list[i][f.profile.source.id];
+      expect(model.crossLinks, f.name).toEqual([
+        { s: id(0), field: 'ref', graph: 'other', t: 'x-1' },
+        { s: id(1), field: 'ref', graph: 'other', t: 'x-2' },
+        { s: id(1), field: 'ref', graph: 'other', t: 'x-3' },
+      ]);
+    }
+  });
+});
+
+describe('a field that is an embedded field and a cross link field', () => {
+  // The glossary holds plain ids. The safety graph holds objects, so each owner gets its id.
+  const plainCases = () => {
+    const safetyGraph = structuredClone(safety.graph) as Record<string, any>;
+    const e = safety.profile.embedded![0];
+    for (const n of safetyGraph[safety.profile.source.nodes] as Record<string, any>[]) {
+      if (n[safety.profile.source.kind] === e.owner && n[e.field]?.[e.id!]) n[e.field] = n[e.field][e.id!];
+    }
+    return [
+      { name: 'glossary', graph: glossary.graph as Record<string, any>, profile: glossary.profile },
+      { name: 'safety', graph: safetyGraph, profile: safety.profile },
+    ];
+  };
+  const withCross = (profile: Profile): Profile => ({ ...profile, crossLinks: [{ field: profile.embedded![0].field, graph: 'other', label: 'Other' }] });
+
+  it('keeps the group node, the edge and a cross link from each member and from the group node', () => {
+    for (const c of plainCases()) {
+      const profile = withCross(c.profile);
+      const e = profile.embedded![0];
+      const model = buildModel(c.graph, profile);
+      const plain = buildModel(c.graph, c.profile);
+      expect(model.nodes, c.name).toEqual(plain.nodes);
+      expect(model.edges, c.name).toEqual(plain.edges);
+      const groups = model.nodes.filter((n) => n.kind === e.kind && !(c.graph[profile.source.nodes] as Record<string, any>[]).some((x) => x[profile.source.id] === n.id));
+      expect(groups.length, c.name).toBeGreaterThan(0);
+      const idKey = profile.source.id;
+      const members = (c.graph[profile.source.nodes] as Record<string, any>[]).filter((n) => (n[profile.source.kind] ?? profile.source.defaultKind) === e.owner && typeof n[e.field] === 'string');
+      for (const g of groups) {
+        const own = model.crossLinks.filter((l) => l.s === g.id);
+        expect(own, `${c.name} ${g.id}`).toEqual([{ s: g.id, field: e.field, graph: 'other', t: g.id }]);
+        for (const m of members.filter((x) => x[e.field] === g.id)) {
+          expect(model.crossLinks.filter((l) => l.s === m[idKey]), `${c.name} ${m[idKey]}`).toEqual([{ s: m[idKey], field: e.field, graph: 'other', t: g.id }]);
+          expect(model.nodes.find((n) => n.id === m[idKey])!.d, c.name).not.toHaveProperty(e.field);
+        }
+      }
+      expect(buildIndex(model).crossOut.get(groups[0].id)!.map((l) => l.t), c.name).toEqual([groups[0].id]);
+    }
+  });
+  it('shows the members and the group node as Used by on the target node', () => {
+    for (const c of plainCases()) {
+      const profile = withCross(c.profile);
+      const e = profile.embedded![0];
+      const model = buildModel(c.graph, profile);
+      const group = model.nodes.find((n) => n.kind === e.kind && model.crossLinks.some((l) => l.s === n.id))!;
+      const target: Graph = { nodes: [{ id: group.id, kind: 'any' }] };
+      const targetProfile: Profile = { ...profile, source: { nodes: 'nodes', id: 'id', kind: 'kind' }, embedded: [], crossLinks: [] };
+      const graphs = [
+        { id: 'one', label: 'One', model },
+        { id: 'other', label: 'Other', model: buildModel(target, targetProfile) },
+      ];
+      const used = incomingCrossLinks(graphs).get('other')!.get(group.id)!;
+      expect(used.map((l) => l.s).sort(), c.name).toEqual(model.crossLinks.filter((l) => l.t === group.id).map((l) => l.s).sort());
+      expect(used.length, c.name).toBeGreaterThanOrEqual(2);
+      expect(checkCrossLinks(graphs).errors, c.name).toEqual([]);
+    }
+  });
+  it('adds no cross link to the group node of an object value', () => {
+    const e = safety.profile.embedded![0];
+    const model = buildModel(safety.graph, withCross(safety.profile));
+    const groups = model.nodes.filter((n) => n.kind === e.kind).map((n) => n.id);
+    expect(model.crossLinks.filter((l) => groups.includes(l.s))).toEqual([]);
   });
 });

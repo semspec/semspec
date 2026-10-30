@@ -92,13 +92,13 @@
     "links": { "type": "array", "items": { "type": "string" }, "description": "Fields that hold lists of node ids and are not parent fields." },
     "crossLinks": {
       "type": "array",
-      "description": "Fields that point into another graph of the workspace. Each field holds a list of node ids of the target graph. These links are not edges of this graph.",
+      "description": "Fields that point into another graph of the workspace. Each field holds 1 node id or a list of node ids of the target graph. A field can also be an embedded field. These links are not edges of this graph.",
       "items": {
         "type": "object",
         "required": ["field", "graph", "label"],
         "additionalProperties": false,
         "properties": {
-          "field": { "type": "string", "description": "The field of a node. It holds a list of node ids of the target graph." },
+          "field": { "type": "string", "description": "The field of a node. It holds 1 node id or a list of node ids of the target graph." },
           "graph": { "type": "string", "description": "The id of the target graph in the workspace file." },
           "label": { "type": "string", "description": "The title of the section in the details panel, for example \"Uses term\"." }
         }
