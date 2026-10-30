@@ -1,0 +1,155 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright 2026 The Semspec Authors */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* The demo pages are large and hold no class of the site. */
+@source not "../public/demo";
+
+@custom-variant dark (&:is(.dark *));
+
+@import "../../src/app/tokens.css";
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  html {
+    @apply font-sans;
+    scroll-padding-top: 5rem;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+  code {
+    @apply font-mono;
+  }
+}
+
+/* The clip box of the graph in the hero. The mask fades the graph in from the left edge of the box, which is the left edge
+   of the trace card. The text column lies left of that edge, so no mark of the graph reaches it. The mask also fades the right edge. */
+/* The dot grid of the hero. On a narrow screen the trace card is below the text, so the dots fade in towards the bottom.
+   On a wide screen the trace card is on the right, so the dots fade in towards the right. */
+.hero-dots {
+  background-image: radial-gradient(color-mix(in oklab, var(--foreground) 22%, transparent) 1px, transparent 1.5px);
+  background-size: 20px 20px;
+  mask-image: linear-gradient(to bottom, transparent 30%, #000 75%);
+}
+@media (min-width: 64rem) {
+  .hero-dots {
+    mask-image: radial-gradient(ellipse 55% 85% at 78% 50%, #000 25%, transparent 80%);
+  }
+}
+
+.hero-graph-clip {
+  mask-image: linear-gradient(to right, transparent 0, #000 30%, #000 80%, transparent 100%);
+}
+
+/* Code from Shiki. The theme sets the colours through variables, 1 set for each theme. */
+.code .shiki {
+  @apply m-0 overflow-x-auto bg-transparent px-4 py-3 font-mono text-[13px] leading-6;
+}
+.code .shiki,
+.code .shiki span {
+  color: var(--shiki-light);
+}
+.dark .code .shiki,
+.dark .code .shiki span {
+  color: var(--shiki-dark);
+}
+.code .shiki code {
+  @apply font-mono;
+}
+
+/* The body of a docs page. The HTML comes from Markdown at build time, so the styles select tags. */
+.doc {
+  @apply text-base leading-7 text-pretty;
+  overflow-wrap: break-word;
+}
+.doc > :first-child {
+  margin-top: 0;
+}
+.doc :is(p, ul, ol, blockquote, .doc-table, .doc-code) {
+  @apply my-4;
+}
+.doc h2 {
+  @apply mt-10 mb-3 scroll-mt-20 text-2xl font-semibold tracking-tight;
+}
+.doc h3 {
+  @apply mt-8 mb-2 scroll-mt-20 text-lg font-semibold tracking-tight;
+}
+.doc h4 {
+  @apply mt-6 mb-2 font-semibold;
+}
+.doc :is(h2, h3) .doc-anchor {
+  @apply ml-2 rounded-sm text-muted-foreground no-underline opacity-0 transition-opacity outline-none;
+}
+.doc :is(h2, h3):hover .doc-anchor,
+.doc :is(h2, h3) .doc-anchor:focus-visible {
+  @apply opacity-100;
+}
+.doc :is(h2, h3) .doc-anchor:focus-visible {
+  @apply ring-3 ring-ring/50;
+}
+@media (hover: none) {
+  .doc :is(h2, h3) .doc-anchor {
+    @apply opacity-40;
+  }
+}
+.doc a:not(.doc-anchor) {
+  @apply font-medium text-foreground underline decoration-muted-foreground/50 underline-offset-4 hover:decoration-foreground;
+}
+.doc ul {
+  @apply list-disc pl-6;
+}
+.doc ol {
+  @apply list-decimal pl-6;
+}
+.doc li + li {
+  @apply mt-1.5;
+}
+.doc li > :is(ul, ol) {
+  @apply my-1.5;
+}
+.doc li::marker {
+  @apply text-muted-foreground;
+}
+.doc blockquote {
+  @apply border-l-2 pl-4 text-muted-foreground;
+}
+.doc hr {
+  @apply my-8;
+}
+.doc img {
+  @apply h-auto max-w-full rounded-lg;
+}
+.doc :not(pre) > code {
+  @apply rounded-sm bg-muted px-1.5 py-0.5 text-[0.875em] break-words;
+}
+.doc-table {
+  @apply overflow-x-auto rounded-lg border;
+}
+.doc-table table {
+  @apply w-full min-w-xl border-collapse text-sm;
+}
+.doc-table :is(th, td) {
+  @apply border-b px-3 py-2 text-left align-top;
+}
+.doc-table th {
+  @apply bg-muted/50 font-medium;
+}
+.doc-table tr:last-child td {
+  @apply border-b-0;
+}
+.doc-code {
+  @apply min-w-0 overflow-hidden rounded-xl border bg-card text-card-foreground;
+}
+.doc-code figcaption {
+  @apply border-b bg-muted/50 px-4 py-1.5 font-mono text-xs text-muted-foreground;
+}

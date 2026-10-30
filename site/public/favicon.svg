@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- SPDX-License-Identifier: Apache-2.0 -->
+  <!-- Copyright 2026 The Semspec Authors -->
+  <style>
+    .mark { fill: #171717; stroke: #171717; }
+    @media (prefers-color-scheme: dark) {
+      .mark { fill: #fafafa; stroke: #fafafa; }
+    }
+  </style>
+  <g class="mark">
+    <path d="M16 7 L6 25 M16 7 L26 25 M6 25 L26 25" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="16" cy="7" r="4.5" stroke="none"/>
+    <circle cx="6" cy="25" r="4.5" stroke="none"/>
+    <circle cx="26" cy="25" r="4.5" stroke="none"/>
+  </g>
+</svg>
