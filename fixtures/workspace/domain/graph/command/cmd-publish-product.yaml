@@ -1,0 +1,8 @@
+id: "cmd-publish-product"
+kind: "command"
+term: "Publish product"
+definition: "The shop shows a product to buyers."
+partOf: ["agg-product"]
+emits: ["evt-product-published"]
+refs:
+  - { to: ent-product, relation: "changes" }

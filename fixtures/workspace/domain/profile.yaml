@@ -1,0 +1,99 @@
+project: Shop domain model
+source: { nodes: nodes, id: id, kind: kind }
+fields:
+  title: [term]
+  statement: [definition]
+lifecycle:
+  field: state
+  fallback: stable
+kinds:
+  - id: context
+    label: Context
+    plural: contexts
+    prefix: ctx-
+    role: hierarchy
+    color: { light: "#5f3dc4", dark: "#b197fc" }
+    chips: [members]
+  - id: aggregate
+    label: Aggregate
+    plural: aggregates
+    prefix: agg-
+    role: hierarchy
+    parents: [[partOf]]
+    color: { light: "#1971c2", dark: "#74c0fc" }
+    chips: [members]
+  - id: entity
+    label: Entity
+    plural: entities
+    prefix: ent-
+    role: hierarchy
+    parents: [[partOf]]
+    color: { light: "#2f9e44", dark: "#8ce99a" }
+    chips: [{ field: role, tone: good }]
+  - id: value
+    label: Value object
+    plural: value objects
+    prefix: vo-
+    role: hierarchy
+    parents: [[partOf]]
+    color: { light: "#0b7285", dark: "#66d9e8" }
+    chips: []
+  - id: command
+    label: Command
+    plural: commands
+    prefix: cmd-
+    role: hierarchy
+    parents: [[partOf]]
+    color: { light: "#d9480f", dark: "#ffa94d" }
+    chips: []
+  - id: query
+    label: Query
+    plural: queries
+    prefix: qry-
+    role: hierarchy
+    parents: [[partOf]]
+    color: { light: "#e67700", dark: "#ffd43b" }
+    chips: []
+  - id: event
+    label: Event
+    plural: events
+    prefix: evt-
+    role: hierarchy
+    parents: [[partOf]]
+    color: { light: "#c2255c", dark: "#f783ac" }
+    chips: [{ field: trigger, template: "after {value}", tone: plain }]
+edges:
+  partOf: { labels: [Part of, Contains], down: true }
+  emits: { labels: [Emits, Emitted by] }
+  handledBy: { labels: [Handled by, Handles] }
+  refs: { labels: [Refers to, Referred from] }
+links: [emits, handledBy]
+refs: { field: refs, target: to, note: relation }
+layout: { default: grouped, groupEdge: partOf }
+fieldFilters:
+  - field: anchors
+    label: Standard
+    from: keys
+    values:
+      std-pay: Payment message standard
+      std-ccy: Currency code standard
+      std-geo: Postal address standard
+      std-card: Card number standard
+      std-code: Product code standard
+      std-ord: Order message standard
+groups:
+  hierarchy: Domain tree
+details:
+  properties:
+    - { label: Avoid, field: avoid, format: list }
+  statementTitle: { default: Definition }
+  taggedLists:
+    - title: Standard anchors
+      field: anchors
+      labels:
+        std-pay.element: Payment message element
+        std-ccy.element: Currency code element
+        std-geo.element: Address element
+        std-card.element: Card number element
+        std-code.element: Product code element
+        std-ord.element: Order message element

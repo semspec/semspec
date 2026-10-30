@@ -1,0 +1,7 @@
+id: "cmd-request-payment"
+kind: "command"
+term: "Request payment"
+definition: "The shop asks for payment of a placed order."
+partOf: ["agg-payment"]
+refs:
+  - { to: ent-payment, relation: "creates" }

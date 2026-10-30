@@ -1,0 +1,5 @@
+id: "vo-refund-reason"
+kind: "value"
+term: "Refund reason"
+definition: "Why the shop pays money back, for example a cancelled order or a damaged item."
+partOf: ["agg-refund"]

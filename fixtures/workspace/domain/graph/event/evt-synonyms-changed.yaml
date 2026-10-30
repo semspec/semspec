@@ -1,0 +1,7 @@
+id: "evt-synonyms-changed"
+kind: "event"
+term: "Synonyms changed"
+definition: "A synonym set has new words."
+trigger: "Define synonyms"
+partOf: ["agg-synonyms"]
+handledBy: ["qry-search-products"]

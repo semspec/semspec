@@ -1,0 +1,12 @@
+id: "ent-order"
+kind: "entity"
+term: "Order"
+definition: "A buyer request to buy the items of a basket. It is the aggregate root."
+role: "Aggregate root"
+avoid: ["purchase"]
+partOf: ["agg-order"]
+refs:
+  - { to: ent-basket, relation: "is made from" }
+  - { to: vo-address, relation: "ships to" }
+anchors:
+  - std-ord: { element: "Order header" }

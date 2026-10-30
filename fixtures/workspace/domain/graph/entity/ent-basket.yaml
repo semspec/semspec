@@ -1,0 +1,9 @@
+id: "ent-basket"
+kind: "entity"
+term: "Basket"
+definition: "The items that a buyer plans to buy. It is the aggregate root."
+role: "Aggregate root"
+avoid: ["cart"]
+partOf: ["agg-basket"]
+refs:
+  - { to: ent-product, relation: "holds lines for" }

@@ -1,0 +1,9 @@
+id: "vo-money"
+kind: "value"
+term: "Money"
+definition: "An amount and a currency. Two amounts add up only in the same currency."
+avoid: ["amount"]
+partOf: ["agg-payment"]
+anchors:
+  - std-pay: { element: "Amount" }
+  - std-ccy: { element: "Currency code" }

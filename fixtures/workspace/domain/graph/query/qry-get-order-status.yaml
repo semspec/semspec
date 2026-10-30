@@ -1,0 +1,8 @@
+id: "qry-get-order-status"
+kind: "query"
+term: "Get order status"
+definition: "Returns the state of an order and the state of its payment."
+partOf: ["agg-order"]
+refs:
+  - { to: ent-order, relation: "reads" }
+  - { to: ent-payment, relation: "reads" }

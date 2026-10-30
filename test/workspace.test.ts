@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildIndex, buildModel, checkCrossLinks, incomingCrossLinks, type Graph, type Profile, type WorkspaceData } from '@core/index';
+import { findContainers } from '../src/app/lib/layouts';
 import { run, startWorkspaceServer } from '../src/cli/index';
 import { loadWorkspace } from '../src/cli/workspace';
 import { validateGraph, validateProfile } from '../src/cli/validate';
@@ -40,12 +41,16 @@ describe('the workspace file', () => {
       ['req', 'Requirements'],
       ['domain', 'Domain model'],
     ]);
-    expect(data.graphs[0].model.crossLinks).toEqual([
-      { s: 'epic-checkout', field: 'terms', graph: 'domain', t: 'basket' },
-      { s: 'story-pay-by-card', field: 'terms', graph: 'domain', t: 'card' },
-      { s: 'story-pay-by-card', field: 'terms', graph: 'domain', t: 'payment' },
-      { s: 'story-save-card', field: 'terms', graph: 'domain', t: 'card' },
+    const links = data.graphs[0].model.crossLinks;
+    expect(links.length).toBe(25);
+    expect(links.filter((c) => c.s === 'story-pay-by-card').map((c) => c.t)).toEqual([
+      'ent-payment',
+      'vo-card-details',
+      'cmd-capture-payment',
+      'evt-payment-captured',
+      'evt-payment-declined',
     ]);
+    expect(links.every((c) => c.field === 'terms' && c.graph === 'domain')).toBe(true);
     expect(data.graphs[1].model.crossLinks).toEqual([]);
   });
   it('refuses a graph id that appears twice', () => {
@@ -61,7 +66,7 @@ describe('the workspace file', () => {
     expect(() => loadWorkspace(badGraph)).toThrow(/Graph "domain": Cannot read the graph/);
     const dir = tmp();
     cpSync(fixtures, dir, { recursive: true });
-    writeFileSync(join(dir, 'domain', 'profile.json'), '{"project":"x"}');
+    writeFileSync(join(dir, 'domain', 'profile.yaml'), 'project: x\n');
     expect(() => loadWorkspace(join(dir, 'workspace.json'))).toThrow(/Graph "domain": The profile/);
   });
   it('refuses a cross link to a graph that the workspace does not have', () => {
@@ -72,7 +77,7 @@ describe('the workspace file', () => {
     const dir = tmp();
     cpSync(fixtures, dir, { recursive: true });
     const graph = json<{ nodes: Record<string, unknown>[] }>('product/graph.json');
-    graph.nodes.find((n) => n.id === 'epic-checkout')!.terms = ['basket', 'missing-term'];
+    graph.nodes.find((n) => n.id === 'epic-checkout')!.terms = ['ent-basket', 'missing-term'];
     writeFileSync(join(dir, 'product', 'graph.json'), JSON.stringify(graph));
     const { warnings } = loadWorkspace(join(dir, 'workspace.json'));
     expect(warnings).toHaveLength(1);
@@ -84,12 +89,48 @@ describe('the workspace file', () => {
     cpSync(new URL('../fixtures/glossary/yaml', import.meta.url).pathname, join(dir, 'domain', 'yaml'), { recursive: true });
     cpSync(new URL('../fixtures/glossary/yaml/term', import.meta.url).pathname, join(dir, 'domain', 'yaml', 'schema'), { recursive: true });
     const ws = JSON.parse(readFileSync(join(dir, 'workspace.json'), 'utf8'));
+    cpSync(new URL('../fixtures/glossary/profile.json', import.meta.url).pathname, join(dir, 'domain', 'glossary-profile.json'));
     ws.graphs[1].graph = 'domain/yaml';
+    ws.graphs[1].profile = 'domain/glossary-profile.json';
     writeFileSync(join(dir, 'workspace.json'), JSON.stringify(ws));
     expect(() => loadWorkspace(join(dir, 'workspace.json'))).toThrow(/Graph "domain".*not unique/s);
     ws.graphs[1].exclude = ['schema'];
     writeFileSync(join(dir, 'workspace.json'), JSON.stringify(ws));
     expect(loadWorkspace(join(dir, 'workspace.json')).data.graphs[1].model.nodes.length).toBeGreaterThan(0);
+  });
+});
+
+describe('the domain model of the workspace', () => {
+  const { data } = loadWorkspace(workspacePath);
+  const domain = data.graphs[1];
+  const count = (kind: string) => domain.model.nodes.filter((n) => n.kind === kind).length;
+
+  it('has 45 nodes in 7 kinds', () => {
+    expect(domain.model.nodes.length).toBe(45);
+    expect(['context', 'aggregate', 'entity', 'value', 'command', 'query', 'event'].map(count)).toEqual([3, 6, 8, 8, 8, 4, 8]);
+    expect(domain.model.unresolved).toEqual([]);
+  });
+  it('shows the containers of the grouped layout for 1 aggregate', () => {
+    expect(domain.model.profile.layout).toEqual({ default: 'grouped', groupEdge: 'partOf' });
+    const ids = domain.model.nodes.map((n) => n.id);
+    const found = findContainers(ids, domain.model.edges, 'partOf');
+    expect(found.parentOf.get('agg-payment')).toBe('ctx-payments');
+    expect(found.parentOf.get('cmd-capture-payment')).toBe('agg-payment');
+    expect(found.children.get('agg-payment')!.sort()).toEqual([
+      'cmd-capture-payment', 'cmd-request-payment', 'ent-payment', 'evt-payment-captured', 'evt-payment-declined', 'qry-get-payment', 'vo-card-details', 'vo-money',
+    ]);
+    expect(found.roots.sort()).toEqual(['ctx-catalogue', 'ctx-ordering', 'ctx-payments']);
+  });
+  it('links a command to its events and an event to a handler in another context', () => {
+    const index = buildIndex(domain.model);
+    expect(index.out.get('cmd-capture-payment')!.filter((e) => e.k === 'emits').map((e) => e.t).sort()).toEqual(['evt-payment-captured', 'evt-payment-declined']);
+    expect(index.out.get('evt-order-placed')!.filter((e) => e.k === 'handledBy').map((e) => e.t)).toEqual(['cmd-request-payment']);
+    expect(index.out.get('ent-payment')!.some((e) => e.k === 'refs' && e.t === 'ent-order' && e.n === 'refers to')).toBe(true);
+  });
+  it('keeps the standard anchors of a term as a tagged list with the keys as filter values', () => {
+    const money = domain.model.nodes.find((n) => n.id === 'vo-money')!;
+    expect(money.d.anchors).toEqual([{ 'std-pay': { element: 'Amount' } }, { 'std-ccy': { element: 'Currency code' } }]);
+    expect(domain.model.profile.fieldFilters![0]).toMatchObject({ field: 'anchors', from: 'keys' });
   });
 });
 
@@ -103,15 +144,16 @@ describe('the cross links in the model', () => {
   });
   it('give each node of the index a list of outgoing cross links', () => {
     const index = buildIndex(req.model);
-    expect(index.crossOut.get('story-pay-by-card')!.map((c) => c.t)).toEqual(['card', 'payment']);
-    expect(index.crossOut.get('story-search-synonyms')).toBeUndefined();
+    expect(index.crossOut.get('story-pay-by-card')!.map((c) => c.t).slice(0, 2)).toEqual(['ent-payment', 'vo-card-details']);
+    expect(index.crossOut.get('prd-shop')).toBeUndefined();
   });
   it('give the incoming cross links of each target node across the workspace', () => {
     const incoming = incomingCrossLinks(data.graphs);
-    const card = incoming.get('domain')!.get('card')!;
+    const card = incoming.get('domain')!.get('vo-card-details')!;
     expect(card.map((c) => c.s)).toEqual(['story-pay-by-card', 'story-save-card']);
     expect(card[0]).toEqual({ graph: 'req', s: 'story-pay-by-card', field: 'terms', label: 'Uses term' });
-    expect(incoming.get('domain')!.get('refund')).toBeUndefined();
+    expect(incoming.get('domain')!.get('ent-refund')).toBeUndefined();
+    expect(incoming.get('domain')!.size).toBeGreaterThanOrEqual(15);
     expect(incoming.get('req')!.size).toBe(0);
   });
   it('leave a link to a missing node out of the incoming links and report it as a warning', () => {
@@ -161,8 +203,8 @@ describe('the workspace on the command line', () => {
     expect(data.graphs.map((g) => g.id)).toEqual(['req', 'domain']);
     const ids = (i: number) => new Set(data.graphs[i].model.nodes.map((n) => n.id));
     expect(ids(0).has('story-pay-by-card')).toBe(true);
-    expect(ids(1).has('basket')).toBe(true);
-    expect(data.graphs[0].model.crossLinks.length).toBe(4);
+    expect(ids(1).has('ent-basket')).toBe(true);
+    expect(data.graphs[0].model.crossLinks.length).toBe(25);
   });
   it('serves the workspace page with the serve command', async () => {
     const server = await startWorkspaceServer(workspacePath, 0, '127.0.0.1');

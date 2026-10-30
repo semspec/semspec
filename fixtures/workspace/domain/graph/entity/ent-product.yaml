@@ -1,0 +1,10 @@
+id: "ent-product"
+kind: "entity"
+term: "Product"
+definition: "Something that the shop sells. It is the aggregate root."
+role: "Aggregate root"
+avoid: ["item", "article"]
+partOf: ["agg-product"]
+refs:
+  - { to: vo-product-code, relation: "is known by" }
+  - { to: vo-price, relation: "is sold at" }

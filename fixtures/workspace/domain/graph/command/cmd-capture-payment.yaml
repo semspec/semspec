@@ -1,0 +1,8 @@
+id: "cmd-capture-payment"
+kind: "command"
+term: "Capture payment"
+definition: "The shop collects the money that the buyer approved."
+partOf: ["agg-payment"]
+emits: ["evt-payment-captured", "evt-payment-declined"]
+refs:
+  - { to: ent-payment, relation: "changes" }

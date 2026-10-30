@@ -1,0 +1,8 @@
+id: "vo-address"
+kind: "value"
+term: "Delivery address"
+definition: "The place where the shop sends an order. Two equal addresses are the same address."
+avoid: ["location"]
+partOf: ["agg-order"]
+anchors:
+  - std-geo: { element: "Postal address" }

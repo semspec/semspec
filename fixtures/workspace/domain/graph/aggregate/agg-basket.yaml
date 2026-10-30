@@ -1,0 +1,6 @@
+id: "agg-basket"
+kind: "aggregate"
+term: "Basket aggregate"
+definition: "All data of one basket. A change goes through the basket."
+avoid: ["cart"]
+partOf: ["ctx-ordering"]

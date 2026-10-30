@@ -1,0 +1,7 @@
+id: "qry-view-basket"
+kind: "query"
+term: "View basket"
+definition: "Returns the lines of a basket and their total price."
+partOf: ["agg-basket"]
+refs:
+  - { to: ent-basket, relation: "reads" }

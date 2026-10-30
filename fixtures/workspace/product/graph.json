@@ -26,7 +26,9 @@
         }
       ],
       "terms": [
-        "basket"
+        "ent-basket",
+        "ent-order",
+        "ent-payment"
       ]
     },
     {
@@ -36,7 +38,11 @@
       "products": [
         "prd-shop"
       ],
-      "status": "active"
+      "status": "active",
+      "terms": [
+        "ent-product",
+        "qry-search-products"
+      ]
     },
     {
       "id": "story-pay-by-card",
@@ -78,8 +84,11 @@
         }
       ],
       "terms": [
-        "card",
-        "payment"
+        "ent-payment",
+        "vo-card-details",
+        "cmd-capture-payment",
+        "evt-payment-captured",
+        "evt-payment-declined"
       ]
     },
     {
@@ -95,6 +104,11 @@
           "type": "manual",
           "plan": "plan-7"
         }
+      ],
+      "terms": [
+        "ent-payment",
+        "cmd-capture-payment",
+        "evt-payment-declined"
       ]
     },
     {
@@ -119,7 +133,7 @@
         "story-pay-by-card"
       ],
       "terms": [
-        "card"
+        "vo-card-details"
       ]
     },
     {
@@ -131,12 +145,23 @@
       "epics": [
         "epic-search"
       ],
-      "status": "active"
+      "status": "active",
+      "terms": [
+        "ent-synonym-set",
+        "vo-synonym",
+        "cmd-define-synonyms",
+        "qry-search-products"
+      ]
     },
     {
       "id": "story-loose",
       "kind": "story",
-      "summary": "A story with no epic."
+      "summary": "A story with no epic.",
+      "terms": [
+        "ent-basket-line",
+        "vo-quantity",
+        "cmd-add-to-basket"
+      ]
     },
     {
       "id": "story-loose-child",
@@ -146,6 +171,12 @@
       "status": "dropped",
       "follows": [
         "story-loose"
+      ],
+      "terms": [
+        "ent-order",
+        "cmd-cancel-order",
+        "evt-order-cancelled",
+        "cmd-issue-refund"
       ]
     },
     {

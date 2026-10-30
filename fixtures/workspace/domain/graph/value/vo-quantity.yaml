@@ -1,0 +1,6 @@
+id: "vo-quantity"
+kind: "value"
+term: "Quantity"
+definition: "A whole number of units of one product. It is 1 or more."
+avoid: ["amount"]
+partOf: ["agg-basket"]

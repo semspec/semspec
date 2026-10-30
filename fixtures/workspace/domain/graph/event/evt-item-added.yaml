@@ -1,0 +1,6 @@
+id: "evt-item-added"
+kind: "event"
+term: "Item added to basket"
+definition: "A product is now in the basket."
+trigger: "Add item to basket"
+partOf: ["agg-basket"]

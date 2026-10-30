@@ -1,0 +1,4 @@
+id: "ctx-payments"
+kind: "context"
+term: "Payments"
+definition: "The part of the shop that takes money for an order and gives it back."

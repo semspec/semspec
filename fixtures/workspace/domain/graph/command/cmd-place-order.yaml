@@ -1,0 +1,8 @@
+id: "cmd-place-order"
+kind: "command"
+term: "Place order"
+definition: "The buyer turns a basket into an order."
+partOf: ["agg-order"]
+emits: ["evt-order-placed"]
+refs:
+  - { to: ent-order, relation: "creates" }

@@ -1,0 +1,5 @@
+id: "agg-order"
+kind: "aggregate"
+term: "Order aggregate"
+definition: "All data of one order. A change goes through the order."
+partOf: ["ctx-ordering"]

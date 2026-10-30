@@ -1,0 +1,4 @@
+id: "ctx-ordering"
+kind: "context"
+term: "Ordering"
+definition: "The part of the shop where a buyer fills a basket and places an order."

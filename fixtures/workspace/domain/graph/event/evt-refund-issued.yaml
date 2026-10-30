@@ -1,0 +1,6 @@
+id: "evt-refund-issued"
+kind: "event"
+term: "Refund issued"
+definition: "The money is on its way back to the buyer."
+trigger: "Issue refund"
+partOf: ["agg-refund"]

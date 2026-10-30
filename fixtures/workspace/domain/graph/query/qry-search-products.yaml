@@ -1,0 +1,8 @@
+id: "qry-search-products"
+kind: "query"
+term: "Search products"
+definition: "Returns the products that match the words of a buyer, including their synonyms."
+partOf: ["agg-product"]
+refs:
+  - { to: ent-product, relation: "reads" }
+  - { to: ent-synonym-set, relation: "reads" }

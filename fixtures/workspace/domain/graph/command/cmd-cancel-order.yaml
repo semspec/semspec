@@ -1,0 +1,8 @@
+id: "cmd-cancel-order"
+kind: "command"
+term: "Cancel order"
+definition: "The buyer or the shop stops an order before it ships."
+partOf: ["agg-order"]
+emits: ["evt-order-cancelled"]
+refs:
+  - { to: ent-order, relation: "changes" }

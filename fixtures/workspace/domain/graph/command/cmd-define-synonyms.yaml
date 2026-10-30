@@ -1,0 +1,8 @@
+id: "cmd-define-synonyms"
+kind: "command"
+term: "Define synonyms"
+definition: "The shop writes the words of a synonym set."
+partOf: ["agg-synonyms"]
+emits: ["evt-synonyms-changed"]
+refs:
+  - { to: ent-synonym-set, relation: "changes" }

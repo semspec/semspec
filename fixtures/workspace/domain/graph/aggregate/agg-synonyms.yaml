@@ -1,0 +1,5 @@
+id: "agg-synonyms"
+kind: "aggregate"
+term: "Synonym aggregate"
+definition: "A set of words that the search treats as equal."
+partOf: ["ctx-catalogue"]

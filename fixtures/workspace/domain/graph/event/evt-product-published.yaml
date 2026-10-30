@@ -1,0 +1,6 @@
+id: "evt-product-published"
+kind: "event"
+term: "Product published"
+definition: "A product is visible in the catalogue."
+trigger: "Publish product"
+partOf: ["agg-product"]

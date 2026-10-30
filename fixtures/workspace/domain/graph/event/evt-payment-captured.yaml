@@ -1,0 +1,8 @@
+id: "evt-payment-captured"
+kind: "event"
+term: "Payment captured"
+definition: "The shop has the money of a payment."
+trigger: "Capture payment"
+partOf: ["agg-payment"]
+anchors:
+  - std-pay: { element: "Result code" }

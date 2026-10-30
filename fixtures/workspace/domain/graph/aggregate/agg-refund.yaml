@@ -1,0 +1,5 @@
+id: "agg-refund"
+kind: "aggregate"
+term: "Refund aggregate"
+definition: "All data of one refund for one payment."
+partOf: ["ctx-payments"]

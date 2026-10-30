@@ -1,0 +1,8 @@
+id: "vo-card-details"
+kind: "value"
+term: "Card details"
+definition: "The data that identifies a card: the holder, the masked number and the expiry date. The shop never keeps the full number."
+avoid: ["card data"]
+partOf: ["agg-payment"]
+anchors:
+  - std-card: { element: "Masked number" }

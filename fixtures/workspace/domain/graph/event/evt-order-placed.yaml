@@ -1,0 +1,7 @@
+id: "evt-order-placed"
+kind: "event"
+term: "Order placed"
+definition: "An order exists and its lines are fixed."
+trigger: "Place order"
+partOf: ["agg-order"]
+handledBy: ["cmd-request-payment"]
