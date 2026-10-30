@@ -6,9 +6,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { stringify } from 'yaml';
-import { buildModel, kindSchemas, type Profile } from '@core/index';
-import { loadInputs, loadProfile, run } from '../src/cli/index';
-import { validateProfile } from '../src/cli/validate';
+import { buildModel, kindSchemas, type Profile } from '@semspec/core';
+import { loadInputs, loadProfile, run } from '../packages/cli/src/index';
+import { validateProfile } from '../packages/cli/src/validate';
 
 const made: string[] = [];
 const tmp = () => {

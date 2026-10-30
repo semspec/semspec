@@ -4,8 +4,8 @@
 // graph. Every test runs on 2 profiles with different kinds and field names.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildModel, formatEdgeProps, isIsoDate, kindSchemas, propsKey, type Graph, type Profile } from '@core/index';
-import { validateGraph, validateProfile } from '../src/cli/validate';
+import { buildModel, formatEdgeProps, isIsoDate, kindSchemas, propsKey, type Graph, type Profile } from '@semspec/core';
+import { validateGraph, validateProfile } from '../packages/cli/src/validate';
 
 type Case = {
   name: string;

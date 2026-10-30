@@ -6,13 +6,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { stringify } from 'yaml';
-import { buildModel, type Graph, type Profile } from '@core/index';
-import { loadInputs, loadProfile, pageFor, parseArgs, run, startServer } from '../src/cli/index';
-import { excludeMatcher } from '../src/cli/yaml';
-import { validateGraph, validateProfile } from '../src/cli/validate';
-import { renderPage } from '../src/cli/page';
-import { buildInfo, versionLine } from '../src/cli/version';
-import { resolveTheme } from '../src/app/lib/theme';
+import { buildModel, type Graph, type Profile } from '@semspec/core';
+import { loadInputs, loadProfile, pageFor, parseArgs, run, startServer } from '../packages/cli/src/index';
+import { excludeMatcher } from '../packages/cli/src/yaml';
+import { validateGraph, validateProfile } from '../packages/cli/src/validate';
+import { renderPage } from '../packages/cli/src/page';
+import { buildInfo, versionLine } from '../packages/cli/src/version';
+import { resolveTheme } from '../packages/app/src/lib/theme';
 
 // Each temp folder goes when the file ends.
 const made: string[] = [];

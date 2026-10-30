@@ -27,7 +27,7 @@ Each source file starts with these 2 lines:
 // Copyright 2026 The Semspec Authors
 ```
 
-Use the year of the first publication of the file. The files in `src/app/components/ui` and `site/src/components/ui` come from shadcn/ui. They keep only the SPDX line, and `NOTICE` holds their MIT licence.
+Use the year of the first publication of the file. The files in `packages/app/src/components/ui` and `site/src/components/ui` come from shadcn/ui. They keep only the SPDX line, and `NOTICE` holds their MIT licence.
 
 ## Checks
 

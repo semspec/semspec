@@ -11,10 +11,28 @@ area:
 acceptance:
   - id: four-packages
     text: "The repository has the 4 packages core, app, mcp and cli, each with its own package.json."
-    status: open
+    status: partial
+    tests:
+      - type: unit
+        file: test/packages.test.ts
+        name: has the packages core, app and cli, each with its own package.json
   - id: dependency-direction
     text: "The packages app, mcp and cli depend on core. The package core depends on none of them."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/packages.test.ts
+        name: lets no package import from a package that it must not depend on
+      - type: unit
+        file: test/packages.test.ts
+        name: lists the packages that a package imports in its package.json
   - id: dependency-test
     text: "A test fails when a package imports from a package that it must not depend on."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/packages.test.ts
+        name: lets no package import from a package that it must not depend on
+      - type: unit
+        file: test/packages.test.ts
+        name: detects an import of a package that is not allowed

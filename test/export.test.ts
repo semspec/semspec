@@ -32,10 +32,10 @@ import {
   type Profile,
   type RdfDataset,
   type WorkspaceData,
-} from '@core/index';
-import { loadInputs, loadProfile, run } from '../src/cli/index';
-import { validateGraph, validateProfile } from '../src/cli/validate';
-import { loadWorkspace } from '../src/cli/workspace';
+} from '@semspec/core';
+import { loadInputs, loadProfile, run } from '../packages/cli/src/index';
+import { validateGraph, validateProfile } from '../packages/cli/src/validate';
+import { loadWorkspace } from '../packages/cli/src/workspace';
 
 const fixture = (name: string, file: string) => new URL(`../fixtures/${name}/${file}`, import.meta.url).pathname;
 const made: string[] = [];

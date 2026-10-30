@@ -30,7 +30,7 @@ import {
   wordCasing,
   type Graph,
   type Profile,
-} from '@core/index';
+} from '@semspec/core';
 
 const load = (name: string) => ({
   graph: JSON.parse(readFileSync(new URL(`../fixtures/${name}/graph.json`, import.meta.url), 'utf8')) as Graph,

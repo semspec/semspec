@@ -11,10 +11,28 @@ area:
 acceptance:
   - id: no-framework
     text: "The package core has no dependency on React, on a browser API or on a server framework."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/packages.test.ts
+        name: imports only its own files
+      - type: unit
+        file: test/packages.test.ts
+        name: has no dependency on a framework, a browser API or a Node module
   - id: own-publish
     text: "The package core builds and publishes with its own version and licence."
-    status: open
+    status: partial
+    tests:
+      - type: unit
+        file: test/packages.test.ts
+        name: has the fields that a publish needs
+      - type: unit
+        file: test/packages.test.ts
+        name: compiles and runs alone, without the other packages
   - id: own-tests
     text: "The package core runs its unit tests without the other packages."
-    status: open
+    status: partial
+    tests:
+      - type: unit
+        file: test/packages.test.ts
+        name: compiles and runs alone, without the other packages

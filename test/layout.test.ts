@@ -2,12 +2,12 @@
 // Copyright 2026 The Semspec Authors
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildModel, type Graph, type Profile, type VEdge } from '@core/index';
-import { setProfile } from '../src/app/lib/core';
-import { SIZE, layered, type Pos } from '../src/app/lib/layout';
-import { boundsOf, containerBoxes, facingSides, findContainers, forceLayout, grouped, moveWithMembers, rectsOf } from '../src/app/lib/layouts';
-import { validateProfile } from '../src/cli/validate';
-import { loadWorkspace } from '../src/cli/workspace';
+import { buildModel, type Graph, type Profile, type VEdge } from '@semspec/core';
+import { setProfile } from '../packages/app/src/lib/core';
+import { SIZE, layered, type Pos } from '../packages/app/src/lib/layout';
+import { boundsOf, containerBoxes, facingSides, findContainers, forceLayout, grouped, moveWithMembers, rectsOf } from '../packages/app/src/lib/layouts';
+import { validateProfile } from '../packages/cli/src/validate';
+import { loadWorkspace } from '../packages/cli/src/workspace';
 
 const load = (name: string) => ({
   graph: JSON.parse(readFileSync(new URL(`../fixtures/${name}/graph.json`, import.meta.url), 'utf8')) as Graph,

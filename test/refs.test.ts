@@ -4,8 +4,8 @@
 // Every test runs on 2 profiles with different kinds and field names.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildModel, kindSchemas, normalise, refsOf, type Graph, type Profile } from '@core/index';
-import { validateProfile } from '../src/cli/validate';
+import { buildModel, kindSchemas, normalise, refsOf, type Graph, type Profile } from '@semspec/core';
+import { validateProfile } from '../packages/cli/src/validate';
 
 const load = (name: string) => ({
   graph: JSON.parse(readFileSync(new URL(`../fixtures/${name}/graph.json`, import.meta.url), 'utf8')) as Graph,

@@ -5,11 +5,11 @@ import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { buildIndex, buildModel, checkCrossLinks, fieldLabel, incomingCrossLinks, propertyLabel, type Graph, type Profile, type WorkspaceData } from '@core/index';
-import { findContainers } from '../src/app/lib/layouts';
-import { run, startWorkspaceServer } from '../src/cli/index';
-import { loadWorkspace } from '../src/cli/workspace';
-import { validateGraph, validateProfile } from '../src/cli/validate';
+import { buildIndex, buildModel, checkCrossLinks, fieldLabel, incomingCrossLinks, propertyLabel, type Graph, type Profile, type WorkspaceData } from '@semspec/core';
+import { findContainers } from '../packages/app/src/lib/layouts';
+import { run, startWorkspaceServer } from '../packages/cli/src/index';
+import { loadWorkspace } from '../packages/cli/src/workspace';
+import { validateGraph, validateProfile } from '../packages/cli/src/validate';
 
 const fixtures = new URL('../fixtures/workspace/', import.meta.url).pathname;
 const workspacePath = join(fixtures, 'workspace.json');

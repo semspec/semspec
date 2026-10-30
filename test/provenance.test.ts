@@ -21,9 +21,9 @@ import {
   type Filters,
   type Graph,
   type Profile,
-} from '@core/index';
-import { loadProfile } from '../src/cli/index';
-import { validateGraph, validateProfile } from '../src/cli/validate';
+} from '@semspec/core';
+import { loadProfile } from '../packages/cli/src/index';
+import { validateGraph, validateProfile } from '../packages/cli/src/validate';
 
 const fixture = (name: string, file: string) => new URL(`../fixtures/${name}/${file}`, import.meta.url).pathname;
 const TODAY = '2026-10-30';

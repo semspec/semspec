@@ -2,8 +2,8 @@
 // Copyright 2026 The Semspec Authors
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { applyFilters, buildIndex, buildModel, fieldValues, filterValues, taggedKeys, taggedLines, type Filters, type Graph, type Profile } from '@core/index';
-import { validateProfile } from '../src/cli/validate';
+import { applyFilters, buildIndex, buildModel, fieldValues, filterValues, taggedKeys, taggedLines, type Filters, type Graph, type Profile } from '@semspec/core';
+import { validateProfile } from '../packages/cli/src/validate';
 
 const load = (name: string) => ({
   graph: JSON.parse(readFileSync(new URL(`../fixtures/${name}/graph.json`, import.meta.url), 'utf8')) as Graph,

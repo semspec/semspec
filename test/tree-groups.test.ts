@@ -2,7 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // Tests of the sub-groups of the hierarchy tree. Every test runs on 2 profiles with different kinds.
 import { describe, expect, it } from 'vitest';
-import { hierarchyGroupKey, hierarchyRootKinds, hierarchySections, type Profile } from '@core/index';
+import { hierarchyGroupKey, hierarchyRootKinds, hierarchySections, type Profile } from '@semspec/core';
 
 const kind = (id: string, role: string, parents?: string[][]) => ({ id, label: id, plural: `${id}s`, role, color: { light: '#000', dark: '#fff' }, ...(parents ? { parents } : {}) });
 const profileOf = (kinds: ReturnType<typeof kind>[]) => ({ kinds }) as unknown as Profile;

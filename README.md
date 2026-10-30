@@ -30,9 +30,9 @@ The install builds the tool. The lockfile keeps the commit. It needs Node 20 or 
 
 ## Contents
 
-- `src/core`: the pure logic (model, scope, walk, casing, CSV, export).
-- `src/app`: the browser app.
-- `src/cli`: the command line tool.
+- `packages/core`: the pure logic (model, scope, walk, casing, CSV, export). The npm package `@semspec/core`.
+- `packages/app`: the browser app.
+- `packages/cli`: the command line tool.
 - `schema`: the JSON Schemas of the graph, the profile and the workspace file.
 - `fixtures`: the test graphs and profiles.
 - `requirements`: the requirements of Semspec, as a Semspec graph.

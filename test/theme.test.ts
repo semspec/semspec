@@ -2,7 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // Tests of the theme choice that another document of the same origin writes to localStorage.
 import { describe, expect, it } from 'vitest';
-import { THEME_KEY, choiceFromStorageEvent } from '../src/app/lib/theme';
+import { THEME_KEY, choiceFromStorageEvent } from '../packages/app/src/lib/theme';
 
 describe('the theme storage event', () => {
   it('takes a light or dark value that another document writes', () => {

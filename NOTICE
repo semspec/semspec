@@ -3,7 +3,7 @@ Copyright 2026 The Semspec Authors
 
 This product is licensed under the Apache License, Version 2.0.
 
-The files in src/app/components/ui and site/src/components/ui come from shadcn/ui (https://ui.shadcn.com).
+The files in packages/app/src/components/ui and site/src/components/ui come from shadcn/ui (https://ui.shadcn.com).
 They are used and changed under the MIT License below.
 
 MIT License

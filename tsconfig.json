@@ -12,7 +12,11 @@
     "isolatedModules": true,
     "types": ["node"],
     "baseUrl": ".",
-    "paths": { "@/*": ["./src/app/*"], "@core/*": ["./src/core/*"] }
+    "paths": {
+      "@/*": ["./packages/app/src/*"],
+      "@semspec/core": ["./packages/core/src/index.ts"],
+      "@semspec/app/*": ["./packages/app/src/*"]
+    }
   },
-  "include": ["src", "test", "vite.config.ts", "vitest.config.ts", "scripts"]
+  "include": ["packages/*/src", "packages/app/vite.config.ts", "packages/cli/scripts", "test", "vitest.config.ts"]
 }

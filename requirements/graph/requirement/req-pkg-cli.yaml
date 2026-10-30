@@ -11,7 +11,17 @@ area:
 acceptance:
   - id: one-binary
     text: "An install of the package cli gives the command semspec."
-    status: open
+    status: partial
+    tests:
+      - type: unit
+        file: test/packages.test.ts
+        name: is the package semspec with 1 bin that runs the built cli
+      - type: unit
+        file: test/packages.test.ts
+        name: lists the built cli, the built app, the schemas and the licence files for the pack
+      - type: unit
+        file: test/packages.test.ts
+        name: installs the run time dependencies of the cli
   - id: mcp-subcommand
     text: "The command semspec mcp starts the MCP server from the same binary."
     status: open
