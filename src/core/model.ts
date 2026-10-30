@@ -5,9 +5,15 @@
 //   parents: where the tree shows the node. The first group of parent fields that names a node wins.
 //   up:      every parent field of the kind. The scope and the group facet follow this list.
 // Edge direction follows the graph: from the specific node to the general node.
+// An edge has a kind, an optional note and optional properties. The model keeps parallel edges (the same
+// source, target and kind) when their properties differ, and keeps 1 edge when the properties are equal.
 import type { CrossLink, Graph, Index, Model, ProfileInput, RawNode, VEdge, VNode } from './types';
 import { allLinkFields, embeddedObjects, firstOf, getPath, isMuted, kindOf, normalise, omitPath, refNote, withDefaultKind } from './profile';
+import { propsKey, readLinkItem, refProps, linkTargetKey } from './edges';
 import { checkKey, checkTitle, citationTitle, deriveTitle, snippet, wordCasing } from './titles';
+
+// The items of a link field. A value that is not a list has none.
+const linkList = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
 export function buildModel(graph: Graph, input: ProfileInput): Model {
   const P = normalise(input);
@@ -35,11 +41,11 @@ export function buildModel(graph: Graph, input: ProfileInput): Model {
     nodes.push(node);
     byId.set(node.id, node);
   };
-  const addEdge = (s: string, t: string, k: string, note?: string) => {
-    const key = `${s}\u0000${t}\u0000${k}`;
+  const addEdge = (s: string, t: string, k: string, note?: string, props?: Record<string, unknown>) => {
+    const key = `${s}\u0000${t}\u0000${k}\u0000${propsKey(props)}`;
     if (edgeKeys.has(key)) return;
     edgeKeys.add(key);
-    edges.push(note ? { s, t, k, n: note } : { s, t, k });
+    edges.push({ s, t, k, ...(note ? { n: note } : {}), ...(props ? { p: props } : {}) });
   };
   const lifecycleOf = (n: Record<string, any>): string => {
     const v = n[P.lifecycle.field];
@@ -157,13 +163,19 @@ export function buildModel(graph: Graph, input: ProfileInput): Model {
 
   for (const n of graphNodes) {
     const id = n[idKey] as string;
-    const link = (field: string, target: string, note?: string) => {
+    const link = (field: string, target: string, note?: string, props?: Record<string, unknown>) => {
       if (!ids.has(target)) unresolved.push({ s: id, t: target, k: field });
-      else addEdge(id, target, field, note);
+      else addEdge(id, target, field, note, props);
     };
-    for (const field of linkFields) for (const t of (n[field] as string[]) ?? []) link(field, t);
+    for (const field of linkFields) {
+      const key = linkTargetKey(P.edges, field);
+      for (const item of linkList(n[field])) {
+        const read = readLinkItem(item, key);
+        if (read) link(field, read.target, undefined, read.p);
+      }
+    }
     if (P.supersededBy && n[P.supersededBy]) link(P.supersededBy, n[P.supersededBy]);
-    for (const spec of P.refs!) for (const t of (n[spec.field] as Record<string, any>[]) ?? []) link(spec.field, t[spec.target], refNote(spec, t));
+    for (const spec of P.refs!) for (const t of (n[spec.field] as Record<string, any>[]) ?? []) link(spec.field, t[spec.target], refNote(spec, t), refProps(spec, t));
   }
 
   const crossLinks: CrossLink[] = [];
@@ -175,8 +187,12 @@ export function buildModel(graph: Graph, input: ProfileInput): Model {
     }
   }
 
-  const existing = (list: unknown) => ((list as string[]) ?? []).filter((p) => byId.has(p));
-  const targets = (n: Record<string, any>, field: string) => existing([...((n[field] as string[]) ?? []), ...(embeddedParents.get(n[idKey])?.get(field) ?? [])]);
+  const existing = (list: string[]) => list.filter((p) => byId.has(p));
+  const targets = (n: Record<string, any>, field: string) => {
+    const key = linkTargetKey(P.edges, field);
+    const own = linkList(n[field]).flatMap((item) => readLinkItem(item, key)?.target ?? []);
+    return existing([...new Set([...own, ...(embeddedParents.get(n[idKey])?.get(field) ?? [])])]);
+  };
   for (const n of graphNodes) {
     const node = byId.get(n[idKey])!;
     let tree: string[] = [];

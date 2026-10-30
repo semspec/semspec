@@ -3,7 +3,7 @@
 // The details of the selected node, and the neighbours panel for the walk.
 // The profile says which sections a node has and which fields they read.
 import type { ReactNode } from 'react';
-import { ChevronsLeft, EyeOff, Network, Target, Undo2 } from 'lucide-react';
+import { ArrowRight, ChevronsLeft, EyeOff, Network, Target, Undo2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -115,7 +115,7 @@ function CheckList({ list }: { list: Record<string, any>[] }) {
   );
 }
 
-function NodeButton({ v, id, note }: { v: Viewer; id: string; note?: string }) {
+function NodeButton({ v, id, note, props }: { v: Viewer; id: string; note?: string; props?: VEdge['p'] }) {
   const n = v.index.byId.get(id);
   if (!n) return <code>{id}</code>;
   return (
@@ -124,20 +124,21 @@ function NodeButton({ v, id, note }: { v: Viewer; id: string; note?: string }) {
       <span className="min-w-0">
         <span className="block break-words">{n.title}</span>
         {note && <span className="block text-xs break-words text-muted-foreground">{note}</span>}
+        {props && <span className="block text-xs break-words text-muted-foreground">{Core.formatEdgeProps(props)}</span>}
       </span>
     </button>
   );
 }
 
 // A linked node with its citation, when the profile gives its kind a citation section.
-function LinkedCard({ v, id }: { v: Viewer; id: string }) {
+function LinkedCard({ v, id, props }: { v: Viewer; id: string; props?: VEdge['p'] }) {
   const o = v.index.byId.get(id)!;
   const spec = (Core.profile.details?.citations ?? []).find((c) => c.kind === o.kind);
   const anchor = spec?.anchor ? Core.getPath(o.d, spec.anchor) : undefined;
   const url = spec?.url ? Core.getPath(o.d, spec.url) : undefined;
   return (
     <div className="flex flex-col gap-1 rounded-md border px-2.5 py-2">
-      <NodeButton v={v} id={id} />
+      <NodeButton v={v} id={id} props={props} />
       {o.sub && <div className="pl-5 text-xs text-muted-foreground">{o.sub}</div>}
       {Boolean(anchor || url) && (
         <div className="pl-5 text-xs">
@@ -149,10 +150,65 @@ function LinkedCard({ v, id }: { v: Viewer; id: string }) {
   );
 }
 
+// The details of a selected edge: its kind, its 2 nodes, its note and its properties.
+function EdgeDetails({ v, edge }: { v: Viewer; edge: VEdge }) {
+  const labels = Core.EDGE_LABEL[edge.k];
+  const props = Object.entries(edge.p ?? {});
+  return (
+    <div className="px-4 pb-6" data-testid="edge-details">
+      <div className="flex flex-col gap-2 pt-3 pb-3">
+        <Badge variant="outline" className="w-fit">
+          Edge
+        </Badge>
+        <h2 className="text-base leading-snug font-semibold break-words">{labels?.[0] ?? edge.k}</h2>
+        <code className="font-mono text-[11px] break-all text-muted-foreground">{edge.k}</code>
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          <Button variant="outline" size="sm" onClick={() => v.select(edge.s)}>
+            <Target /> Select the source
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => v.select(edge.t)}>
+            <ArrowRight /> Select the target
+          </Button>
+        </div>
+      </div>
+      <Separator />
+      <Section title="Source">
+        <NodeButton v={v} id={edge.s} />
+      </Section>
+      <Separator />
+      <Section title="Target">
+        <NodeButton v={v} id={edge.t} />
+      </Section>
+      {edge.n && (
+        <>
+          <Separator />
+          <Section title="Note">
+            <Text>{edge.n}</Text>
+          </Section>
+        </>
+      )}
+      <Separator />
+      <Section title="Properties" count={props.length}>
+        {!props.length && <span className="text-xs text-muted-foreground">None.</span>}
+        {props.length > 0 && (
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
+            {props.map(([key, value]) => (
+              <Prop key={key} label={key}>
+                {typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)}
+              </Prop>
+            ))}
+          </dl>
+        )}
+      </Section>
+    </div>
+  );
+}
+
 export function DetailsPanel({ v }: { v: Viewer }) {
   const { index } = v;
   const P = Core.profile;
   const D = P.details ?? {};
+  if (v.selectedEdge) return <EdgeDetails v={v} edge={v.selectedEdge} />;
   const n = v.selected ? index.byId.get(v.selected) : null;
   if (!n) {
     return (
@@ -427,8 +483,8 @@ export function DetailsPanel({ v }: { v: Viewer }) {
           <div key={kind}>
             <Divider />
             <Section title={capitalise(Core.KIND_PLURAL[kind])} count={edges.length}>
-              {edges.map((e) =>
-                (D.citations ?? []).some((c) => c.kind === kind) ? <LinkedCard key={e.s + e.t + e.k} v={v} id={other(e)} /> : <NodeButton key={e.s + e.t + e.k} v={v} id={other(e)} note={e.n} />,
+              {edges.map((e, i) =>
+                (D.citations ?? []).some((c) => c.kind === kind) ? <LinkedCard key={i} v={v} id={other(e)} props={e.p} /> : <NodeButton key={i} v={v} id={other(e)} note={e.n} props={e.p} />,
               )}
             </Section>
           </div>
@@ -450,8 +506,8 @@ export function DetailsPanel({ v }: { v: Viewer }) {
                 <div className="text-xs font-medium text-muted-foreground">
                   {g.label} · {g.list.length}
                 </div>
-                {g.list.map((e) => (
-                  <NodeButton key={e.s + e.t + e.k} v={v} id={other(e)} note={e.n} />
+                {g.list.map((e, i) => (
+                  <NodeButton key={i} v={v} id={other(e)} note={e.n} props={e.p} />
                 ))}
               </div>
             ))}

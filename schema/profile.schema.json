@@ -57,7 +57,23 @@
         "additionalProperties": false,
         "properties": {
           "labels": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 2, "description": "The label from the source and the label from the target." },
-          "down": { "type": "boolean", "description": "Set when the target is the more general node. The layout puts it on the left." }
+          "down": { "type": "boolean", "description": "Set when the target is the more general node. The layout puts it on the left." },
+          "target": { "type": "string", "description": "For a link field: the key of the node id in an object of the field. The default is \"id\". The other keys of the object are the properties of the edge." },
+          "from": { "type": "array", "items": { "type": "string" }, "description": "The kinds that the source node of an edge of this name may have." },
+          "to": { "type": "array", "items": { "type": "string" }, "description": "The kinds that the target node of an edge of this name may have." },
+          "properties": {
+            "type": "object",
+            "description": "The properties of an edge of this name, by property name.",
+            "additionalProperties": {
+              "type": "object",
+              "required": ["type"],
+              "additionalProperties": false,
+              "properties": {
+                "type": { "enum": ["string", "number", "boolean", "date"], "description": "A date is an ISO date string: YYYY, YYYY-MM or YYYY-MM-DD." },
+                "required": { "type": "boolean", "description": "Set when every edge of this name must have the property." }
+              }
+            }
+          }
         }
       }
     },

@@ -1,0 +1,69 @@
+id: req-edge-properties
+kind: requirement
+title: Give edges properties
+statement: An edge has a kind, an optional note and optional properties, as in a labelled property graph. Parallel edges stay when their properties differ.
+capabilities:
+  - cap-nodes
+  - cap-schemas
+area:
+  - core
+  - app
+acceptance:
+  - id: refs
+    text: Every key of a refs item except the target key, the note key and the many key is a property of the edge.
+    status: verified
+    tests:
+      - type: unit
+        file: test/edges.test.ts
+        name: are the keys of the item except the target key and the note key
+      - type: unit
+        file: test/edges.test.ts
+        name: hold the values with their types
+      - type: unit
+        file: test/edges.test.ts
+        name: are missing when the item has only the target key and the note key
+      - type: unit
+        file: test/edges.test.ts
+        name: leave out the many key
+  - id: link-objects
+    text: A link field can hold objects with the node id in the target key of the profile and the properties of the edge. The default target key is id. A plain id still works.
+    status: verified
+    tests:
+      - type: unit
+        file: test/edges.test.ts
+        name: come from an object that holds the target key, and a plain id gives an edge with no properties
+      - type: unit
+        file: test/edges.test.ts
+        name: use the target key of the profile
+      - type: unit
+        file: test/edges.test.ts
+        name: are in the product fixture on the complies edge
+      - type: unit
+        file: test/edges.test.ts
+        name: still place a node in the tree when the parent field holds objects
+  - id: parallel
+    text: The model keeps parallel edges when their properties differ and keeps 1 edge when the properties are equal.
+    status: verified
+    tests:
+      - type: unit
+        file: test/edges.test.ts
+        name: stay 2 edges when the properties differ
+      - type: unit
+        file: test/edges.test.ts
+        name: merge to 1 edge when the properties are equal, whatever the order of the keys
+      - type: unit
+        file: test/edges.test.ts
+        name: keep 2 refs edges with the same note and different properties
+      - type: unit
+        file: test/edges.test.ts
+        name: compare property sets by value
+  - id: line
+    text: A compact line lists the properties of an edge, for example since 2024 and share 0.4 joined by a middle dot.
+    status: verified
+    tests:
+      - type: unit
+        file: test/edges.test.ts
+        name: joins the properties with a middle dot
+  - id: panel
+    text: The details panel shows the properties after each edge. A click on an edge in the canvas selects it, and the panel shows its kind, source, target, note and properties, with buttons to select the source or the target.
+    status: partial

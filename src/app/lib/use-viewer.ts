@@ -35,6 +35,8 @@ export interface ViewerState {
   filters: Filters;
   view: View;
   selected: string | null;
+  // The selected edge. A node and an edge are never selected together.
+  selectedEdge: VEdge | null;
   selectSeq: number;
   walk: Walk | null;
   walkRoot: string | null;
@@ -56,6 +58,7 @@ export function useViewer(model: Model, session?: { initial?: ViewerState; save:
   const [filters, setFilters] = useState<Filters>(init?.filters ?? EMPTY_FILTERS);
   const [view, setView] = useState<View>(init?.view ?? 'graph');
   const [selected, setSelected] = useState<string | null>(init?.selected ?? null);
+  const [selectedEdge, setSelectedEdge] = useState<VEdge | null>(init?.selectedEdge ?? null);
   const [selectSeq, setSelectSeq] = useState(init?.selectSeq ?? 0);
   const [walk, setWalk] = useState<Walk | null>(init?.walk ?? null);
   const [walkRoot, setWalkRoot] = useState<string | null>(init?.walkRoot ?? null);
@@ -104,6 +107,7 @@ export function useViewer(model: Model, session?: { initial?: ViewerState; save:
   const select = useCallback(
     (id: string | null, opts?: { panel?: Panel }) => {
       setSelected(id);
+      setSelectedEdge(null);
       if (id) {
         reveal(id);
         setSelectSeq((s) => s + 1);
@@ -112,6 +116,14 @@ export function useViewer(model: Model, session?: { initial?: ViewerState; save:
     },
     [reveal],
   );
+
+  const selectEdge = useCallback((edge: VEdge | null) => {
+    setSelectedEdge(edge);
+    if (edge) {
+      setSelected(null);
+      setPanel('details');
+    }
+  }, []);
 
   const setScope = useCallback(
     (next: Scope) => {
@@ -208,7 +220,7 @@ export function useViewer(model: Model, session?: { initial?: ViewerState; save:
     },
   );
 
-  const latest: ViewerState = { scope, depth, filters, view, selected, selectSeq, walk, walkRoot, history, layoutTick, dock, statusColour, panel, open, positions: positions.current };
+  const latest: ViewerState = { scope, depth, filters, view, selected, selectedEdge, selectSeq, walk, walkRoot, history, layoutTick, dock, statusColour, panel, open, positions: positions.current };
   const current = useRef(latest);
   current.current = latest;
   const saver = useRef(session?.save);
@@ -231,6 +243,8 @@ export function useViewer(model: Model, session?: { initial?: ViewerState; save:
     setView,
     selected,
     select,
+    selectedEdge,
+    selectEdge,
     selectSeq,
     walk,
     walkRoot,

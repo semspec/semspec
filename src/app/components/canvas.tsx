@@ -257,7 +257,8 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       edges.flatMap((e: VEdge, i) => {
         // The nesting shows the edge to the container of a node.
         if (layout === 'grouped' && e.k === groupEdge && containers.parentOf.get(e.s) === e.t) return [];
-        const touches = e.s === hovered || e.t === hovered || e.s === selected || e.t === selected;
+        const chosen = e === v.selectedEdge;
+        const touches = chosen || e.s === hovered || e.t === hovered || e.s === selected || e.t === selected;
         const dim = !!neighbours && !touches;
         // A `down` edge points from the specific node on the right to the general node on the left.
         // React Flow draws it from the general node, so the line leaves a right side and enters a left side.
@@ -275,6 +276,7 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
         const marker = { type: MarkerType.ArrowClosed, width: 12, height: 12, color: 'var(--muted-foreground)' };
         return [{
           id: `e${i}`,
+          data: { edge: e },
           source: from,
           target: to,
           ...(facing ? { sourceHandle: `s-${facing.source}`, targetHandle: `t-${facing.target}` } : {}),
@@ -282,11 +284,11 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
           labelStyle: { fontSize: 11, fill: 'var(--muted-foreground)' },
           labelBgStyle: { fill: 'var(--background)', fillOpacity: 0.85 },
           labelBgPadding: [4, 2],
-          style: { stroke: 'var(--muted-foreground)', strokeOpacity: dim ? 0.12 : touches ? 0.9 : 0.45, strokeWidth: touches ? 1.6 : 1.1 },
+          style: { stroke: 'var(--muted-foreground)', strokeOpacity: dim ? 0.12 : touches ? 0.9 : 0.45, strokeWidth: chosen ? 2.6 : touches ? 1.6 : 1.1 },
           ...(down ? { markerStart: marker } : { markerEnd: marker }),
         }];
       }),
-    [edges, hovered, selected, neighbours, showAll, layout, groupEdge, containers, rects],
+    [edges, hovered, selected, v.selectedEdge, neighbours, showAll, layout, groupEdge, containers, rects],
   );
 
   // Fit keeps the text readable: the zoom never goes below 0.7. A canvas that is larger than the
@@ -374,6 +376,7 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       nodeTypes={NODE_TYPES}
       onNodesChange={onNodesChange}
       onNodeClick={(_, n) => v.select(n.id)}
+      onEdgeClick={(_, e) => v.selectEdge((e.data as { edge: VEdge }).edge)}
       onNodeDoubleClick={(_, n) => v.expand(n.id)}
       onNodeDragStop={(_, n) => {
         // A member has a position inside its container. The store keeps absolute positions.

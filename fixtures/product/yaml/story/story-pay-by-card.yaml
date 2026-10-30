@@ -9,7 +9,11 @@ teams:
 epics:
   - epic-checkout
 complies:
-  - std-card-data
+  - std: std-card-data
+    since: "2024-03"
+    audited: true
+  - std: std-card-data
+    since: "2025"
 scenarios:
   - key: declined
     text: A declined card shows a message.

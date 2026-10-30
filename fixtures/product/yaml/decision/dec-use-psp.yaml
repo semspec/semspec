@@ -6,4 +6,6 @@ decidedOn: 2026-03-01
 notes:
   - ref: epic-checkout
     text: governs the epic
+    since: "2024"
+    share: 0.4
 replacedBy: dec-use-two-psp

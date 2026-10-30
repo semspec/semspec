@@ -9,3 +9,4 @@ export * from './explore';
 export * from './schema';
 export * from './tagged';
 export * from './workspace';
+export * from './edges';

@@ -27,6 +27,7 @@ const EDGES: Record<string, [string, string, string][]> = {
     ['story-save-card', 'story-pay-by-card', 'follows'],
     ['story-loose-child', 'story-loose', 'follows'],
     ['story-pay-by-card', 'std-card-data', 'complies'],
+    ['story-pay-by-card', 'std-card-data', 'complies'],
     ['dec-use-psp', 'epic-checkout', 'notes'],
     ['dec-use-two-psp', 'story-pay-by-card', 'notes'],
     ['dec-use-psp', 'dec-use-two-psp', 'replacedBy'],
@@ -411,7 +412,7 @@ describe('the default kind in the inputs', () => {
       delete first[profile.source.kind];
       const { defaultKind, ...source } = profile.source;
       expect(validateGraph(graph, { ...profile, source }).errors.join('\n'), name).toContain(`has the unknown kind "undefined"`);
-      const fixed = { ...profile, source: { ...source, defaultKind: profile.kinds[0].id } };
+      const fixed = { ...profile, source: { ...source, defaultKind: defaultKind ?? profile.kinds[0].id } };
       expect(validateGraph(graph, fixed).errors, name).toEqual([]);
     }
   });

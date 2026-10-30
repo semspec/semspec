@@ -3,12 +3,33 @@
 // Derives 1 JSON Schema (draft 2020-12) for each kind from the profile. The schema holds only what
 // the profile knows. It allows any other field, because a profile does not name every field.
 import { normalise } from './profile';
-import type { Profile, ProfileInput } from './types';
+import { DEFAULT_LINK_TARGET } from './edges';
+import type { EdgeSpec, Profile, ProfileInput } from './types';
 
 export type JsonSchema = Record<string, unknown>;
 
 const text: JsonSchema = { type: 'string' };
 const list: JsonSchema = { type: 'array', items: { type: 'string' } };
+
+// A date is an ISO date string: YYYY, YYYY-MM or YYYY-MM-DD.
+const DATE_PATTERN = '^\\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\\d|3[01]))?)?$';
+
+// The schema of the declared properties of an edge name.
+function edgeProperties(spec: EdgeSpec | undefined): Record<string, JsonSchema> {
+  const out: Record<string, JsonSchema> = {};
+  for (const [name, d] of Object.entries(spec?.properties ?? {})) out[name] = d.type === 'date' ? { type: 'string', pattern: DATE_PATTERN } : { type: d.type };
+  return out;
+}
+
+const requiredProperties = (spec: EdgeSpec | undefined): string[] => Object.entries(spec?.properties ?? {}).filter(([, d]) => d.required).map(([name]) => name);
+
+// A link field holds node ids, or objects that hold the node id in the target key and the properties of the edge.
+function linkProperty(profile: Profile, field: string): JsonSchema {
+  const spec = profile.edges[field];
+  const target = spec?.target ?? DEFAULT_LINK_TARGET;
+  const object: JsonSchema = { type: 'object', properties: { [target]: text, ...edgeProperties(spec) }, required: [target, ...requiredProperties(spec)], additionalProperties: true };
+  return { type: 'array', items: { anyOf: [text, object] } };
+}
 
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -49,12 +70,12 @@ export function kindSchemas(input: ProfileInput): Record<string, JsonSchema> {
       [kindKey]: { const: kind.id },
     };
     [...profile.fields.title, ...profile.fields.statement, profile.lifecycle.field].forEach((f) => (properties[f] = text));
-    (kind.parents ?? []).forEach((group) => group.forEach((f) => (properties[f] = list)));
-    (profile.links ?? []).forEach((f) => (properties[f] = list));
+    (kind.parents ?? []).forEach((group) => group.forEach((f) => (properties[f] = linkProperty(profile, f))));
+    (profile.links ?? []).forEach((f) => (properties[f] = linkProperty(profile, f)));
     for (const { field, target, note, many } of profile.refs!) {
-      const item: Record<string, JsonSchema> = { [target]: text, [note]: text };
+      const item: Record<string, JsonSchema> = { ...edgeProperties(profile.edges[field]), [target]: text, [note]: text };
       if (many) item[many] = { type: 'boolean' };
-      properties[field] = { type: 'array', items: { type: 'object', properties: item, required: [target], additionalProperties: true } };
+      properties[field] = { type: 'array', items: { type: 'object', properties: item, required: [target, ...requiredProperties(profile.edges[field])], additionalProperties: true } };
     }
     if (profile.supersededBy) properties[profile.supersededBy] = text;
     (profile.parts ?? []).filter((p) => p.owner === kind.id).forEach((p) => (properties[p.field] = partProperty(profile, p)));

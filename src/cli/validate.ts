@@ -4,7 +4,7 @@
 // the names that the profile gives.
 import { readFileSync } from 'node:fs';
 import Ajv from 'ajv/dist/2020.js';
-import { embeddedObjects, getPath, parentFields, refsOf, withDefaultKind, type Graph, type Profile } from '../core/index';
+import { buildModel, embeddedObjects, endProblems, getPath, linkTargetKey, parentFields, propertyProblems, readLinkItem, refsOf, withDefaultKind, type Graph, type Profile } from '../core/index';
 
 const schemaPath = new URL('../../schema/profile.schema.json', import.meta.url);
 
@@ -39,6 +39,10 @@ function crossCheckProfile(p: Profile): string[] {
     if (tones !== 'good,warn,bad') errors.push(`profile status values have the tones ${tones}. They must have the tones good, warn, bad in this order.`);
   }
   const edges = new Set(Object.keys(p.edges));
+  for (const [name, spec] of Object.entries(p.edges)) {
+    spec.from?.forEach((id) => need(`edge ${name} from`, id));
+    spec.to?.forEach((id) => need(`edge ${name} to`, id));
+  }
   const needEdge = (where: string, e: string | undefined) => e !== undefined && !edges.has(e) && errors.push(`profile ${where} names the edge "${e}", which has no entry in edges`);
   p.kinds.forEach((k) => (k.parents ?? []).forEach((g) => g.forEach((f) => needEdge(`kind ${k.id} parents`, f))));
   p.links?.forEach((f) => needEdge('links', f));
@@ -92,7 +96,14 @@ export function validateGraph(graph: Graph, profile: Profile, labels?: string[])
       const v = n[f];
       if (v === undefined) return;
       if (!Array.isArray(v)) errors.push(`Field "${f}" of "${String(n[profile.source.id])}" is not a list${labels ? ` (${label(i, n[profile.source.id])})` : ''}`);
-      else v.forEach((t) => !ids.has(String(t)) && missing++);
+      else {
+        const key = linkTargetKey(profile.edges, f);
+        v.forEach((item) => {
+          const read = readLinkItem(item, key);
+          if (!read) errors.push(`Field "${f}" of "${String(n[profile.source.id])}" holds an item that is not a node id and has no "${key}" key${labels ? ` (${label(i, n[profile.source.id])})` : ''}`);
+          else if (!ids.has(read.target)) missing++;
+        });
+      }
     });
   });
   // A cross link field holds a list of node ids of another graph.
@@ -124,6 +135,23 @@ export function validateGraph(graph: Graph, profile: Profile, labels?: string[])
           if (same(object[key]) !== same(second[key])) warnings.push(`"${owners[0]}" and "${other}" both hold the ${e.kind} "${id}" in "${e.field}", but the field "${key}" differs. The explorer keeps the value of "${owners[0]}".`);
         }
       }
+    }
+  }
+  // The constraints of the edge names. The model needs a graph with no error in its structure.
+  if (!errors.length) {
+    const model = buildModel(graph, profile);
+    const kindOfNode = new Map(model.nodes.map((x) => [x.id, x.kind]));
+    const where = (id: string) => {
+      const i = list.findIndex((x) => x[profile.source.id] === id);
+      return i >= 0 ? label(i, id) : `Node ${id}`;
+    };
+    for (const e of model.edges) {
+      const spec = profile.edges[e.k];
+      const head = `${where(e.s)}, edge "${e.k}" to "${e.t}"`;
+      endProblems(spec, kindOfNode.get(e.s), kindOfNode.get(e.t)).forEach((m) => errors.push(`${head} ${m}`));
+      const found = propertyProblems(spec, e.p);
+      found.errors.forEach((m) => errors.push(`${head} ${m}`));
+      found.warnings.forEach((m) => warnings.push(`${head} ${m}`));
     }
   }
   if (missing) warnings.push(`${missing} link(s) name a node that is not in the graph. The explorer skips them.`);

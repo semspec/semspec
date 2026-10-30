@@ -1,0 +1,92 @@
+id: req-edge-types
+kind: requirement
+title: Constrain the edge types
+statement: A profile can declare the kinds of the 2 nodes of an edge name and the properties of the edge. The graph check reports each edge that breaks the declaration.
+capabilities:
+  - cap-validate
+  - cap-schemas
+area:
+  - core
+  - cli
+acceptance:
+  - id: ends
+    text: An edge whose source kind is not in from, or whose target kind is not in to, is an error that names the node and the edge.
+    status: verified
+    tests:
+      - type: unit
+        file: test/edges.test.ts
+        name: pass for the fixtures
+      - type: unit
+        file: test/edges.test.ts
+        name: report an edge whose source kind is not in from, and name the node and the edge
+      - type: unit
+        file: test/edges.test.ts
+        name: report an edge whose target kind is not in to
+      - type: unit
+        file: test/edges.test.ts
+        name: report an edge from a part, a check or an embedded owner against the constraint of its name
+      - type: unit
+        file: test/edges.test.ts
+        name: use the label of the source when the graph comes from files
+  - id: properties
+    text: A property that the profile does not declare is a warning. A missing required property and a value of the wrong type are errors. An edge name with no properties declaration has no property check.
+    status: verified
+    tests:
+      - type: unit
+        file: test/edges.test.ts
+        name: warn about a property that the profile does not declare
+      - type: unit
+        file: test/edges.test.ts
+        name: accept any property on an edge name with no properties declaration
+      - type: unit
+        file: test/edges.test.ts
+        name: report a required property that is missing
+      - type: unit
+        file: test/edges.test.ts
+        name: report a required property that is missing on a link object and on an edge with no properties at all
+      - type: unit
+        file: test/edges.test.ts
+        name: report a value of a wrong type
+      - type: unit
+        file: test/edges.test.ts
+        name: check a property of a link object
+  - id: date
+    text: A date is an ISO date string with the form YYYY, YYYY-MM or YYYY-MM-DD.
+    status: verified
+    tests:
+      - type: unit
+        file: test/edges.test.ts
+        name: accepts YYYY, YYYY-MM and YYYY-MM-DD and nothing else
+  - id: link-target
+    text: A link field that holds an object without the target key is an error that names the node. A link object to a missing node counts as a missing link.
+    status: verified
+    tests:
+      - type: unit
+        file: test/edges.test.ts
+        name: report a link field with an object that has no target key, and name the node
+      - type: unit
+        file: test/edges.test.ts
+        name: count a link object to a missing node as a missing link
+  - id: profile
+    text: The profile check reports a kind in from or to that the profile does not define, and a property with an unknown type or an unknown key.
+    status: verified
+    tests:
+      - type: unit
+        file: test/edges.test.ts
+        name: names an unknown kind in from and in to
+      - type: unit
+        file: test/edges.test.ts
+        name: refuses a property with an unknown type and an unknown key
+  - id: schema
+    text: The schema of a kind types a link field as ids or objects with the declared properties, and types the declared properties of a refs field.
+    status: verified
+    tests:
+      - type: unit
+        file: test/edges.test.ts
+        name: types the declared properties of a refs field and requires the required ones
+      - type: unit
+        file: test/edges.test.ts
+        name: types a link field as ids or objects with the declared properties
+      - type: unit
+        file: test/edges.test.ts
+        name: keeps the target key "id" for a link field with no declaration

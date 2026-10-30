@@ -128,7 +128,7 @@ The graph is an object with a list of nodes. See `schema/graph.schema.json`.
 ```
 
 - A node has an `id`, a `kind` and any other fields. The profile can rename the 3 keys in its `source` object.
-- A field that the profile names as a parent field or a link field holds a list of node ids.
+- A field that the profile names as a parent field or a link field holds a list of node ids. An item can also be an object that holds the node id and the properties of the edge. See "Edges".
 - A node with no value in the kind key gets `source.defaultKind`, when the profile sets it.
 - A field that the profile names as an embedded field holds an object, a string or a number. The explorer makes 1 node for each distinct id, and the owners link to it. A string or a number is the id, and the new node has no other field. An object holds its id in the key that `id` names. A node of the graph with the same id wins.
 - A field that the profile names as a part field holds a list of parts. A part is an object. The explorer shows each part as a node of its own.
@@ -147,9 +147,9 @@ The profile is a JSON or YAML object. See `schema/profile.schema.json` and the 2
 | `fields` | The fields for the title, the statement, the level and the delivery state, and a pattern that cuts a prefix from an id. |
 | `lifecycle` | The field of the state, a fallback, a fallback for each kind, and the states that show muted. |
 | `kinds` | The node kinds: id, label, plural, role, colour for the light and the dark theme, parent field groups, a citation rule (with an optional `name` path for the display name of the source) and the chips of a summary. |
-| `edges` | A label pair for each edge name, and a `down` flag for an edge whose target is the more general node. |
+| `edges` | A label pair for each edge name, and a `down` flag for an edge whose target is the more general node. An entry can also have `target` (the key of the node id in an object of a link field, default `id`), `from` and `to` (the kinds of the 2 nodes of an edge) and `properties` (the declared properties of an edge). See "Edges". |
 | `links`, `supersededBy` | Link fields that are not parent fields. |
-| `refs` | A field that holds a list of objects: `field`, `target` (the key of the node id in an object) and `note` (the key of the edge note). Give 1 entry or a list of entries. Each `field` needs an entry in `edges`, which gives the labels of its edge. An entry can have `many`, the key of a boolean in an object. When the boolean is true, the edge note gets the suffix `[]`, so a note `lines` reads `lines[]`. |
+| `refs` | A field that holds a list of objects: `field`, `target` (the key of the node id in an object) and `note` (the key of the edge note). Give 1 entry or a list of entries. Each `field` needs an entry in `edges`, which gives the labels of its edge. An entry can have `many`, the key of a boolean in an object. When the boolean is true, the edge note gets the suffix `[]`, so a note `lines` reads `lines[]`. Every other key of an object is a property of the edge. |
 | `crossLinks` | Fields that hold node ids of another graph of a workspace: the field, the id of the target graph and a label. See "Cross links". |
 | `linkedScopeEdges` | The edges that pull a linked node into the scope of a node. |
 | `parts` | Which kinds own parts, in which field, and the fields of a part. |
@@ -160,6 +160,40 @@ The profile is a JSON or YAML object. See `schema/profile.schema.json` and the 2
 | `layout` | The layout of the Graph and Cards views. The optional `default` is `layered`, `grouped` or `force`. The optional `groupEdge` names the edge whose target is the container of its source. The value `grouped` needs `groupEdge`. See the section on layouts. |
 | `facets`, `entry`, `groups` | The group facet, the start page and the names of tree groups. |
 | `details` | The sections of the details panel: properties, text sections, option lists, source lists, object lists, tagged lists and citations. |
+
+## Edges
+
+The model is a labelled property graph, as in ISO GQL (ISO/IEC 39075) and PG-Schema. A node has a kind (its label) and fields (its properties). An edge has a kind, a note and properties.
+
+An edge gets its properties from 2 places:
+
+- A refs item: every key except the target key, the note key and the `many` key is a property. The item `{ "ref": "x", "text": "note", "since": "2024", "share": 0.4 }` gives an edge with the note `note` and the properties `since` and `share`.
+- A link field: an item is a node id, or an object `{ "<target key>": "<id>", ...properties }`. The profile names the target key in `edges.<field>.target`. The default is `id`. An object without the target key is an error that names the node.
+
+An embedded object, a part and a check make edges with no properties.
+
+Parallel edges (the same source, target and kind) stay 2 edges when their properties differ, as GQL allows. The model keeps 1 edge when the properties are equal. The order of the keys does not matter.
+
+A profile can declare constraints for an edge name:
+
+```json
+"edges": {
+  "complies": {
+    "labels": ["Complies with", "Complied with by"],
+    "target": "std",
+    "from": ["story"],
+    "to": ["standard"],
+    "properties": { "since": { "type": "date", "required": true }, "share": { "type": "number" } }
+  }
+}
+```
+
+- `from` and `to` list the kinds of the source node and of the target node. An edge with another kind is an error. A kind that the profile does not define is a profile error.
+- `properties` declares the properties by name. The `type` is `string`, `number`, `boolean` or `date`. A `date` is an ISO date string: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Quote a year in YAML, so it stays a string.
+- A property that `properties` does not declare is a warning. A missing required property and a value of the wrong type are errors. An edge name with no `properties` has no property check.
+- `semspec schema` types a link field as a list of ids or objects, with the declared properties.
+
+The details panel shows the properties after each edge, for example `since 2024 · share 0.4`. A click on an edge in the Graph view or the Cards view selects it. The panel then shows the kind, the source, the target, the note and the properties, with buttons to select the source or the target. The table has no column for edge properties.
 
 ## Layouts
 

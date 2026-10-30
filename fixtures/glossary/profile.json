@@ -12,8 +12,13 @@
     { "id": "term", "label": "Term", "plural": "terms", "role": "hierarchy", "parents": [["inGroup"]], "color": { "light": "#d9480f", "dark": "#ffa94d" }, "chips": ["lifecycle"] }
   ],
   "edges": {
-    "inGroup": { "labels": ["In group", "Contains"], "down": true },
-    "relations": { "labels": ["Relates to", "Related from"] }
+    "inGroup": { "labels": ["In group", "Contains"], "down": true, "from": ["term"], "to": ["group"] },
+    "relations": {
+      "labels": ["Relates to", "Related from"],
+      "from": ["term"],
+      "to": ["term"],
+      "properties": { "weight": { "type": "number", "required": true }, "since": { "type": "date" } }
+    }
   },
   "refs": { "field": "relations", "target": "to", "note": "relation" },
   "layout": { "default": "force" },

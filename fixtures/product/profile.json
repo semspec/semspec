@@ -51,8 +51,19 @@
     "epics": { "labels": ["In epic", "Contains"], "down": true },
     "follows": { "labels": ["Follows", "Followed by"], "down": true },
     "issuedBy": { "labels": ["Issued by", "Issues"], "down": true },
-    "complies": { "labels": ["Complies with", "Complied with by"] },
-    "notes": { "labels": ["Notes", "Noted by"] },
+    "complies": {
+      "labels": ["Complies with", "Complied with by"],
+      "target": "std",
+      "from": ["story"],
+      "to": ["standard"],
+      "properties": { "since": { "type": "date", "required": true }, "audited": { "type": "boolean" } }
+    },
+    "notes": {
+      "labels": ["Notes", "Noted by"],
+      "from": ["decision"],
+      "to": ["epic", "story"],
+      "properties": { "since": { "type": "date" }, "share": { "type": "number" } }
+    },
     "replacedBy": { "labels": ["Replaced by", "Replaces"] },
     "scenario": { "labels": ["Scenario of", "Has scenario"], "down": true },
     "tested": { "labels": ["Tested by", "Tests"] }

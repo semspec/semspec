@@ -5,6 +5,7 @@ owner: grp-harmony
 relations:
   - to: scale
     relation: is built from
+    weight: 0.6
 source:
   - title: Harmony Primer
     page: "30"

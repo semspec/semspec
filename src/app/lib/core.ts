@@ -64,6 +64,7 @@ export const Core = {
   toCsv: C.toCsv,
   getPath: C.getPath,
   taggedLines: C.taggedLines,
+  formatEdgeProps: C.formatEdgeProps,
   filterValues: C.filterValues,
   kindSpec: (id: string) => C.kindOf(profile, id),
 };

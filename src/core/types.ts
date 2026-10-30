@@ -140,6 +140,22 @@ export interface CrossLinkSpec {
   label: string;
 }
 
+// The type of an edge property. `date` is an ISO date string: YYYY, YYYY-MM or YYYY-MM-DD.
+export type PropertyType = 'string' | 'number' | 'boolean' | 'date';
+
+// The declaration of one edge name. `labels` is [reading from the source, reading from the target].
+// `down` marks an edge whose target is the more general node. `target` is the key of the node id in
+// an object of a link field (default "id"). `from` and `to` are the kinds of the source node and of
+// the target node that an edge of this name may join. `properties` declares the properties of an edge.
+export interface EdgeSpec {
+  labels: [string, string];
+  down?: boolean;
+  target?: string;
+  from?: string[];
+  to?: string[];
+  properties?: Record<string, { type: PropertyType; required?: boolean }>;
+}
+
 // One refs field. `target` is the key of the node id in an item and `note` is the key of the edge
 // note. `many` is the key of a boolean in an item. When it is true, the note gets the suffix `[]`.
 export interface RefsSpec {
@@ -165,9 +181,8 @@ export interface Profile {
     states?: Record<string, { muted?: boolean }>;
   };
   kinds: KindSpec[];
-  // Edge fields. `labels` is [reading from the source, reading from the target].
-  // `down` marks an edge whose target is the more general node.
-  edges: Record<string, { labels: [string, string]; down?: boolean }>;
+  // Edge declarations, by edge name.
+  edges: Record<string, EdgeSpec>;
   links?: string[];
   // Links into other graphs. They are not edges of this graph.
   crossLinks?: CrossLinkSpec[];
@@ -217,6 +232,8 @@ export interface VEdge {
   t: string;
   k: string;
   n?: string;
+  // The properties of the edge.
+  p?: Record<string, unknown>;
 }
 
 // A link from a node of this graph to a node of another graph. `t` may name no node.

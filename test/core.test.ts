@@ -317,6 +317,11 @@ describe('kind schemas', () => {
   const pSchemas = kindSchemas(product.profile) as Record<string, any>;
   const sSchemas = kindSchemas(safety.profile) as Record<string, any>;
   const list = { type: 'array', items: { type: 'string' } };
+  // A link field holds node ids, or objects with the node id and the properties of the edge.
+  const links = (target = 'id', properties: Record<string, unknown> = {}, required: string[] = []) => ({
+    type: 'array',
+    items: { anyOf: [{ type: 'string' }, { type: 'object', properties: { [target]: { type: 'string' }, ...properties }, required: [target, ...required], additionalProperties: true }] },
+  });
 
   it('gives 1 schema for each kind with the title, the description and the open shape', () => {
     expect(Object.keys(pSchemas)).toEqual(product.profile.kinds.map((k) => k.id));
@@ -338,16 +343,16 @@ describe('kind schemas', () => {
   it('types the title, statement and lifecycle fields and the parent and link fields', () => {
     expect(pSchemas.story.properties.summary).toEqual({ type: 'string' });
     expect(pSchemas.story.properties.status).toEqual({ type: 'string' });
-    expect(pSchemas.story.properties.epics).toEqual(list);
-    expect(pSchemas.story.properties.follows).toEqual(list);
-    expect(pSchemas.story.properties.complies).toEqual(list);
+    expect(pSchemas.story.properties.epics).toEqual(links());
+    expect(pSchemas.story.properties.follows).toEqual(links());
+    expect(pSchemas.story.properties.complies).toEqual(links('std', { since: { type: 'string', pattern: expect.any(String) }, audited: { type: 'boolean' } }, ['since']));
     expect(pSchemas.epic.properties.epics).toBeUndefined();
-    expect(sSchemas.mitigation.properties.subgoals).toEqual(list);
-    expect(sSchemas.mitigation.properties.addresses).toEqual(list);
+    expect(sSchemas.mitigation.properties.subgoals).toEqual(links());
+    expect(sSchemas.mitigation.properties.addresses).toEqual(links());
     expect(sSchemas.mitigation.properties.claim).toEqual({ type: 'string' });
   });
   it('describes the refs and the supersededBy field', () => {
-    expect(pSchemas.decision.properties.notes.items.properties).toEqual({ ref: { type: 'string' }, text: { type: 'string' } });
+    expect(pSchemas.decision.properties.notes.items.properties).toEqual({ ref: { type: 'string' }, text: { type: 'string' }, since: { type: 'string', pattern: expect.any(String) }, share: { type: 'number' } });
     expect(pSchemas.decision.properties.replacedBy).toEqual({ type: 'string' });
     expect(sSchemas.hazard.properties.notes).toBeUndefined();
   });

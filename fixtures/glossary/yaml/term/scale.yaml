@@ -5,6 +5,8 @@ owner: grp-harmony
 relations:
   - to: chord
     relation: chords are built from it
+    weight: 0.9
+    since: "1750"
 source:
   - title: Harmony Primer
     page: "12"
