@@ -1,0 +1,20 @@
+id: req-pkg-split
+kind: requirement
+title: Split the code into 4 packages
+state: draft
+priority: now
+statement: "The code splits into the packages core, app, mcp and cli."
+capabilities:
+  - cap-packages
+area:
+  - core
+acceptance:
+  - id: four-packages
+    text: "The repository has the 4 packages core, app, mcp and cli, each with its own package.json."
+    status: open
+  - id: dependency-direction
+    text: "The packages app, mcp and cli depend on core. The package core depends on none of them."
+    status: open
+  - id: dependency-test
+    text: "A test fails when a package imports from a package that it must not depend on."
+    status: open

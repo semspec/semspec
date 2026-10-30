@@ -2,6 +2,7 @@ id: req-verify-models
 kind: requirement
 title: Name a formal model
 state: draft
+priority: later
 statement: A node names a formal model in TLA+ or Quint.
 capabilities:
   - cap-formal

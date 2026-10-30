@@ -2,6 +2,7 @@ id: req-verify-conformance
 kind: requirement
 title: Feed results into the status
 state: draft
+priority: later
 statement: A conformance result sets the status of the condition it checks.
 capabilities:
   - cap-formal

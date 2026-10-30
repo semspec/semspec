@@ -1,0 +1,20 @@
+id: req-embed-hybrid
+kind: requirement
+title: Rank with keywords and vectors together
+state: draft
+priority: later
+statement: "Hybrid ranking merges the keyword ranking and the vector ranking by rank fusion."
+capabilities:
+  - cap-embeddings
+area:
+  - core
+acceptance:
+  - id: fusion
+    text: "The hybrid ranking merges the 2 rankings with reciprocal rank fusion."
+    status: open
+  - id: fallback
+    text: "When the index is missing, the search returns the keyword ranking."
+    status: open
+  - id: eval-compare
+    text: "The evaluation set reports the recall of the keyword ranking and of the hybrid ranking side by side."
+    status: open

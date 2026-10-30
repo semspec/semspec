@@ -2,6 +2,7 @@ id: req-gate-check
 kind: requirement
 title: Fail on a broken graph
 state: draft
+priority: later
 statement: A check command exits with an error when the graph breaks a rule of the profile.
 capabilities:
   - cap-gate

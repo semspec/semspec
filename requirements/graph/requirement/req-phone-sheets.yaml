@@ -1,0 +1,20 @@
+id: req-phone-sheets
+kind: requirement
+title: Open the tree and the details in a sheet
+state: draft
+priority: later
+statement: "At phone width the tree and the details panel open in a sheet."
+capabilities:
+  - cap-phone-layout
+area:
+  - app
+acceptance:
+  - id: tree-sheet
+    text: "A toolbar button opens the tree in a sheet."
+    status: open
+  - id: details-sheet
+    text: "A toolbar button opens the details panel in a sheet."
+    status: open
+  - id: close
+    text: "A sheet closes with its close button, with the Escape key and by a tap outside it."
+    status: open

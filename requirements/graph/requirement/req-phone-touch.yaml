@@ -1,0 +1,20 @@
+id: req-phone-touch
+kind: requirement
+title: Support touch on the canvas
+state: draft
+priority: later
+statement: "The canvas supports touch pan and pinch zoom."
+capabilities:
+  - cap-phone-layout
+area:
+  - app
+acceptance:
+  - id: pan
+    text: "A 1 finger drag on the canvas pans the Graph view."
+    status: open
+  - id: pinch
+    text: "A 2 finger pinch on the canvas zooms the Graph view."
+    status: open
+  - id: page-stays
+    text: "A gesture on the canvas does not scroll or zoom the page."
+    status: open

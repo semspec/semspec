@@ -1,0 +1,17 @@
+id: req-mcp-resources
+kind: requirement
+title: Offer the profile as MCP resources
+state: draft
+priority: next
+statement: "The MCP server offers the profile and the vocabularies as resources."
+capabilities:
+  - cap-mcp
+area:
+  - harness
+acceptance:
+  - id: profile
+    text: "The server lists the profile as 1 resource and returns its content on request."
+    status: open
+  - id: vocabularies
+    text: "The server lists each vocabulary as 1 resource and returns its terms on request."
+    status: open

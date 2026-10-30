@@ -2,6 +2,7 @@ id: req-gate-hooks
 kind: requirement
 title: Run the gate in the workflow
 state: draft
+priority: later
 statement: The check runs as an agent hook, a pre-commit hook and a CI step.
 capabilities:
   - cap-gate

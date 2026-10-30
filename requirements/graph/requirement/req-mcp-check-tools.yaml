@@ -1,0 +1,26 @@
+id: req-mcp-check-tools
+kind: requirement
+title: Check the graph with MCP tools
+state: draft
+priority: next
+statement: "The MCP server has the tools gaps, validate and schema."
+capabilities:
+  - cap-mcp
+area:
+  - harness
+acceptance:
+  - id: gaps-status
+    text: "The tool gaps returns the nodes with a red or amber status."
+    status: open
+  - id: gaps-checks
+    text: "The tool gaps returns the requirements with a missing check."
+    status: open
+  - id: gaps-source
+    text: "The tool gaps returns the facts that have no source."
+    status: open
+  - id: validate
+    text: "The tool validate checks 1 YAML node against the profile and returns the errors. It does not write a file."
+    status: open
+  - id: schema
+    text: "The tool schema returns the kinds, the edges and the vocabularies of the profile."
+    status: open

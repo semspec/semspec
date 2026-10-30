@@ -1,0 +1,14 @@
+id: req-phone-wide
+kind: requirement
+title: Keep the layout from 768 px
+state: draft
+priority: later
+statement: "The layout from 768 px wide up does not change."
+capabilities:
+  - cap-phone-layout
+area:
+  - app
+acceptance:
+  - id: wide-same
+    text: "At 768 px wide and above, the tree and the details panel stay in their side panels and no sheet button shows."
+    status: open

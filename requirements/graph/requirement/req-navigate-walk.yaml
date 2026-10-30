@@ -2,6 +2,7 @@ id: req-navigate-walk
 kind: requirement
 title: Walk with a tool
 state: draft
+priority: next
 statement: An MCP server returns the neighbours of a node by edge.
 capabilities:
   - cap-mcp

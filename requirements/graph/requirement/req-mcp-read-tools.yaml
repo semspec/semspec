@@ -1,0 +1,26 @@
+id: req-mcp-read-tools
+kind: requirement
+title: Read nodes with MCP tools
+state: draft
+priority: next
+statement: "The MCP server has the tools get, trace and impact."
+capabilities:
+  - cap-mcp
+area:
+  - harness
+acceptance:
+  - id: get
+    text: "The tool get returns 1 node with its fields, its edges with their properties, its provenance and its cross links."
+    status: open
+  - id: trace-up
+    text: "The tool trace returns the path from a node to the root."
+    status: open
+  - id: trace-down
+    text: "The tool trace returns the tree below a node."
+    status: open
+  - id: impact
+    text: "The tool impact returns the nodes that depend on a node, across the workspace."
+    status: open
+  - id: unknown-id
+    text: "A tool call with an unknown id returns an error that names the id."
+    status: open

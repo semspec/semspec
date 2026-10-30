@@ -1,0 +1,14 @@
+id: req-phone-table
+kind: requirement
+title: Scroll the table inside its box
+state: draft
+priority: later
+statement: "At phone width the Table scrolls inside its own box."
+capabilities:
+  - cap-phone-layout
+area:
+  - app
+acceptance:
+  - id: table-scroll
+    text: "The Table box scrolls sideways. The page does not."
+    status: open

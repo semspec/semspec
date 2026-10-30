@@ -1,0 +1,20 @@
+id: req-pkg-cli
+kind: requirement
+title: Install 1 binary
+state: draft
+priority: now
+statement: "The package cli is the 1 binary that users install. The command mcp is a subcommand of it."
+capabilities:
+  - cap-packages
+area:
+  - cli
+acceptance:
+  - id: one-binary
+    text: "An install of the package cli gives the command semspec."
+    status: open
+  - id: mcp-subcommand
+    text: "The command semspec mcp starts the MCP server from the same binary."
+    status: open
+  - id: help
+    text: "The command semspec --help lists mcp with the other subcommands."
+    status: open

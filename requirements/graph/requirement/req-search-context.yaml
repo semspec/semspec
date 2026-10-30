@@ -1,0 +1,14 @@
+id: req-search-context
+kind: requirement
+title: Return graph context with each hit
+state: draft
+priority: next
+statement: "Each search hit carries graph context."
+capabilities:
+  - cap-search
+area:
+  - core
+acceptance:
+  - id: context-fields
+    text: "Each hit has the kind, the parent and the status of its node."
+    status: open

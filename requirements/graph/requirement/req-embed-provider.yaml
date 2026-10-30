@@ -1,0 +1,23 @@
+id: req-embed-provider
+kind: requirement
+title: Name the embedding provider and model in the configuration
+state: draft
+priority: later
+statement: "The workspace or the profile names the embedding provider and the model. Semspec ships no model and has no default model."
+capabilities:
+  - cap-embeddings
+area:
+  - core
+acceptance:
+  - id: interface
+    text: "An embedding provider is a function from a list of texts to a list of vectors."
+    status: open
+  - id: in-process
+    text: "A provider setting can name a local in-process runtime and a model id. The runtime loads that model on the machine of the user."
+    status: open
+  - id: endpoint
+    text: "A provider setting can name a local server endpoint and a model. Semspec calls that endpoint."
+    status: open
+  - id: no-model
+    text: "Without a configured model, search runs on keywords only and nothing fails."
+    status: open

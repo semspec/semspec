@@ -2,6 +2,7 @@ id: req-context-slice
 kind: requirement
 title: Give the slice of a task
 state: draft
+priority: later
 statement: A command writes the scope, the parts and the checks of 1 node as text for an agent.
 capabilities:
   - cap-slice

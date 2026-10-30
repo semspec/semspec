@@ -1,0 +1,23 @@
+id: req-embed-license
+kind: requirement
+title: Leave the model and its licence to the user
+state: draft
+priority: later
+statement: "The user chooses the model and accepts its licence. Semspec ships no model and has no model dependency."
+capabilities:
+  - cap-embeddings
+area:
+  - core
+acceptance:
+  - id: no-model-shipped
+    text: "The package files and the build output contain no model file."
+    status: open
+  - id: no-model-dependency
+    text: "No package lists a model as a dependency."
+    status: open
+  - id: no-download
+    text: "Semspec downloads a model only when the user configures it. Semspec never redistributes it."
+    status: open
+  - id: tested-models
+    text: "The documentation lists the tested models with their licences."
+    status: open

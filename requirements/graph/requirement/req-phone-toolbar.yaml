@@ -1,0 +1,20 @@
+id: req-phone-toolbar
+kind: requirement
+title: Wrap the toolbar and the filters
+state: draft
+priority: later
+statement: "At phone width the toolbar, the filters and the view tabs wrap or collapse."
+capabilities:
+  - cap-phone-layout
+area:
+  - app
+acceptance:
+  - id: toolbar
+    text: "Each toolbar control stays reachable at 375 px wide."
+    status: open
+  - id: filters
+    text: "The filters collapse into 1 control or wrap onto more lines."
+    status: open
+  - id: tabs
+    text: "The view tabs wrap or scroll inside their own box."
+    status: open

@@ -1,0 +1,20 @@
+id: req-mcp-serve
+kind: requirement
+title: Serve the graph over MCP
+state: draft
+priority: next
+statement: "The command semspec mcp serves a graph or a workspace over stdio with the Model Context Protocol."
+capabilities:
+  - cap-mcp
+area:
+  - cli
+acceptance:
+  - id: stdio
+    text: "The command semspec mcp --graph and --profile starts an MCP server on stdio for 1 graph."
+    status: open
+  - id: workspace
+    text: "The command semspec mcp with a workspace folder serves all graphs of the workspace."
+    status: open
+  - id: no-stdout-noise
+    text: "The server writes only MCP messages to stdout. It writes logs to stderr."
+    status: open

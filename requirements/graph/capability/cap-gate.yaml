@@ -2,6 +2,7 @@ id: cap-gate
 kind: capability
 title: Graph gate
 state: draft
+priority: later
 statement: A check blocks a change that breaks the graph.
 features:
   - feat-gates

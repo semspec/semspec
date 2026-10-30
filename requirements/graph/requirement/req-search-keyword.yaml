@@ -1,0 +1,23 @@
+id: req-search-keyword
+kind: requirement
+title: Rank nodes by keyword
+state: draft
+priority: next
+statement: "The tool search returns ranked node ids for a query. The ranking is BM25 over ids, titles, statements and definitions."
+capabilities:
+  - cap-search
+area:
+  - core
+acceptance:
+  - id: bm25
+    text: "The tool search ranks nodes with BM25 over the id, the title, the statement and the definition of each node."
+    status: open
+  - id: ranked-ids
+    text: "The tool search returns the node ids in rank order, with a limit on the count."
+    status: open
+  - id: filters
+    text: "The tool search accepts filters for kind, status and scope. A hit that fails a filter is not returned."
+    status: open
+  - id: no-hit
+    text: "A query with no match returns an empty list, not an error."
+    status: open

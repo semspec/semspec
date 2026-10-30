@@ -1,0 +1,8 @@
+id: feat-distribution
+kind: feature
+title: Distribution
+state: draft
+priority: now
+statement: A user installs Semspec as 1 command line tool. A developer uses the core library on its own.
+products:
+  - prd-semspec

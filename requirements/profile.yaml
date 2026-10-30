@@ -14,9 +14,9 @@ lifecycle:
     retired: { muted: true }
 kinds:
   - { id: product, label: Product, plural: products, prefix: prd-, role: hierarchy, color: { light: "#5f3dc4", dark: "#b197fc" }, chips: [lifecycle, members] }
-  - { id: feature, label: Feature, plural: features, prefix: feat-, role: hierarchy, parents: [[products]], color: { light: "#1971c2", dark: "#74c0fc" }, chips: [lifecycle, members] }
+  - { id: feature, label: Feature, plural: features, prefix: feat-, role: hierarchy, parents: [[products]], color: { light: "#1971c2", dark: "#74c0fc" }, chips: [lifecycle, { field: priority }, members] }
   - { id: capability, label: Capability, plural: capabilities, prefix: cap-, role: hierarchy, parents: [[features]], color: { light: "#0b7285", dark: "#66d9e8" }, chips: [lifecycle, members] }
-  - { id: requirement, label: Requirement, plural: requirements, prefix: req-, role: hierarchy, parents: [[capabilities]], color: { light: "#d9480f", dark: "#ffa94d" }, chips: [lifecycle, coverage] }
+  - { id: requirement, label: Requirement, plural: requirements, prefix: req-, role: hierarchy, parents: [[capabilities]], color: { light: "#d9480f", dark: "#ffa94d" }, chips: [lifecycle, { field: priority }, coverage] }
   - { id: condition, label: Condition, plural: conditions, role: part, color: { light: "#c2255c", dark: "#f783ac" }, chips: [verified, verifyTypes] }
   - { id: decision, label: Decision, plural: decisions, prefix: dec-, role: linked, color: { light: "#495057", dark: "#adb5bd" }, chips: [lifecycle] }
   - { id: test, label: Test, plural: tests, role: check, color: { light: "#2b8a3e", dark: "#69db7c" }, chips: [checkType] }
@@ -47,7 +47,18 @@ status:
     - { value: verified, label: Verified, tone: good }
     - { value: partial, label: Partial, tone: warn }
     - { value: open, label: Open, tone: bad }
+vocabularies:
+  priority:
+    label: Priority
+    definition: When a draft feature, capability or requirement is built.
+    concepts:
+      - { code: now, label: Now, definition: The team builds it in the current work., order: 1 }
+      - { code: next, label: Next, definition: The team builds it after the work in progress., order: 2 }
+      - { code: later, label: Later, definition: The team has not planned it yet., order: 3 }
+fieldVocabularies: { priority: priority }
 fieldFilters:
+  - field: priority
+    label: Priority
   - field: area
     label: Area
     values: { core: Core library, cli: Command line, app: Browser app, harness: Harness }

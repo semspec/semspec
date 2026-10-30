@@ -1,0 +1,23 @@
+id: req-embed-index
+kind: requirement
+title: Keep an index next to the graph
+state: draft
+priority: later
+statement: "An index of vectors sits next to the graph. A hash of each node is the key."
+capabilities:
+  - cap-embeddings
+area:
+  - core
+acceptance:
+  - id: hash-key
+    text: "Each index entry has the hash of the node text as its key."
+    status: open
+  - id: incremental
+    text: "A rebuild embeds only the nodes whose hash changed or is new."
+    status: open
+  - id: stale
+    text: "A rebuild removes the entries of nodes that no longer exist."
+    status: open
+  - id: vector-size
+    text: "The index stores vectors of a reduced size, set in the settings."
+    status: open
