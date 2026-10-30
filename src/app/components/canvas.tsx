@@ -267,7 +267,9 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
         const to = down ? e.s : e.t;
         // The force layout and the edges between containers attach on the sides that face each other.
         const facing =
-          (layout === 'force' || (layout === 'grouped' && containers.parentOf.get(e.s) !== containers.parentOf.get(e.t))) && rects.has(from) && rects.has(to)
+          (layout === 'force' ||
+            (layout === 'grouped' &&
+              (containers.parentOf.get(e.s) !== containers.parentOf.get(e.t) || containers.children.has(e.s) || containers.children.has(e.t)))) && rects.has(from) && rects.has(to)
             ? facingSides(rects.get(from)!, rects.get(to)!)
             : null;
         const marker = { type: MarkerType.ArrowClosed, width: 12, height: 12, color: 'var(--muted-foreground)' };
@@ -301,14 +303,15 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       const all = ids.map((id) => rects.get(id)).filter((r) => !!r);
       if (!rect || !rect.width || !all.length) return;
       const { x: minX, y: minY, w: width, h: height } = boundsOf(all);
-      const z = Math.min(1, Math.max(layout === 'layered' ? 0.7 : 0.4, Math.min((rect.width - 48) / width, (rect.height - 110) / height)));
+      const z = Math.min(1, Math.max(layout === 'layered' ? 0.7 : layout === 'grouped' ? 0.15 : 0.4, Math.min((rect.width - 48) / width, (rect.height - 110) / height)));
       const x = width * z + 48 <= rect.width ? (rect.width - width * z) / 2 - minX * z : 24 - minX * z;
-      // A canvas taller than the view shows the root of the scope in the middle of the left edge.
+      // A canvas taller than the view shows the root of the scope in the middle of the left edge. The
+      // grouped layout starts at the top left corner.
       const rootPos = positions.get(v.scope?.type === 'node' ? v.scope.id : (v.walkRoot ?? ids[0]));
       const y =
         height * z + 110 <= rect.height
           ? (rect.height - height * z) / 2 - minY * z + 24
-          : rootPos
+          : layout !== 'grouped' && rootPos
             ? rect.height / 2 - (rootPos.y + size.h / 2) * z + 24
             : 64 - minY * z;
       flow.setViewport({ x, y, zoom: z }, { duration: animate ? 250 : 0 });

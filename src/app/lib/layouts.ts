@@ -121,6 +121,57 @@ interface Level {
   size: Size;
 }
 
+// The aspect ratio (width to height) that the packing aims at. It is the shape of a wide screen.
+export const PACK_ASPECT = 16 / 10;
+// A row of containers inside a container is packed when it is wider than this many times its height.
+const ROW_LIMIT = 2.5;
+const PACK_GAP = 40;
+
+interface Block {
+  id: string;
+  w: number;
+  h: number;
+}
+
+// Packs blocks into rows, in the order given. It tries every row width that breaks the rows in a
+// different place, and keeps the drawing whose aspect ratio is the closest to `aspect`. It returns
+// the top left corner of each block and the size of the drawing.
+export function packBlocks(blocks: Block[], aspect: number, gap: number): { at: Map<string, Pos>; size: Size } {
+  const widths = new Set<number>();
+  let run = 0;
+  blocks.forEach((b) => widths.add((run += b.w + gap) - gap));
+  const flow = (limit: number) => {
+    const at = new Map<string, Pos>();
+    let x = 0;
+    let y = 0;
+    let rowH = 0;
+    let maxW = 0;
+    blocks.forEach((b) => {
+      if (x > 0 && x + b.w > limit) {
+        y += rowH + gap;
+        x = 0;
+        rowH = 0;
+      }
+      at.set(b.id, { x, y });
+      x += b.w + gap;
+      rowH = Math.max(rowH, b.h);
+      maxW = Math.max(maxW, x - gap);
+    });
+    return { at, size: { w: maxW, h: y + rowH } };
+  };
+  let best = flow(Infinity);
+  let bestScore = Infinity;
+  widths.forEach((limit) => {
+    const t = flow(limit);
+    const score = Math.abs(Math.log(t.size.w / t.size.h / aspect));
+    if (score < bestScore - 1e-9) {
+      best = t;
+      bestScore = score;
+    }
+  });
+  return best;
+}
+
 function spacing(mode: Mode) {
   return { nodesep: mode === 'cards' ? 28 : 18, ranksep: mode === 'cards' ? 90 : 110 };
 }
@@ -128,7 +179,10 @@ function spacing(mode: Mode) {
 // The grouped layout. It lays out 1 level at a time. The members of a container get their layout
 // first, which gives the size of the container. Then the container is a node in the level above.
 // The result holds the absolute position of every node, a container with the top left of its box.
-export function grouped(ids: string[], edges: VEdge[], mode: Mode, groupEdge: string, down: Set<string>): Map<string, Pos> {
+// The top level packs its containers and its free nodes into rows when the drawing is too wide.
+// A level inside a container packs its containers when its row is too wide. `aspect` is the aimed
+// ratio of width to height.
+export function grouped(ids: string[], edges: VEdge[], mode: Mode, groupEdge: string, down: Set<string>, aspect = PACK_ASPECT): Map<string, Pos> {
   const { parentOf, children, roots } = findContainers(ids, edges, groupEdge);
   const leaf = SIZE[mode];
   const chains = new Map(ids.map((id) => [id, chainOf(parentOf, id)]));
@@ -165,7 +219,38 @@ export function grouped(ids: string[], edges: VEdge[], mode: Mode, groupEdge: st
     const minX = Math.min(...rects.map((r) => r.x));
     const minY = Math.min(...rects.map((r) => r.y));
     const pos = new Map(rects.map((r) => [r.id, { x: r.x - minX, y: r.y - minY }]));
-    return { pos, size: { w: Math.max(...rects.map((r) => r.x + r.w)) - minX, h: Math.max(...rects.map((r) => r.y + r.h)) - minY } };
+    const size = { w: Math.max(...rects.map((r) => r.x + r.w)) - minX, h: Math.max(...rects.map((r) => r.y + r.h)) - minY };
+    return pack(level, items, { pos, size });
+  };
+
+  // Packs a level into rows. The blocks keep the order of the dagre result: left to right, then top
+  // to bottom. At the top level the free nodes form 1 more block, a grid. A level with no container,
+  // or with a drawing that is not too wide, keeps the dagre result.
+  const pack = (level: string | null, items: string[], laid: Level): Level => {
+    const boxes = items.filter((id) => children.has(id));
+    if (!boxes.length) return laid;
+    const free = items.filter((id) => !children.has(id));
+    const wide = laid.size.w > ROW_LIMIT * laid.size.h;
+    if (level === null ? laid.size.w <= aspect * 1.25 * laid.size.h : !wide) return laid;
+    const byPlace = (a: string, b: string) => laid.pos.get(a)!.x - laid.pos.get(b)!.x || laid.pos.get(a)!.y - laid.pos.get(b)!.y;
+    const blocks: Block[] = [];
+    const grid = new Map<string, Pos>();
+    const members = level === null ? boxes : items;
+    members.slice().sort(byPlace).forEach((id) => blocks.push({ id, w: (sizes.get(id) ?? leaf).w, h: (sizes.get(id) ?? leaf).h }));
+    if (level === null && free.length) {
+      const cols = Math.max(1, Math.round(Math.sqrt(free.length * aspect)));
+      const gap = spacing(mode).nodesep;
+      free.slice().sort(byPlace).forEach((id, i) => grid.set(id, { x: (i % cols) * (leaf.w + gap), y: Math.floor(i / cols) * (leaf.h + gap) }));
+      const rows = Math.ceil(free.length / cols);
+      blocks.push({ id: '\0free', w: Math.min(cols, free.length) * (leaf.w + gap) - gap, h: rows * (leaf.h + gap) - gap });
+    }
+    const packed = packBlocks(blocks, aspect, PACK_GAP);
+    const pos = new Map<string, Pos>();
+    packed.at.forEach((p, id) => {
+      if (id === '\0free') grid.forEach((g, member) => pos.set(member, { x: p.x + g.x, y: p.y + g.y }));
+      else pos.set(id, p);
+    });
+    return { pos, size: packed.size };
   };
 
   // Deepest containers first, so every container has a size when its level is laid out.

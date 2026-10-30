@@ -7,6 +7,7 @@ import { setProfile } from '../src/app/lib/core';
 import { SIZE, layered, type Pos } from '../src/app/lib/layout';
 import { boundsOf, containerBoxes, facingSides, findContainers, forceLayout, grouped, moveWithMembers, rectsOf } from '../src/app/lib/layouts';
 import { validateProfile } from '../src/cli/validate';
+import { loadWorkspace } from '../src/cli/workspace';
 
 const load = (name: string) => ({
   graph: JSON.parse(readFileSync(new URL(`../fixtures/${name}/graph.json`, import.meta.url), 'utf8')) as Graph,
@@ -195,5 +196,52 @@ describe('the bounds and the sides', () => {
     expect(facingSides(o, { x: 20, y: 200, ...r })).toEqual({ source: 'bottom', target: 'top' });
     expect(facingSides(o, { x: 20, y: -200, ...r })).toEqual({ source: 'top', target: 'bottom' });
     expect(facingSides(o, { x: 100, y: 100, ...r })).toEqual({ source: 'right', target: 'left' });
+  });
+});
+
+describe('the packed grouped layout', () => {
+  const { data } = loadWorkspace(new URL('../fixtures/workspace/workspace.json', import.meta.url).pathname);
+  const domain = data.graphs[1];
+  const profile = domain.model.profile;
+  const ids = domain.model.nodes.map((n) => n.id);
+  const groupEdge = profile.layout!.groupEdge!;
+  const pos = grouped(ids, domain.model.edges, 'graph', groupEdge, new Set(Object.keys(profile.edges).filter((k) => profile.edges[k].down)));
+  const { parentOf, roots } = findContainers(ids, domain.model.edges, groupEdge);
+  const rects = rectsOf(ids, parentOf, pos, 'graph');
+  const tops = roots.filter((id) => Array.from(parentOf.values()).includes(id));
+
+  it('packs the containers of the sample domain model into a drawing close to the view', () => {
+    expect(tops.length).toBeGreaterThan(1);
+    const b = boundsOf(Array.from(rects.values()));
+    expect(b.w / b.h).toBeGreaterThanOrEqual(1);
+    expect(b.w / b.h).toBeLessThanOrEqual(2.5);
+  });
+  it('leaves no 2 top level containers on each other', () => {
+    for (let i = 0; i < tops.length; i++) {
+      for (let j = i + 1; j < tops.length; j++) {
+        const a = rects.get(tops[i])!;
+        const c = rects.get(tops[j])!;
+        expect(a.x + a.w <= c.x || c.x + c.w <= a.x || a.y + a.h <= c.y || c.y + c.h <= a.y).toBe(true);
+      }
+    }
+  });
+  it('keeps every member inside its container box', () => {
+    parentOf.forEach((p, id) => expect(inside(rects.get(id)!, rects.get(p)!)).toBe(true));
+  });
+  it('packs 6 equal containers and the free nodes into rows, in a stable order', () => {
+    const many = ['f1', 'f2', ...Array.from({ length: 6 }, (_, i) => `c${i}`), ...Array.from({ length: 6 }, (_, i) => `m${i}`)];
+    const links = Array.from({ length: 6 }, (_, i) => edge(`m${i}`, `c${i}`));
+    const one = grouped(many, links, 'graph', 'in', none);
+    const r = rectsOf(many, findContainers(many, links, 'in').parentOf, one, 'graph');
+    const b = boundsOf(Array.from(r.values()));
+    expect(b.w / b.h).toBeLessThanOrEqual(2.5);
+    expect(Array.from(grouped(many, links, 'graph', 'in', none))).toEqual(Array.from(one));
+  });
+  it('packs the containers inside a container when the row is too wide', () => {
+    const many = ['top', ...Array.from({ length: 6 }, (_, i) => `a${i}`), ...Array.from({ length: 6 }, (_, i) => `m${i}`)];
+    const links = [...Array.from({ length: 6 }, (_, i) => edge(`a${i}`, 'top')), ...Array.from({ length: 6 }, (_, i) => edge(`m${i}`, `a${i}`))];
+    const r = rectsOf(many, findContainers(many, links, 'in').parentOf, grouped(many, links, 'graph', 'in', none), 'graph');
+    const top = r.get('top')!;
+    expect(top.w / top.h).toBeLessThanOrEqual(2.5);
   });
 });
