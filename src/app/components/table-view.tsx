@@ -74,7 +74,7 @@ function statusColumn(index: Viewer['index'], fields: Filters['fields']): Column
 
 // The values of a field filter on the node itself, with their labels.
 function fieldText(spec: FieldFilterSpec, n: VNode): string {
-  return Core.filterValues(n.d[spec.field], spec.from).map((x) => spec.values?.[x] ?? x).join(', ');
+  return Core.filterValues(n.d[spec.field], spec.from).map((x) => spec.values?.[x] ?? Core.fieldLabel(spec.field, x)).join(', ');
 }
 
 // A column for a field filter of the profile. It shows the values of the node itself.
@@ -142,9 +142,9 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
           </span>
         ),
       },
-      { id: 'lifecycle', header: 'Lifecycle', size: 84, accessorFn: (n) => n.lifecycle, cell: ({ getValue }) => <span title={String(getValue())}>{String(getValue()) || '–'}</span> },
+      { id: 'lifecycle', header: 'Lifecycle', size: 84, accessorFn: (n) => (n.lifecycle ? Core.fieldLabel(index.profile.lifecycle.field, n.lifecycle) : ''), cell: ({ getValue }) => <span title={String(getValue())}>{String(getValue()) || '–'}</span> },
       { id: 'delivery', header: 'Delivery', size: 80, accessorFn: (n) => n.delivery, cell: ({ getValue }) => <span>{String(getValue()) || '–'}</span> },
-      { id: 'level', header: 'Level', size: 64, accessorFn: (n) => n.level, cell: ({ getValue }) => <span className="font-mono text-[11px] uppercase">{String(getValue()) || '–'}</span> },
+      { id: 'level', header: 'Level', size: 64, accessorFn: (n) => (n.level ? Core.fieldLabel(index.profile.fields.level ?? '', n.level) : ''), cell: ({ getValue }) => <span className="font-mono text-[11px] uppercase">{String(getValue()) || '–'}</span> },
       { id: 'parent', header: 'Parent', size: 140, accessorFn: parentTitle, cell: ({ getValue }) => <span className="block truncate" title={String(getValue())}>{String(getValue()) || '–'}</span> },
       {
         id: 'coverage',
@@ -195,7 +195,7 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
       { label: 'Id', text: (n: VNode) => n.id },
       { label: 'Title', text: (n: VNode) => n.title },
       { label: 'Kind', text: (n: VNode) => Core.KIND_LABEL[n.kind] },
-      { label: 'Lifecycle', text: (n: VNode) => n.lifecycle },
+      { label: 'Lifecycle', text: (n: VNode) => (n.lifecycle ? Core.fieldLabel(index.profile.lifecycle.field, n.lifecycle) : '') },
       { label: 'Delivery', text: (n: VNode) => n.delivery },
       { label: 'Level', text: (n: VNode) => n.level },
       { label: 'Parent', text: parentTitle },

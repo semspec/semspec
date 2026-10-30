@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 // Helpers that read a profile. The core knows no kind and no field. It asks the profile.
-import type { CheckSpec, EmbeddedSpec, KindSpec, Profile, ProfileInput, RefsSpec, Role } from './types';
+import type { CheckSpec, EmbeddedSpec, KindSpec, Profile, ProfileInput, RefsSpec, Role, Vocabulary } from './types';
 
 // A profile without checks gets a check definition that no node uses.
 const NO_CHECKS: CheckSpec = { kind: '__no_check_kind', field: '__no_check_field', edge: '__no_check_edge', typeField: 'type', types: {} };
@@ -18,11 +18,21 @@ export function refNote(spec: RefsSpec, item: Record<string, any>): string | und
   return spec.many && item[spec.many] === true ? `${text}[]` : text || undefined;
 }
 
+// The vocabularies that a profile holds inline. A vocabulary that names a file is left out. The
+// command line tool reads the file before it builds the model.
+function inlineVocabularies(p: ProfileInput): Record<string, Vocabulary> | undefined {
+  if (!p.vocabularies) return undefined;
+  const out: Record<string, Vocabulary> = {};
+  for (const [id, v] of Object.entries(p.vocabularies)) if ('concepts' in v) out[id] = v;
+  return out;
+}
+
 // Fills the optional parts of a profile, so the rest of the core reads no missing value.
 export function normalise(p: ProfileInput): Profile {
   return {
     ...p,
     refs: refsOf(p),
+    vocabularies: inlineVocabularies(p),
     links: p.links ?? [],
     parts: p.parts ?? [],
     embedded: p.embedded ?? [],

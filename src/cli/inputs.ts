@@ -5,14 +5,15 @@ import { statSync } from 'node:fs';
 import type { Graph, Profile } from '../core/index';
 import { readInput } from './input';
 import { validateGraph, validateProfile } from './validate';
+import { resolveVocabularyFiles } from './vocabulary';
 import { readGraphFolder } from './yaml';
 
 // Reads and checks the profile. It throws on an error.
 export function loadProfile(profilePath: string): Profile {
-  const profile = readInput(profilePath, 'profile');
-  const problems = validateProfile(profile);
+  const read = resolveVocabularyFiles(readInput(profilePath, 'profile'), profilePath);
+  const problems = read.errors.length ? read.errors : validateProfile(read.profile);
   if (problems.length) throw new Error(`The profile "${profilePath}" is not valid:\n  ${problems.join('\n  ')}`);
-  return profile as Profile;
+  return read.profile as Profile;
 }
 
 // Reads and checks both inputs. It throws on an error and returns the warnings.

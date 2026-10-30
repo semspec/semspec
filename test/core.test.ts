@@ -195,10 +195,10 @@ describe('walk', () => {
 describe('summary', () => {
   it('shows the chips that the profile names for each kind', () => {
     const s = summaryOf(pIndex, pIndex.byId.get('story-pay-by-card')!);
-    expect(s.chips.map((c) => c.text)).toEqual(['HIGH', 'planned', 'r1', '1 of 2 verified']);
+    expect(s.chips.map((c) => c.text)).toEqual(['HIGH', 'Planned', 'r1', '1 of 2 verified']);
     const dropped = summaryOf(pIndex, pIndex.byId.get('story-loose-child')!);
     expect(dropped.muted).toBe(true);
-    expect(dropped.chips.find((c) => c.text === 'dropped')?.struck).toBe(true);
+    expect(dropped.chips.find((c) => c.text === 'Dropped')?.struck).toBe(true);
     expect(summaryOf(sIndex, sIndex.byId.get('hz-overheat')!).chips.map((c) => c.text)).toEqual(['critical']);
     expect(summaryOf(sIndex, sIndex.byId.get('sg-detect-overheat')!).chips.map((c) => c.text)).toEqual(['open', '1 of 2 verified']);
   });
@@ -342,7 +342,7 @@ describe('kind schemas', () => {
   });
   it('types the title, statement and lifecycle fields and the parent and link fields', () => {
     expect(pSchemas.story.properties.summary).toEqual({ type: 'string' });
-    expect(pSchemas.story.properties.status).toEqual({ type: 'string' });
+    expect(pSchemas.story.properties.status).toMatchObject({ type: 'string', enum: ['planned', 'active', 'dropped', 'replaced'] });
     expect(pSchemas.story.properties.epics).toEqual(links());
     expect(pSchemas.story.properties.follows).toEqual(links());
     expect(pSchemas.story.properties.complies).toEqual(links('std', { since: { type: 'string', pattern: expect.any(String) }, audited: { type: 'boolean' } }, ['since']));
@@ -352,7 +352,7 @@ describe('kind schemas', () => {
     expect(sSchemas.mitigation.properties.claim).toEqual({ type: 'string' });
   });
   it('describes the refs and the supersededBy field', () => {
-    expect(pSchemas.decision.properties.notes.items.properties).toEqual({ ref: { type: 'string' }, text: { type: 'string' }, since: { type: 'string', pattern: expect.any(String) }, share: { type: 'number' } });
+    expect(pSchemas.decision.properties.notes.items.properties).toEqual({ ref: { type: 'string' }, text: { type: 'string' }, since: { type: 'string', pattern: expect.any(String) }, share: { type: 'number' }, force: { type: 'string', enum: ['mandatory', 'advisory'], description: expect.any(String) } });
     expect(pSchemas.decision.properties.replacedBy).toEqual({ type: 'string' });
     expect(sSchemas.hazard.properties.notes).toBeUndefined();
   });
@@ -375,7 +375,7 @@ describe('kind schemas', () => {
   it('allows a string or a list of strings for a field filter', () => {
     const either = { anyOf: [{ type: 'string' }, list] };
     expect(pSchemas.story.properties.teams).toEqual(either);
-    expect(pSchemas.story.properties.priority).toEqual(either);
+    expect(pSchemas.story.properties.priority.anyOf[1].type).toBe('array');
     expect(sSchemas.mitigation.properties.parts).toEqual(either);
   });
   it.each([

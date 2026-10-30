@@ -153,8 +153,33 @@ export interface EdgeSpec {
   target?: string;
   from?: string[];
   to?: string[];
-  properties?: Record<string, { type: PropertyType; required?: boolean }>;
+  properties?: Record<string, { type: PropertyType; required?: boolean; vocabulary?: string }>;
 }
+
+// A concept of a vocabulary. It maps to skos:Concept: `code` to skos:notation, `label` to
+// skos:prefLabel, `definition` to skos:definition, `broader` to skos:broader (the code of another
+// concept of the scheme) and `altLabels` to skos:altLabel. Only a code is a valid value of a field.
+export interface Concept {
+  code: string;
+  label: string;
+  definition?: string;
+  broader?: string;
+  altLabels?: string[];
+  // Sorts the concepts in a list. A concept with no order comes after the ones with an order.
+  order?: number;
+  iri?: string;
+}
+
+// A vocabulary maps to skos:ConceptScheme.
+export interface Vocabulary {
+  label: string;
+  definition?: string;
+  iri?: string;
+  concepts: Concept[];
+}
+
+// A vocabulary in a profile file: inline, or in a file next to the profile.
+export type VocabularyInput = Vocabulary | { file: string };
 
 // One refs field. `target` is the key of the node id in an item and `note` is the key of the edge
 // note. `many` is the key of a boolean in an item. When it is true, the note gets the suffix `[]`.
@@ -166,7 +191,7 @@ export interface RefsSpec {
 }
 
 // A profile as a file holds it: `refs` is 1 entry or a list.
-export type ProfileInput = Omit<Profile, 'refs'> & { refs?: RefsSpec | RefsSpec[] };
+export type ProfileInput = Omit<Profile, 'refs' | 'vocabularies'> & { refs?: RefsSpec | RefsSpec[]; vocabularies?: Record<string, VocabularyInput> };
 
 export interface Profile {
   // The name of the project, shown as secondary text.
@@ -196,6 +221,10 @@ export interface Profile {
   checks?: CheckSpec;
   status?: StatusSpec;
   fieldFilters?: FieldFilterSpec[];
+  // Vocabularies by scheme id. The command line tool reads the ones that name a file.
+  vocabularies?: Record<string, Vocabulary>;
+  // The scheme of a field, by field path. The field is a node field, the lifecycle field or a field filter field.
+  fieldVocabularies?: Record<string, string>;
   facets?: { groupKind: string; groupLabel: string };
   entry?: { kind: string; childKind: string; title: string; countLabel: string };
   groups?: { hierarchy: string };

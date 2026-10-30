@@ -1,0 +1,22 @@
+label: State
+definition: Where a term is in its life.
+concepts:
+  - code: draft
+    label: Draft
+    definition: The editors still write the term.
+    order: 1
+  - code: stable
+    label: Stable
+    definition: The term is complete and in use.
+    order: 2
+  - code: retired
+    label: Retired
+    definition: The glossary no longer uses the term.
+    order: 3
+  - code: replaced
+    label: Replaced
+    definition: Another term took its place.
+    broader: retired
+    altLabels:
+      - superseded
+    order: 4

@@ -1,17 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 // Tests of the inputs, the page and the command line tool. The page is built for 2 profiles.
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { stringify } from 'yaml';
 import { buildModel, type Graph, type Profile } from '@core/index';
-import { loadInputs, pageFor, parseArgs, run, startServer } from '../src/cli/index';
+import { loadInputs, loadProfile, pageFor, parseArgs, run, startServer } from '../src/cli/index';
 import { excludeMatcher } from '../src/cli/yaml';
 import { validateGraph, validateProfile } from '../src/cli/validate';
 import { renderPage } from '../src/cli/page';
 
+// Each temp folder goes when the file ends.
+const made: string[] = [];
+const tmp = () => {
+  const dir = mkdtempSync(join(tmpdir(), 're-'));
+  made.push(dir);
+  return dir;
+};
+afterAll(() => made.forEach((d) => rmSync(d, { recursive: true, force: true })));
 const path = (name: string, file: string) => new URL(`../fixtures/${name}/${file}`, import.meta.url).pathname;
 const json = <T>(name: string, file: string) => JSON.parse(readFileSync(path(name, file), 'utf8')) as T;
 
@@ -149,7 +157,7 @@ describe('the inputs', () => {
 
 describe('the command line tool', () => {
   it('writes 1 HTML file with the build command', async () => {
-    const out = join(mkdtempSync(join(tmpdir(), 're-')), 'out', 'explorer.html');
+    const out = join(tmp(), 'out', 'explorer.html');
     const code = await run(['build', '--graph', path('safety', 'graph.json'), '--profile', path('safety', 'profile.json'), '--out', out]);
     expect(code).toBe(0);
     const html = readFileSync(out, 'utf8');
@@ -159,7 +167,7 @@ describe('the command line tool', () => {
   it('refuses a missing option and an invalid profile', async () => {
     expect(await run(['build', '--graph', 'a.json'])).toBe(1);
     expect(await run(['nothing'])).toBe(1);
-    const dir = mkdtempSync(join(tmpdir(), 're-'));
+    const dir = tmp();
     writeFileSync(join(dir, 'p.json'), '{"project":"x"}');
     expect(await run(['build', '--graph', path('safety', 'graph.json'), '--profile', join(dir, 'p.json'), '--out', join(dir, 'o.html')])).toBe(1);
   });
@@ -183,7 +191,6 @@ describe('the command line tool', () => {
 const folder = (name: string) => path(name, 'yaml');
 const byId = <T extends { id: string }>(list: T[]) => [...list].sort((a, b) => (a.id < b.id ? -1 : 1));
 const edgeKeys = (m: { edges: { s: string; t: string; k: string }[] }) => m.edges.map((e) => `${e.s}|${e.t}|${e.k}`).sort();
-const tmp = () => mkdtempSync(join(tmpdir(), 're-'));
 
 describe.each(['product', 'safety', 'glossary'])('the YAML input of the %s fixture', (name) => {
   const profile = json<Profile>(name, 'profile.json');
@@ -201,8 +208,10 @@ describe.each(['product', 'safety', 'glossary'])('the YAML input of the %s fixtu
     const dir = tmp();
     writeFileSync(join(dir, 'profile.yaml'), stringify(profile));
     writeFileSync(join(dir, 'graph.yml'), stringify(graph));
+    // The vocabulary files of the fixture are relative to the profile.
+    if (existsSync(path(name, 'vocabularies'))) cpSync(path(name, 'vocabularies'), join(dir, 'vocabularies'), { recursive: true });
     const read = loadInputs(join(dir, 'graph.yml'), join(dir, 'profile.yaml'));
-    expect(read.profile).toEqual(profile);
+    expect(read.profile).toEqual(loadProfile(path(name, 'profile.json')));
     expect(buildModel(read.graph, read.profile).nodes.length).toBe(buildModel(graph, profile).nodes.length);
   });
   it('reads a file with a list of nodes and ignores other files', () => {
@@ -484,6 +493,60 @@ describe('the glossary fixture', () => {
     const out = join(tmp(), 'glossary.html');
     expect(await run(['build', '--graph', path('glossary', 'graph.json'), '--profile', path('glossary', 'profile.json'), '--out', out])).toBe(0);
     expect(readFileSync(out, 'utf8')).toContain('Music glossary');
+  });
+});
+
+describe.each(['product', 'glossary'])('the vocabulary files of the %s fixture', (name) => {
+  const graph = json<Graph>(name, 'graph.json');
+  const source = json<Profile>(name, 'profile.json');
+  const loaded = loadProfile(path(name, 'profile.json'));
+  const scheme = Object.keys(loaded.vocabularies!)[0];
+  // A directory with the profile, where the vocabulary `scheme` is in a file of the given format.
+  function setup(format: 'json' | 'yaml', change: (profile: any) => void = () => {}) {
+    const dir = tmp();
+    const profile = JSON.parse(JSON.stringify(loaded)) as any;
+    const file = `vocab/${scheme}.${format === 'json' ? 'json' : 'yaml'}`;
+    mkdirSync(join(dir, 'vocab'));
+    writeFileSync(join(dir, file), format === 'json' ? JSON.stringify(loaded.vocabularies![scheme]) : stringify(loaded.vocabularies![scheme]));
+    profile.vocabularies[scheme] = { file };
+    change(profile);
+    writeFileSync(join(dir, 'profile.json'), JSON.stringify(profile));
+    writeFileSync(join(dir, 'graph.json'), JSON.stringify(graph));
+    return dir;
+  }
+  it('builds when a vocabulary is in a JSON file or a YAML file next to the profile', async () => {
+    for (const format of ['json', 'yaml'] as const) {
+      const dir = setup(format);
+      const out = join(dir, 'out.html');
+      expect(await run(['build', '--graph', join(dir, 'graph.json'), '--profile', join(dir, 'profile.json'), '--out', out]), format).toBe(0);
+      const data = pageData(readFileSync(out, 'utf8'));
+      expect(data.profile.vocabularies[scheme], format).toEqual(loaded.vocabularies![scheme]);
+      expect(source.vocabularies, format).toBeDefined();
+    }
+  });
+  it('reads a vocabulary path relative to the profile, and not to the working directory', () => {
+    const dir = setup('yaml');
+    expect(loadProfile(join(dir, 'profile.json')).vocabularies![scheme]).toEqual(loaded.vocabularies![scheme]);
+  });
+  it('refuses a vocabulary file that does not exist and names the file', () => {
+    const dir = setup('json', (profile) => (profile.vocabularies[scheme] = { file: 'vocab/missing.json' }));
+    expect(() => loadProfile(join(dir, 'profile.json'))).toThrow(new RegExp(`vocabulary "${scheme}": Cannot read the vocabulary file .*missing\\.json`));
+  });
+  it('refuses a vocabulary file with a wrong shape and names the scheme and the file', () => {
+    const dir = setup('json');
+    writeFileSync(join(dir, 'vocab', `${scheme}.json`), JSON.stringify({ label: 'Broken', concepts: [{ label: 'No code' }] }));
+    expect(() => loadProfile(join(dir, 'profile.json'))).toThrow(new RegExp(`vocabulary "${scheme}", file ".*${scheme}\\.json": /concepts/0 must have required property 'code'`));
+  });
+  it('checks the content of a vocabulary file like an inline vocabulary', () => {
+    const dir = setup('yaml');
+    const content = JSON.parse(JSON.stringify(loaded.vocabularies![scheme]));
+    content.concepts.push({ ...content.concepts[0] }, { code: 'orphan-code', label: 'Orphan', broader: 'nothing' });
+    writeFileSync(join(dir, 'vocab', `${scheme}.yaml`), stringify(content));
+    expect(() => loadProfile(join(dir, 'profile.json'))).toThrow(/more than once[^]*has the broader code "nothing"/);
+  });
+  it('accepts a profile with a file entry in the schema', () => {
+    const dir = setup('json');
+    expect(validateProfile(JSON.parse(readFileSync(join(dir, 'profile.json'), 'utf8')))).toEqual([]);
   });
 });
 

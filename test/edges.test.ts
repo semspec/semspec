@@ -62,15 +62,17 @@ describe('the properties of a refs edge', () => {
   });
   it('hold the values with their types', () => {
     const product = cases[0];
-    expect(edgesOf(product, 'notes', 'dec-use-psp')[0].p).toEqual({ since: '2024', share: 0.4 });
+    expect(edgesOf(product, 'notes', 'dec-use-psp')[0].p).toEqual({ since: '2024', share: 0.4, force: 'mandatory' });
     const glossary = cases[1];
-    expect(edgesOf(glossary, 'relations', 'scale')[0].p).toEqual({ weight: 0.9, since: '1750' });
+    expect(edgesOf(glossary, 'relations', 'scale')[0].p).toEqual({ weight: 0.9, since: '1750', role: 'basis' });
   });
   it('are missing when the item has only the target key and the note key', () => {
     for (const c of cases) {
       const copy = editRef(c, (item) => {
         delete item[c.refs.number];
         delete item[c.refs.date];
+        delete item.force;
+        delete item.role;
       });
       const e = edgesOf(copy, c.refs.field, c.refs.node)[0];
       expect(e.p, c.name).toBeUndefined();

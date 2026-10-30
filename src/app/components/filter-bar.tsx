@@ -12,7 +12,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/in
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { KindDot, StatusDot } from '@/components/kind';
-import { Core, type Filters, type Kind, type StatusTone } from '@/lib/core';
+import { Core, type Filters, type Kind, type StatusTone, type Vocabulary } from '@/lib/core';
 import { EMPTY_FILTERS, type Viewer } from '@/lib/use-viewer';
 
 // A built-in facet, or "field:" and the field of a field filter of the profile.
@@ -38,6 +38,18 @@ function selectedOf(filters: Filters, key: FacetKey): string[] {
 function withSelected(filters: Filters, key: FacetKey, list: string[]): Filters {
   const field = fieldOf(key);
   return field ? { ...filters, fields: { ...filters.fields, [field]: list } } : { ...filters, [key]: list };
+}
+
+// The options of a field with a vocabulary: the order and the labels of the vocabulary, and a group for each broader concept.
+// `labels` and `groupOf` come from the field filter. They win over the vocabulary.
+function codedList(scheme: Vocabulary, values: string[], counts: Map<string, number>, labels?: Record<string, string>, groupOf?: (val: string) => string | undefined): Option[] {
+  return Core.codedOptions(scheme, values).map((o) => ({
+    value: o.value,
+    label: o.value === '' ? 'None' : labels?.[o.value] ?? o.label,
+    hint: o.value !== '' && o.value !== o.label ? o.value : undefined,
+    count: counts.get(o.value) ?? 0,
+    group: groupOf ? groupOf(o.value) : o.group,
+  }));
 }
 
 // Options in groups, in the order of their first option. An option with no group is in the group ''.
@@ -99,12 +111,17 @@ export function FilterBar({ v }: { v: Viewer }) {
         list = [...status!.values.map((x) => ({ value: x.value, label: x.label, tone: x.tone })), { value: '', label: 'None', tone: null }]
           .filter((x) => values.has(x.value))
           .map((x) => ({ ...x, count: counts.get(x.value) ?? 0 }));
+      } else if (key === 'lifecycles' && Core.schemeOf(v.model.profile.lifecycle.field)) {
+        list = codedList(Core.schemeOf(v.model.profile.lifecycle.field)!.scheme, Array.from(values), counts);
       } else if (fieldOf(key)) {
         // The values in alphabetical order, in groups when the profile names a separator. "None" comes last.
+        // A field with a vocabulary has the order and the groups of the vocabulary.
         const spec = fieldFilters.find((f) => f.field === fieldOf(key))!;
+        const coded = Core.schemeOf(spec.field);
         const label = (val: string) => (val ? spec.values?.[val] ?? val : 'None');
         const groupOf = (val: string) => (spec.groupBy && val ? val.split(spec.groupBy)[0] : undefined);
-        list = Array.from(values)
+        if (coded) list = codedList(coded.scheme, Array.from(values), counts, spec.values, spec.groupBy ? groupOf : undefined);
+        else list = Array.from(values)
           .sort((a, b) => (!a ? 1 : !b ? -1 : (groupOf(a) ?? '').localeCompare(groupOf(b) ?? '') || label(a).localeCompare(label(b))))
           .map((val) => ({ value: val, label: label(val), hint: spec.values?.[val] ? val : undefined, count: counts.get(val) ?? 0, group: groupOf(val) }));
       } else {

@@ -1,0 +1,144 @@
+id: req-vocabularies
+kind: requirement
+title: Give fields a vocabulary
+statement: A profile can list the codes that a field takes, with a label and a definition for each code. The shape follows W3C SKOS concept schemes. The checks, the schemas and the app use the vocabulary.
+capabilities:
+  - cap-validate
+  - cap-schemas
+  - cap-filters
+area:
+  - core
+  - cli
+  - app
+acceptance:
+  - id: shape
+    text: A vocabulary has a label, a definition and concepts. A concept has a code, a label, a definition, and optionally a broader code, alternative labels, an order and an IRI. The README maps them to SKOS.
+    status: verified
+    tests:
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: gives the concept and the label of a code, and the value itself for a value that is not a code
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: accept the vocabularies of both fixtures
+  - id: file
+    text: A vocabulary can be in a JSON file or a YAML file. The path is relative to the profile. The command line tool reads the file and checks its shape.
+    status: verified
+    tests:
+      - type: unit
+        file: test/build.test.ts
+        name: builds when a vocabulary is in a JSON file or a YAML file next to the profile
+      - type: unit
+        file: test/build.test.ts
+        name: reads a vocabulary path relative to the profile, and not to the working directory
+      - type: unit
+        file: test/build.test.ts
+        name: refuses a vocabulary file that does not exist and names the file
+      - type: unit
+        file: test/build.test.ts
+        name: refuses a vocabulary file with a wrong shape and names the scheme and the file
+      - type: unit
+        file: test/build.test.ts
+        name: checks the content of a vocabulary file like an inline vocabulary
+      - type: unit
+        file: test/build.test.ts
+        name: accepts a profile with a file entry in the schema
+  - id: profile-errors
+    text: A duplicated code, a broader code that does not exist, a cycle in broader, a scheme that the profile lacks, a vocabulary on a property that is not a string, and a lifecycle value that is not a code are errors in the profile.
+    status: verified
+    tests:
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: report a duplicated code
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: report a broader code that does not exist
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: report a cycle in broader, also a concept that is its own broader
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: report a scheme that fieldVocabularies or an edge property names and the profile lacks
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: report an edge property with a vocabulary that is not a string
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: report a lifecycle fallback, a fallback for a kind and a state that are not codes of the lifecycle vocabulary
+  - id: values
+    text: Only a code is a valid value of a field. A value that is not a code is an error that names the node or the edge. The message lists the allowed codes when there are 10 or fewer.
+    status: verified
+    tests:
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: accepts a code and refuses an alternative label or any other text
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: refuses a lifecycle value that is not a code and names the node and the allowed codes
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: accepts a node with a code and a node with no value
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: refuses a value of another field with a vocabulary, also in a list
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: lists the allowed codes only when the vocabulary has 10 codes or fewer
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: refuses a value of an edge property that is not a code and names the edge
+  - id: schema
+    text: The schema of a kind gives a field with a vocabulary an enum of the codes, with the labels in the description. An edge property with a vocabulary gets the same enum.
+    status: verified
+    tests:
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: gives a field with a vocabulary the enum of the codes, with the labels in the description
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: gives an edge property with a vocabulary the enum of the codes
+      - type: unit
+        file: test/core.test.ts
+        name: describes the refs and the supersededBy field
+  - id: order
+    text: The options of a coded field are in the order of the concepts, by order and then by label. A value that is not a code comes after the codes and the empty value comes last.
+    status: verified
+    tests:
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: sorts by order, then by label, and puts a concept with no order last
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: orders the codes of a list, with a value that is not a code after the codes and the empty value last
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: gives the options of a list with the labels and the order of the vocabulary
+  - id: hierarchy
+    text: A concept with a broader concept is in a group under the label of the broader concept. The pure logic builds the forest and stops at a cycle.
+    status: verified
+    tests:
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: names the group of a concept by the label of its broader concept
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: lists the codes from a concept up to the top
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: builds a forest in list order and leaves out a concept in a cycle
+  - id: labels
+    text: A chip, an edge property line and the filters show the label of a code. A value that is not a code shows as it is.
+    status: verified
+    tests:
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: gives the label of a code of an edge property and the value itself for any other value
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: show the label of a coded lifecycle and of a coded field
+      - type: unit
+        file: test/vocabulary.test.ts
+        name: show a value that is not a code as it is
+  - id: panel
+    text: The filters group and order the options by the vocabulary. The details panel shows a coded field as its label, the code in small mono text and the definition below it.
+    status: partial

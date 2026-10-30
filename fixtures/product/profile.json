@@ -62,7 +62,7 @@
       "labels": ["Notes", "Noted by"],
       "from": ["decision"],
       "to": ["epic", "story"],
-      "properties": { "since": { "type": "date" }, "share": { "type": "number" } }
+      "properties": { "since": { "type": "date" }, "share": { "type": "number" }, "force": { "type": "string", "vocabulary": "force" } }
     },
     "replacedBy": { "labels": ["Replaced by", "Replaces"] },
     "scenario": { "labels": ["Scenario of", "Has scenario"], "down": true },
@@ -96,6 +96,36 @@
     ],
     "detail": { "field": "openBrowsers", "label": "Open on" }
   },
+  "vocabularies": {
+    "priority": {
+      "label": "Priority",
+      "definition": "How soon a story must be done.",
+      "concepts": [
+        { "code": "low", "label": "Low", "definition": "The story can wait for a later release.", "order": 3 },
+        { "code": "medium", "label": "Medium", "definition": "The story is planned for the next releases.", "order": 2 },
+        { "code": "high", "label": "High", "definition": "The story blocks a release.", "order": 1 }
+      ]
+    },
+    "lifecycle": {
+      "label": "Lifecycle",
+      "definition": "Where a node is in its life.",
+      "concepts": [
+        { "code": "planned", "label": "Planned", "definition": "The team has not started the work.", "order": 1 },
+        { "code": "active", "label": "Active", "definition": "The team works on it.", "order": 2 },
+        { "code": "dropped", "label": "Dropped", "definition": "The team stopped the work and does not plan to resume it.", "order": 3 },
+        { "code": "replaced", "label": "Replaced", "definition": "Another node took its place.", "altLabels": ["superseded"], "order": 4 }
+      ]
+    },
+    "force": {
+      "label": "Force",
+      "definition": "How strongly a decision binds the node it notes.",
+      "concepts": [
+        { "code": "mandatory", "label": "Mandatory", "definition": "The node must follow the decision." },
+        { "code": "advisory", "label": "Advisory", "definition": "The node should follow the decision." }
+      ]
+    }
+  },
+  "fieldVocabularies": { "priority": "priority", "status": "lifecycle" },
   "fieldFilters": [{ "field": "teams", "label": "Team", "values": { "web": "Web shop" } }, { "field": "priority", "label": "Priority" }, { "field": "basis", "label": "Basis", "from": "keys", "values": { "law": "Law", "contract": "Contract" } }],
   "facets": { "groupKind": "epic", "groupLabel": "Epic" },
   "entry": { "kind": "epic", "childKind": "story", "title": "Pick an epic to see what it contains", "countLabel": "stories" },

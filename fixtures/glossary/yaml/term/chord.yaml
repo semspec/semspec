@@ -6,6 +6,7 @@ relations:
   - to: scale
     relation: is built from
     weight: 0.6
+    role: contrast
 source:
   - title: Harmony Primer
     page: "30"

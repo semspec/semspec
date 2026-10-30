@@ -4,7 +4,7 @@
 // the profile knows. It allows any other field, because a profile does not name every field.
 import { normalise } from './profile';
 import { DEFAULT_LINK_TARGET } from './edges';
-import type { EdgeSpec, Profile, ProfileInput } from './types';
+import type { EdgeSpec, Profile, ProfileInput, Vocabulary } from './types';
 
 export type JsonSchema = Record<string, unknown>;
 
@@ -14,10 +14,19 @@ const list: JsonSchema = { type: 'array', items: { type: 'string' } };
 // A date is an ISO date string: YYYY, YYYY-MM or YYYY-MM-DD.
 const DATE_PATTERN = '^\\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\\d|3[01]))?)?$';
 
+// The schema of a string that takes its value from a scheme: the codes are the enum, and the
+// description lists each code with its label.
+function codeSchema(scheme: Vocabulary): JsonSchema {
+  return { type: 'string', enum: scheme.concepts.map((c) => c.code), description: `${scheme.label}. ${scheme.concepts.map((c) => `${c.code} = ${c.label}`).join('; ')}` };
+}
+
 // The schema of the declared properties of an edge name.
-function edgeProperties(spec: EdgeSpec | undefined): Record<string, JsonSchema> {
+function edgeProperties(profile: Profile, spec: EdgeSpec | undefined): Record<string, JsonSchema> {
   const out: Record<string, JsonSchema> = {};
-  for (const [name, d] of Object.entries(spec?.properties ?? {})) out[name] = d.type === 'date' ? { type: 'string', pattern: DATE_PATTERN } : { type: d.type };
+  for (const [name, d] of Object.entries(spec?.properties ?? {})) {
+    const scheme = d.vocabulary === undefined ? undefined : profile.vocabularies?.[d.vocabulary];
+    out[name] = scheme ? codeSchema(scheme) : d.type === 'date' ? { type: 'string', pattern: DATE_PATTERN } : { type: d.type };
+  }
   return out;
 }
 
@@ -27,7 +36,7 @@ const requiredProperties = (spec: EdgeSpec | undefined): string[] => Object.entr
 function linkProperty(profile: Profile, field: string): JsonSchema {
   const spec = profile.edges[field];
   const target = spec?.target ?? DEFAULT_LINK_TARGET;
-  const object: JsonSchema = { type: 'object', properties: { [target]: text, ...edgeProperties(spec) }, required: [target, ...requiredProperties(spec)], additionalProperties: true };
+  const object: JsonSchema = { type: 'object', properties: { [target]: text, ...edgeProperties(profile, spec) }, required: [target, ...requiredProperties(spec)], additionalProperties: true };
   return { type: 'array', items: { anyOf: [text, object] } };
 }
 
@@ -73,7 +82,7 @@ export function kindSchemas(input: ProfileInput): Record<string, JsonSchema> {
     (kind.parents ?? []).forEach((group) => group.forEach((f) => (properties[f] = linkProperty(profile, f))));
     (profile.links ?? []).forEach((f) => (properties[f] = linkProperty(profile, f)));
     for (const { field, target, note, many } of profile.refs!) {
-      const item: Record<string, JsonSchema> = { ...edgeProperties(profile.edges[field]), [target]: text, [note]: text };
+      const item: Record<string, JsonSchema> = { ...edgeProperties(profile, profile.edges[field]), [target]: text, [note]: text };
       if (many) item[many] = { type: 'boolean' };
       properties[field] = { type: 'array', items: { type: 'object', properties: item, required: [target, ...requiredProperties(profile.edges[field])], additionalProperties: true } };
     }
@@ -84,6 +93,15 @@ export function kindSchemas(input: ProfileInput): Record<string, JsonSchema> {
       if (f.field in properties) return;
       properties[f.field] = f.from === 'keys' ? { type: 'array', items: { type: 'object', minProperties: 1 } } : { anyOf: [text, list] };
     });
+    // A field with a vocabulary takes the codes of the scheme. A field of a dotted path gets no enum.
+    for (const [field, id] of Object.entries(profile.fieldVocabularies ?? {})) {
+      const scheme = profile.vocabularies?.[id];
+      if (!scheme || field.includes('.')) continue;
+      const one = codeSchema(scheme);
+      const keys = profile.fieldFilters?.find((f) => f.field === field)?.from === 'keys';
+      if (keys) properties[field] = { type: 'array', items: { type: 'object', minProperties: 1, propertyNames: { enum: one.enum }, description: one.description } };
+      else properties[field] = field === profile.lifecycle.field ? one : { anyOf: [one, { type: 'array', items: one }] };
+    }
     result[kind.id] = {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
       title: kind.label,

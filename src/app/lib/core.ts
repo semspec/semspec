@@ -3,9 +3,9 @@
 // The app reads the pure logic through this module. It binds the profile of the page, so a
 // component asks for a label or a role and does not name a kind.
 import * as C from '@core/index';
-import type { Chip, FieldFilterSpec, Filters, Groups, Index, Model, NodeStatus, Profile, StatusTone, Summary, VEdge, VNode, Walk } from '@core/index';
+import type { Chip, FieldFilterSpec, Filters, Groups, Index, Model, NodeStatus, Profile, StatusTone, Summary, VEdge, VNode, Vocabulary, Walk } from '@core/index';
 
-export type { Chip, FieldFilterSpec, Filters, Groups, Index, Model, NodeStatus, Profile, StatusTone, Summary, VEdge, VNode, Walk };
+export type { Chip, FieldFilterSpec, Filters, Groups, Index, Model, NodeStatus, Profile, StatusTone, Summary, VEdge, VNode, Vocabulary, Walk };
 export type Kind = string;
 
 let profile: Profile;
@@ -64,7 +64,19 @@ export const Core = {
   toCsv: C.toCsv,
   getPath: C.getPath,
   taggedLines: C.taggedLines,
-  formatEdgeProps: C.formatEdgeProps,
+  // The properties of an edge as a line. A code shows as its label.
+  formatEdgeProps: (p: VEdge['p'], edge?: string) => C.formatEdgeProps(p, edge === undefined ? undefined : (k, v) => C.propertyLabel(profile, edge, k, v)),
+  propertyLabel: (edge: string, property: string, value: unknown) => C.propertyLabel(profile, edge, property, value),
+  // Vocabularies. A field with no scheme gives undefined.
+  schemeOf: (field: string) => C.schemeOfField(profile, field),
+  fieldConcept: (field: string, code: unknown) => C.fieldConcept(profile, field, code),
+  fieldLabel: (field: string, code: string) => C.fieldLabel(profile, field, code),
+  codedOptions: C.codedOptions,
+  propertyConcept: (edge: string, property: string, value: unknown) => {
+    const id = profile.edges[edge]?.properties?.[property]?.vocabulary;
+    const scheme = id === undefined ? undefined : profile.vocabularies?.[id];
+    return scheme && typeof value === 'string' ? C.conceptOf(scheme, value) : undefined;
+  },
   filterValues: C.filterValues,
   kindSpec: (id: string) => C.kindOf(profile, id),
 };

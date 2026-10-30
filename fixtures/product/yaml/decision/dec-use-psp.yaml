@@ -8,4 +8,5 @@ notes:
     text: governs the epic
     since: "2024"
     share: 0.4
+    force: mandatory
 replacedBy: dec-use-two-psp

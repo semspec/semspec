@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 // Tests of the workspace: the file, the cross links, the checks and the page.
-import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { buildIndex, buildModel, checkCrossLinks, incomingCrossLinks, type Graph, type Profile, type WorkspaceData } from '@core/index';
 import { findContainers } from '../src/app/lib/layouts';
 import { run, startWorkspaceServer } from '../src/cli/index';
@@ -13,7 +13,14 @@ import { validateGraph, validateProfile } from '../src/cli/validate';
 
 const fixtures = new URL('../fixtures/workspace/', import.meta.url).pathname;
 const workspacePath = join(fixtures, 'workspace.json');
-const tmp = () => mkdtempSync(join(tmpdir(), 'ws-'));
+// Each temp folder goes when the file ends.
+const made: string[] = [];
+const tmp = () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ws-'));
+  made.push(dir);
+  return dir;
+};
+afterAll(() => made.forEach((d) => rmSync(d, { recursive: true, force: true })));
 const json = <T>(file: string) => JSON.parse(readFileSync(join(fixtures, file), 'utf8')) as T;
 
 // A copy of the workspace fixture in a new folder, with an edit of the workspace file.
@@ -90,6 +97,7 @@ describe('the workspace file', () => {
     cpSync(new URL('../fixtures/glossary/yaml/term', import.meta.url).pathname, join(dir, 'domain', 'yaml', 'schema'), { recursive: true });
     const ws = JSON.parse(readFileSync(join(dir, 'workspace.json'), 'utf8'));
     cpSync(new URL('../fixtures/glossary/profile.json', import.meta.url).pathname, join(dir, 'domain', 'glossary-profile.json'));
+    cpSync(new URL('../fixtures/glossary/vocabularies', import.meta.url).pathname, join(dir, 'domain', 'vocabularies'), { recursive: true });
     ws.graphs[1].graph = 'domain/yaml';
     ws.graphs[1].profile = 'domain/glossary-profile.json';
     writeFileSync(join(dir, 'workspace.json'), JSON.stringify(ws));

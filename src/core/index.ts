@@ -10,3 +10,4 @@ export * from './schema';
 export * from './tagged';
 export * from './workspace';
 export * from './edges';
+export * from './vocabulary';

@@ -70,8 +70,24 @@ function Code({ children, title }: { children: ReactNode; title?: string }) {
   );
 }
 
-function formatProp(value: unknown, format?: string): ReactNode {
+// A coded value: its label, its code in small mono text, and its definition below in muted text.
+function Coded({ concept }: { concept: { code: string; label: string; definition?: string } }) {
+  return (
+    <span className="flex flex-col">
+      <span>
+        {concept.label} <code className="font-mono text-[10px] text-muted-foreground">{concept.code}</code>
+      </span>
+      {concept.definition && <span className="text-xs text-muted-foreground">{concept.definition}</span>}
+    </span>
+  );
+}
+
+function formatProp(value: unknown, format?: string, field?: string): ReactNode {
   if (value === undefined || value === null || value === '') return '';
+  if (field && Core.schemeOf(field)) {
+    const items = Array.isArray(value) ? value : [value];
+    return <span className="flex flex-col gap-1">{items.map((x, i) => { const c = Core.fieldConcept(field, x); return c ? <Coded key={i} concept={c} /> : <span key={i}>{String(x)}</span>; })}</span>;
+  }
   if (format === 'list') return Array.isArray(value) ? value.join(', ') : String(value);
   if (format === 'upper') return <span className="font-mono text-xs uppercase">{String(value)}</span>;
   if (format === 'code') return <Code>{String(value)}</Code>;
@@ -115,7 +131,7 @@ function CheckList({ list }: { list: Record<string, any>[] }) {
   );
 }
 
-function NodeButton({ v, id, note, props }: { v: Viewer; id: string; note?: string; props?: VEdge['p'] }) {
+function NodeButton({ v, id, note, props, edge }: { v: Viewer; id: string; note?: string; props?: VEdge['p']; edge?: string }) {
   const n = v.index.byId.get(id);
   if (!n) return <code>{id}</code>;
   return (
@@ -124,21 +140,21 @@ function NodeButton({ v, id, note, props }: { v: Viewer; id: string; note?: stri
       <span className="min-w-0">
         <span className="block break-words">{n.title}</span>
         {note && <span className="block text-xs break-words text-muted-foreground">{note}</span>}
-        {props && <span className="block text-xs break-words text-muted-foreground">{Core.formatEdgeProps(props)}</span>}
+        {props && <span className="block text-xs break-words text-muted-foreground">{Core.formatEdgeProps(props, edge)}</span>}
       </span>
     </button>
   );
 }
 
 // A linked node with its citation, when the profile gives its kind a citation section.
-function LinkedCard({ v, id, props }: { v: Viewer; id: string; props?: VEdge['p'] }) {
+function LinkedCard({ v, id, props, edge }: { v: Viewer; id: string; props?: VEdge['p']; edge?: string }) {
   const o = v.index.byId.get(id)!;
   const spec = (Core.profile.details?.citations ?? []).find((c) => c.kind === o.kind);
   const anchor = spec?.anchor ? Core.getPath(o.d, spec.anchor) : undefined;
   const url = spec?.url ? Core.getPath(o.d, spec.url) : undefined;
   return (
     <div className="flex flex-col gap-1 rounded-md border px-2.5 py-2">
-      <NodeButton v={v} id={id} props={props} />
+      <NodeButton v={v} id={id} props={props} edge={edge} />
       {o.sub && <div className="pl-5 text-xs text-muted-foreground">{o.sub}</div>}
       {Boolean(anchor || url) && (
         <div className="pl-5 text-xs">
@@ -192,11 +208,14 @@ function EdgeDetails({ v, edge }: { v: Viewer; edge: VEdge }) {
         {!props.length && <span className="text-xs text-muted-foreground">None.</span>}
         {props.length > 0 && (
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
-            {props.map(([key, value]) => (
-              <Prop key={key} label={key}>
-                {typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)}
-              </Prop>
-            ))}
+            {props.map(([key, value]) => {
+              const concept = Core.propertyConcept(edge.k, key, value);
+              return (
+                <Prop key={key} label={key}>
+                  {concept ? <Coded concept={concept} /> : typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value)}
+                </Prop>
+              );
+            })}
           </dl>
         )}
       </Section>
@@ -296,7 +315,7 @@ export function DetailsPanel({ v }: { v: Viewer }) {
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
           {(D.properties ?? []).map((p) => (
             <Prop key={p.label} label={p.label}>
-              {formatProp(Core.getPath(d, p.field), p.format)}
+              {formatProp(Core.getPath(d, p.field), p.format, p.field)}
             </Prop>
           ))}
           {S && status.total > 0 && (
@@ -484,7 +503,7 @@ export function DetailsPanel({ v }: { v: Viewer }) {
             <Divider />
             <Section title={capitalise(Core.KIND_PLURAL[kind])} count={edges.length}>
               {edges.map((e, i) =>
-                (D.citations ?? []).some((c) => c.kind === kind) ? <LinkedCard key={i} v={v} id={other(e)} props={e.p} /> : <NodeButton key={i} v={v} id={other(e)} note={e.n} props={e.p} />,
+                (D.citations ?? []).some((c) => c.kind === kind) ? <LinkedCard key={i} v={v} id={other(e)} props={e.p} edge={e.k} /> : <NodeButton key={i} v={v} id={other(e)} note={e.n} props={e.p} edge={e.k} />,
               )}
             </Section>
           </div>
@@ -507,7 +526,7 @@ export function DetailsPanel({ v }: { v: Viewer }) {
                   {g.label} · {g.list.length}
                 </div>
                 {g.list.map((e, i) => (
-                  <NodeButton key={i} v={v} id={other(e)} note={e.n} props={e.p} />
+                  <NodeButton key={i} v={v} id={other(e)} note={e.n} props={e.p} edge={e.k} />
                 ))}
               </div>
             ))}

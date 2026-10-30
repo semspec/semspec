@@ -3,6 +3,7 @@
 // What a reader does with a model: scope by a node, filter, walk by expansion, summarise, export.
 import type { Chip, Filters, Groups, Index, NodeStatus, Summary, VEdge, VNode, Walk } from './types';
 import { filterValues } from './tagged';
+import { fieldLabel } from './vocabulary';
 import { getPath, isMuted, kindLabel, kindOf, kindPlural, linkedKinds, treeKinds } from './profile';
 
 // ---------- scope ----------
@@ -407,7 +408,7 @@ export function summaryOf(index: Index, n: VNode): Summary {
   const muted = isMuted(P, n.lifecycle);
   for (const spec of k?.chips ?? []) {
     if (spec === 'lifecycle') {
-      if (n.lifecycle) chips.push({ text: n.lifecycle, tone: muted ? 'muted' : 'life', struck: muted });
+      if (n.lifecycle) chips.push({ text: fieldLabel(P, P.lifecycle.field, n.lifecycle), tone: muted ? 'muted' : 'life', struck: muted });
     } else if (spec === 'members') {
       const counts = new Map<string, number>();
       (index.children.get(n.id) ?? []).forEach((c) => counts.set(index.byId.get(c)!.kind, (counts.get(index.byId.get(c)!.kind) ?? 0) + 1));
@@ -430,7 +431,7 @@ export function summaryOf(index: Index, n: VNode): Summary {
     } else if (typeof spec === 'object') {
       let value = getPath(n.d, spec.field);
       if (value === undefined || value === null || value === '') continue;
-      let text = String(value);
+      let text = fieldLabel(P, spec.field, String(value));
       if (spec.slice) text = text.slice(0, spec.slice);
       if (spec.format === 'upper') text = text.toUpperCase();
       chips.push({ text: spec.template ? spec.template.replace('{value}', text) : text, tone: spec.tone ?? 'plain' });

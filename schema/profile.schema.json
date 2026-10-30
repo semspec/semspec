@@ -70,7 +70,8 @@
               "additionalProperties": false,
               "properties": {
                 "type": { "enum": ["string", "number", "boolean", "date"], "description": "A date is an ISO date string: YYYY, YYYY-MM or YYYY-MM-DD." },
-                "required": { "type": "boolean", "description": "Set when every edge of this name must have the property." }
+                "required": { "type": "boolean", "description": "Set when every edge of this name must have the property." },
+                "vocabulary": { "type": "string", "description": "The id of a vocabulary. The value of the property must be a code of the vocabulary. The type must be string." }
               }
             }
           }
@@ -188,6 +189,26 @@
           "properties": { "field": { "type": "string" }, "label": { "type": "string" } }
         }
       }
+    },
+    "vocabularies": {
+      "type": "object",
+      "description": "Vocabularies by scheme id. A vocabulary maps to a skos:ConceptScheme and lists the codes that a field can take, with their meaning. An entry is the vocabulary itself, or an object with a `file` key. The file holds the vocabulary in JSON or YAML, and its path is relative to the profile.",
+      "additionalProperties": {
+        "anyOf": [
+          { "$ref": "#/$defs/vocabulary" },
+          {
+            "type": "object",
+            "required": ["file"],
+            "additionalProperties": false,
+            "properties": { "file": { "type": "string", "minLength": 1, "description": "The path of the vocabulary file, relative to the profile." } }
+          }
+        ]
+      }
+    },
+    "fieldVocabularies": {
+      "type": "object",
+      "description": "The vocabulary of a field, by field path. The field is a node field, the lifecycle field or the field of a field filter. A value that is not a code of the vocabulary is an error.",
+      "additionalProperties": { "type": "string", "description": "The id of a vocabulary." }
     },
     "fieldFilters": {
       "type": "array",
@@ -490,6 +511,35 @@
     }
   },
   "$defs": {
+    "vocabulary": {
+      "type": "object",
+      "description": "A vocabulary maps to a skos:ConceptScheme.",
+      "required": ["label", "concepts"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string", "description": "The name of the scheme. It maps to skos:prefLabel." },
+        "definition": { "type": "string", "description": "What the scheme covers. It maps to skos:definition." },
+        "iri": { "type": "string", "description": "The IRI of the scheme. Optional." },
+        "concepts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "description": "A concept maps to a skos:Concept.",
+            "required": ["code", "label"],
+            "additionalProperties": false,
+            "properties": {
+              "code": { "type": "string", "description": "The value that a field holds. It maps to skos:notation." },
+              "label": { "type": "string", "description": "The text that the explorer shows for the code. It maps to skos:prefLabel." },
+              "definition": { "type": "string", "description": "What the code means. It maps to skos:definition." },
+              "broader": { "type": "string", "description": "The code of the broader concept of the scheme. It maps to skos:broader." },
+              "altLabels": { "type": "array", "items": { "type": "string" }, "description": "Other names of the concept. They map to skos:altLabel. They are not valid values." },
+              "order": { "type": "number", "description": "Sorts the concepts in a list. A concept with no order comes last." },
+              "iri": { "type": "string", "description": "The IRI of the concept. Optional." }
+            }
+          }
+        }
+      }
+    },
     "refs": {
       "type": "object",
       "required": ["field", "target", "note"],

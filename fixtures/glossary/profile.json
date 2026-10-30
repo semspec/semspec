@@ -6,7 +6,7 @@
     "idPrefixPattern": "^[a-z]+-",
     "statement": ["definition"]
   },
-  "lifecycle": { "field": "state", "fallback": "stable", "states": { "retired": { "muted": true } } },
+  "lifecycle": { "field": "state", "fallback": "stable", "states": { "retired": { "muted": true }, "replaced": { "muted": true } } },
   "kinds": [
     { "id": "group", "label": "Group", "plural": "groups", "prefix": "grp-", "role": "hierarchy", "color": { "light": "#1971c2", "dark": "#74c0fc" }, "chips": ["lifecycle", "members"] },
     { "id": "term", "label": "Term", "plural": "terms", "role": "hierarchy", "parents": [["inGroup"]], "color": { "light": "#d9480f", "dark": "#ffa94d" }, "chips": ["lifecycle"] }
@@ -17,9 +17,21 @@
       "labels": ["Relates to", "Related from"],
       "from": ["term"],
       "to": ["term"],
-      "properties": { "weight": { "type": "number", "required": true }, "since": { "type": "date" } }
+      "properties": { "weight": { "type": "number", "required": true }, "since": { "type": "date" }, "role": { "type": "string", "vocabulary": "role" } }
     }
   },
+  "vocabularies": {
+    "state": { "file": "vocabularies/state.yaml" },
+    "role": {
+      "label": "Role",
+      "definition": "What a term does for the term it relates to.",
+      "concepts": [
+        { "code": "basis", "label": "Basis", "definition": "The other term builds on this term." },
+        { "code": "contrast", "label": "Contrast", "definition": "The other term is the opposite of this term." }
+      ]
+    }
+  },
+  "fieldVocabularies": { "state": "state" },
   "refs": { "field": "relations", "target": "to", "note": "relation" },
   "layout": { "default": "force" },
   "embedded": [{ "owner": "term", "field": "owner", "kind": "group", "edge": "inGroup" }],

@@ -4,7 +4,7 @@
 // the names that the profile gives.
 import { readFileSync } from 'node:fs';
 import Ajv from 'ajv/dist/2020.js';
-import { buildModel, embeddedObjects, endProblems, getPath, linkTargetKey, parentFields, propertyProblems, readLinkItem, refsOf, withDefaultKind, type Graph, type Profile } from '../core/index';
+import { buildModel, embeddedObjects, endProblems, getPath, linkTargetKey, parentFields, nodeCodeProblems, profileVocabularyProblems, propertyProblems, readLinkItem, refsOf, withDefaultKind, type Graph, type Profile } from '../core/index';
 
 const schemaPath = new URL('../../schema/profile.schema.json', import.meta.url);
 
@@ -29,6 +29,7 @@ function crossCheckProfile(p: Profile): string[] {
     need(`embedded ${x.field} kind`, x.kind);
     need(`embedded ${x.field} owner`, x.owner);
   });
+  errors.push(...profileVocabularyProblems(p));
   need('source defaultKind', p.source.defaultKind);
   need('checks kind', p.checks?.kind);
   need('facets groupKind', p.facets?.groupKind);
@@ -114,6 +115,8 @@ export function validateGraph(graph: Graph, profile: Profile, labels?: string[])
       if (!Array.isArray(v) || v.some((t) => typeof t !== 'string')) errors.push(`Cross link field "${c.field}" of "${String(n[profile.source.id])}" is not a list of ids${labels ? ` (${label(i, n[profile.source.id])})` : ''}`);
     }
   });
+  // A field with a vocabulary holds codes of the scheme.
+  list.forEach((n, i) => nodeCodeProblems(profile, n).forEach((m) => errors.push(`${label(i, n[profile.source.id])} ${m}`)));
   // 2 objects with the same id must hold the same fields. The model keeps the first one.
   for (const e of profile.embedded ?? []) {
     const nodes = list as Record<string, any>[];
@@ -149,7 +152,7 @@ export function validateGraph(graph: Graph, profile: Profile, labels?: string[])
       const spec = profile.edges[e.k];
       const head = `${where(e.s)}, edge "${e.k}" to "${e.t}"`;
       endProblems(spec, kindOfNode.get(e.s), kindOfNode.get(e.t)).forEach((m) => errors.push(`${head} ${m}`));
-      const found = propertyProblems(spec, e.p);
+      const found = propertyProblems(spec, e.p, profile.vocabularies);
       found.errors.forEach((m) => errors.push(`${head} ${m}`));
       found.warnings.forEach((m) => warnings.push(`${head} ${m}`));
     }
