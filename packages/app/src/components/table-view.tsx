@@ -300,13 +300,13 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
         </Table>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t bg-card px-3 py-1.5 text-xs">
-        <Button variant={showFilters || activeFilters ? 'secondary' : 'ghost'} size="xs" onClick={() => setShowFilters((s) => !s)}>
+        <Button variant={showFilters || activeFilters ? 'secondary' : 'ghost'} size="xs" className="max-md:h-10" onClick={() => setShowFilters((s) => !s)}>
           <ListFilter /> Column filters{activeFilters ? ` (${activeFilters})` : ''}
         </Button>
         <span className="text-muted-foreground">
           {from}–{to} of {total}
         </span>
-        <span className="ml-auto flex items-center gap-2">
+        <span className="ml-auto flex flex-wrap items-center gap-2 max-md:w-full">
           <span className="text-muted-foreground">Rows</span>
           <ToggleGroup
             value={[String(pageSize)]}
@@ -321,21 +321,21 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
             aria-label="Rows per page"
           >
             {PAGE_SIZES.map((s) => (
-              <ToggleGroupItem key={s} value={String(s)} className="h-6 px-2 text-xs">
+              <ToggleGroupItem key={s} value={String(s)} className="h-6 px-2 text-xs max-md:h-10 max-md:min-w-10">
                 {s}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          <Button variant="outline" size="xs" disabled={pageIndex === 0} onClick={() => setPageIndex((p) => p - 1)}>
+          <Button variant="outline" size="xs" className="max-md:h-10" disabled={pageIndex === 0} onClick={() => setPageIndex((p) => p - 1)}>
             Previous
           </Button>
-          <span className="tabular-nums">
+          <span className="whitespace-nowrap tabular-nums">
             {pageIndex + 1} / {pages}
           </span>
-          <Button variant="outline" size="xs" disabled={pageIndex >= pages - 1} onClick={() => setPageIndex((p) => p + 1)}>
+          <Button variant="outline" size="xs" className="max-md:h-10" disabled={pageIndex >= pages - 1} onClick={() => setPageIndex((p) => p + 1)}>
             Next
           </Button>
-          <Button variant="outline" size="xs" onClick={exportCsv}>
+          <Button variant="outline" size="xs" className="max-md:h-10" onClick={exportCsv}>
             <Download /> CSV
           </Button>
         </span>

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Info, Network, Palette, Table2, TriangleAlert, X } from 'lucide-react';
+import { ArrowLeft, Info, ListTree, Menu, Monitor, Moon, Network, Palette, Sun, Table2, TriangleAlert, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Toggle } from '@/components/ui/toggle';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -17,6 +19,9 @@ import { ThemeSwitch } from '@/components/theme-switch';
 import { TreePanel } from '@/components/tree-panel';
 import { incomingCrossLinks, kindColorCss, type WorkspaceData } from '@semspec/core';
 import { Core, setProfile, type Model } from '@/lib/core';
+import { usePhone } from '@/lib/use-phone';
+import { useTheme } from '@/lib/use-theme';
+import type { ThemeChoice } from '@/lib/theme';
 import { useViewer, type View, type Viewer, type ViewerState } from '@/lib/use-viewer';
 import { WorkspaceContext, type WorkspaceApi } from '@/lib/workspace';
 import { cn } from '@/lib/utils';
@@ -25,11 +30,11 @@ function ScopeControl({ v }: { v: Viewer }) {
   if (v.scope?.type === 'node') {
     const n = v.index.byId.get(v.scope.id)!;
     return (
-      <span className="inline-flex h-7 max-w-[28rem] items-center gap-1.5 rounded-md border bg-secondary pr-0.5 pl-2 text-[13px]" data-testid="scope-chip">
+      <span className="inline-flex h-7 max-md:h-10 max-w-[min(28rem,100%)] items-center gap-1.5 rounded-md border bg-secondary pr-0.5 pl-2 text-[13px]" data-testid="scope-chip">
         <span className="shrink-0 text-muted-foreground">Scope</span>
         <KindDot kind={n.kind} />
         <span className="truncate font-medium" title={n.id}>{n.title}</span>
-        <Button variant="ghost" size="icon-xs" aria-label="Remove the scope" onClick={() => v.setScope(null)}>
+        <Button variant="ghost" size="icon-xs" className="max-md:size-10" aria-label="Remove the scope" onClick={() => v.setScope(null)}>
           <X />
         </Button>
       </span>
@@ -38,11 +43,11 @@ function ScopeControl({ v }: { v: Viewer }) {
   if (v.walk && v.walkRoot) {
     const n = v.index.byId.get(v.walkRoot)!;
     return (
-      <span className="inline-flex h-7 max-w-[28rem] items-center gap-1.5 rounded-md border bg-secondary pr-0.5 pl-2 text-[13px]" data-testid="scope-chip">
+      <span className="inline-flex h-7 max-md:h-10 max-w-[min(28rem,100%)] items-center gap-1.5 rounded-md border bg-secondary pr-0.5 pl-2 text-[13px]" data-testid="scope-chip">
         <span className="shrink-0 text-muted-foreground">Walk from</span>
         <KindDot kind={n.kind} />
         <span className="truncate font-medium">{n.title}</span>
-        <Button variant="ghost" size="icon-xs" aria-label="Clear the walk" onClick={v.resetWalk}>
+        <Button variant="ghost" size="icon-xs" className="max-md:size-10" aria-label="Clear the walk" onClick={v.resetWalk}>
           <X />
         </Button>
       </span>
@@ -52,14 +57,14 @@ function ScopeControl({ v }: { v: Viewer }) {
     return (
       <span className="inline-flex h-7 items-center gap-1.5 rounded-md border bg-secondary pr-0.5 pl-2 text-[13px]">
         <span className="font-medium">Whole graph</span>
-        <Button variant="ghost" size="icon-xs" aria-label="Remove the scope" onClick={() => v.setScope(null)}>
+        <Button variant="ghost" size="icon-xs" className="max-md:size-10" aria-label="Remove the scope" onClick={() => v.setScope(null)}>
           <X />
         </Button>
       </span>
     );
   }
   return (
-    <Button variant="outline" size="sm" onClick={() => v.setScope({ type: 'all' })}>
+    <Button variant="outline" size="sm" className="max-md:h-10" onClick={() => v.setScope({ type: 'all' })}>
       Whole graph
     </Button>
   );
@@ -71,7 +76,7 @@ const FALLBACK_STARTS = 8;
 // The start page. The profile names the kind to start from. Without it, the start page lists
 // the nodes with the most children.
 
-function Welcome({ v }: { v: Viewer }) {
+function Welcome({ v, onStart }: { v: Viewer; onStart?: () => void }) {
   const entry = v.model.profile.entry;
   const kind = entry?.kind;
   const childKind = entry?.childKind;
@@ -94,7 +99,10 @@ function Welcome({ v }: { v: Viewer }) {
             <button
               key={n.id}
               type="button"
-              onClick={() => v.setScope({ type: 'node', id: n.id })}
+              onClick={() => {
+                onStart?.();
+                v.setScope({ type: 'node', id: n.id });
+              }}
               className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 text-left text-[13px] transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               <KindDot kind={n.kind} className="size-2.5" />
@@ -119,8 +127,8 @@ function Welcome({ v }: { v: Viewer }) {
   );
 }
 
-function CenterView({ v }: { v: Viewer }) {
-  if (!v.scope && !v.walk) return <Welcome v={v} />;
+function CenterView({ v, onStart }: { v: Viewer; onStart?: () => void }) {
+  if (!v.scope && !v.walk) return <Welcome v={v} onStart={onStart} />;
   if (v.view === 'table') return <TableView v={v} />;
   const mode = v.view === 'cards' ? 'cards' : 'graph';
   if (!v.dock) return <Canvas key={mode} v={v} mode={mode} />;
@@ -220,12 +228,64 @@ function GraphApp({
   const noSource = active ? Core.missingSource(v.index, v.baseIds) : null;
   const status = `${v.canvasIds.length} nodes · ${v.canvasEdges.length} edges${v.walk ? ' · walk' : ''}${noSource ? ` · ${noSource.missing} of ${noSource.total} without a source` : ''}`;
 
+  // Below 768 px the tree and the details panel open as sheets.
+  const phone = usePhone();
+  const [treeOpen, setTreeOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const firstSeq = useRef(v.selectSeq);
+  // A pick in the start list sets the scope. The canvas shows then, not the details.
+  const skipOpen = useRef(false);
+  // A pick on the phone opens the details sheet. A pick in the tree sheet closes the tree sheet instead.
+  useEffect(() => {
+    if (!phone || v.selectSeq === firstSeq.current) return;
+    firstSeq.current = v.selectSeq;
+    if (skipOpen.current) {
+      skipOpen.current = false;
+      return;
+    }
+    if (treeOpen) setTreeOpen(false);
+    else setDetailsOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [v.selectSeq]);
+  useEffect(() => {
+    if (phone && v.selectedEdge) setDetailsOpen(true);
+  }, [phone, v.selectedEdge]);
+  // A sheet does not stay open after the viewport grows to the desktop layout.
+  useEffect(() => {
+    if (!phone) {
+      setTreeOpen(false);
+      setDetailsOpen(false);
+    }
+  }, [phone]);
+
+  const panelTitle = v.panel === 'details' ? 'Details' : 'Neighbours';
+  const panelBody = <ScrollArea className="min-h-0 flex-1">{v.panel === 'details' ? <DetailsPanel v={v} /> : <ExpandPanel v={v} />}</ScrollArea>;
+  const mainColumn = (
+    <main className="flex h-full min-h-0 flex-col">
+      <FilterBar v={v} />
+      <div className="min-h-0 flex-1">
+        <CenterView v={v} onStart={() => (skipOpen.current = true)} />
+      </div>
+      <div className="flex h-8 shrink-0 items-center gap-3 border-t bg-card px-3 text-xs text-muted-foreground" role="status" aria-live="polite">
+        <span className="truncate tabular-nums">{active ? status : 'No scope'}</span>
+        {active && v.view !== 'table' && !phone && (
+          <Button variant={v.dock ? 'secondary' : 'ghost'} size="xs" className="ml-auto" onClick={() => v.setDock(!v.dock)}>
+            <Table2 /> {v.dock ? 'Hide the table' : 'Show the table under the canvas'}
+          </Button>
+        )}
+      </div>
+    </main>
+  );
+
   return (
     <WorkspaceContext.Provider value={ws}>
       {/* The kinds of each graph have their own colours. These variables replace those of the page. */}
       <style>{kindColorCss(model.profile)}</style>
     <TooltipProvider delay={300}>
-      <div className="flex h-screen flex-col bg-background text-[13px] text-foreground">
+      <div className="flex h-screen max-md:h-dvh flex-col overflow-hidden bg-background text-[13px] text-foreground">
+        {phone ? (
+          <PhoneHeader v={v} ws={ws} label={label} model={model} onTree={() => setTreeOpen(true)} onDetails={() => setDetailsOpen(true)} />
+        ) : (
         <header className="flex h-12 shrink-0 items-center gap-4 border-b bg-card px-3">
           <div className="flex items-center gap-2.5">
             <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -271,35 +331,26 @@ function GraphApp({
             <ThemeSwitch />
           </div>
         </header>
+        )}
+        {phone ? (
+          <div className="min-h-0 flex-1">{mainColumn}</div>
+        ) : (
         <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1">
           <ResizablePanel defaultSize="21%" minSize="14%" maxSize="40%" className="bg-sidebar">
             <TreePanel v={v} />
           </ResizablePanel>
           <ResizableHandle />
           <ResizablePanel defaultSize="51%" minSize="30%">
-            <main className="flex h-full min-h-0 flex-col">
-              <FilterBar v={v} />
-              <div className="min-h-0 flex-1">
-                <CenterView v={v} />
-              </div>
-              <div className="flex h-8 shrink-0 items-center gap-3 border-t bg-card px-3 text-xs text-muted-foreground" role="status" aria-live="polite">
-                <span className="tabular-nums">{active ? status : 'No scope'}</span>
-                {active && v.view !== 'table' && (
-                  <Button variant={v.dock ? 'secondary' : 'ghost'} size="xs" className="ml-auto" onClick={() => v.setDock(!v.dock)}>
-                    <Table2 /> {v.dock ? 'Hide the table' : 'Show the table under the canvas'}
-                  </Button>
-                )}
-              </div>
-            </main>
+            {mainColumn}
           </ResizablePanel>
           <ResizableHandle />
           <ResizablePanel defaultSize="28%" minSize="20%" maxSize="45%">
             <aside className="flex h-full min-h-0">
               <div className="flex min-w-0 flex-1 flex-col bg-card">
                 <div className="flex h-9 shrink-0 items-center border-b px-4 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  {v.panel === 'details' ? 'Details' : 'Neighbours'}
+                  {panelTitle}
                 </div>
-                <ScrollArea className="min-h-0 flex-1">{v.panel === 'details' ? <DetailsPanel v={v} /> : <ExpandPanel v={v} />}</ScrollArea>
+                {panelBody}
               </div>
               <nav aria-label="Side panels" className="flex w-10 shrink-0 flex-col items-center gap-1 border-l bg-sidebar py-2">
                 {(
@@ -321,8 +372,127 @@ function GraphApp({
             </aside>
           </ResizablePanel>
         </ResizablePanelGroup>
+        )}
+        {phone && (
+          <>
+            <Sheet open={treeOpen} onOpenChange={setTreeOpen}>
+              <SheetContent side="left" className="w-[88vw] gap-0 bg-sidebar" data-testid="tree-sheet">
+                <SheetHeader className="border-b py-3 pr-12">
+                  <SheetTitle>Tree</SheetTitle>
+                </SheetHeader>
+                <div className="min-h-0 flex-1">
+                  <TreePanel v={v} />
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+              <SheetContent side="right" className="w-[92vw] gap-0 bg-card" data-testid="details-sheet">
+                <SheetHeader className="gap-2 border-b py-3 pr-12">
+                  <SheetTitle>{panelTitle}</SheetTitle>
+                  <Tabs value={v.panel} onValueChange={(val) => v.setPanel(val as 'details' | 'expand')}>
+                    <TabsList aria-label="Side panels" className="w-full group-data-horizontal/tabs:h-12">
+                      <TabsTrigger value="details">Details</TabsTrigger>
+                      <TabsTrigger value="expand">Neighbours</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </SheetHeader>
+                {panelBody}
+              </SheetContent>
+            </Sheet>
+          </>
+        )}
       </div>
     </TooltipProvider>
     </WorkspaceContext.Provider>
+  );
+}
+
+// The header below 768 px. The tree and the details panel open from 2 buttons. The graph switch, the
+// status colour and the theme are in a menu. The view tabs have a row of their own.
+function PhoneHeader({
+  v,
+  ws,
+  label,
+  model,
+  onTree,
+  onDetails,
+}: {
+  v: Viewer;
+  ws: WorkspaceApi;
+  label: string;
+  model: Model;
+  onTree: () => void;
+  onDetails: () => void;
+}) {
+  const { choice, setChoice } = useTheme();
+  const status = model.profile.status;
+  return (
+    <header className="flex shrink-0 flex-col gap-1.5 border-b bg-card px-2 py-1.5" data-testid="phone-header">
+      <div className="flex items-center gap-1.5">
+        <Button variant="outline" size="icon" className="size-10" aria-label="Open the tree" onClick={onTree}>
+          <ListTree />
+        </Button>
+        <div className="min-w-0 flex-1 px-1 leading-tight">
+          <div className="truncate text-sm font-semibold">Semspec</div>
+          <div className="truncate text-[11px] text-muted-foreground tabular-nums">
+            {label} · {model.nodes.length} nodes · {model.edges.length} edges
+          </div>
+        </div>
+        <Button variant="outline" size="icon" className="size-10" aria-label="Open the details" onClick={onDetails}>
+          <Info />
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="size-10" aria-label="Menu" />}>
+            <Menu />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {ws.graphs.length > 1 && (
+              <>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Graph</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup value={ws.activeId} onValueChange={(id: string) => ws.setActive(id)}>
+                    {ws.graphs.map((g) => (
+                      <DropdownMenuRadioItem key={g.id} value={g.id}>
+                        {g.label}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            {ws.canBack && (
+              <DropdownMenuItem onClick={ws.back}>
+                <ArrowLeft /> Back{ws.backLabel ? ` to ${ws.backLabel}` : ''}
+              </DropdownMenuItem>
+            )}
+            {status && (
+              <DropdownMenuCheckboxItem checked={v.statusColour} onCheckedChange={v.setStatusColour}>
+                <Palette /> Colour by {status.label.toLowerCase()}
+              </DropdownMenuCheckboxItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Theme</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={choice} onValueChange={(c: string) => setChoice(c as ThemeChoice)}>
+                <DropdownMenuRadioItem value="light"><Sun /> Light</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="dark"><Moon /> Dark</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="system"><Monitor /> System</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <Tabs value={v.view} onValueChange={(val) => v.setView(val as View)}>
+        <TabsList aria-label="View" className="w-full group-data-horizontal/tabs:h-12">
+          <TabsTrigger value="graph">Graph</TabsTrigger>
+          <TabsTrigger value="cards">Cards</TabsTrigger>
+          <TabsTrigger value="table">Table</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      <div className="flex min-w-0">
+        <ScopeControl v={v} />
+      </div>
+    </header>
   );
 }

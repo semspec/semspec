@@ -11,4 +11,4 @@ area:
 acceptance:
   - id: table-scroll
     text: "The Table box scrolls sideways. The page does not."
-    status: open
+    status: partial

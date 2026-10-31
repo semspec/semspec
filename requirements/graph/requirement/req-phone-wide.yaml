@@ -11,4 +11,8 @@ area:
 acceptance:
   - id: wide-same
     text: "At 768 px wide and above, the tree and the details panel stay in their side panels and no sheet button shows."
-    status: open
+    status: partial
+    tests:
+      - type: unit
+        file: test/phone-layout.test.ts
+        name: uses the phone layout below 768 px only

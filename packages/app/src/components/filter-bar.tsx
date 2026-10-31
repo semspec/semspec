@@ -161,7 +161,7 @@ export function FilterBar({ v }: { v: Viewer }) {
   return (
     <div className="flex flex-col gap-2 border-b bg-card px-3 py-2" data-testid="filter-bar">
       <div className="flex flex-wrap items-center gap-2">
-        <InputGroup className="h-8 w-64 max-w-full">
+        <InputGroup className="h-8 w-64 max-w-full max-md:h-10 max-md:w-full">
           <InputGroupAddon>
             <Search />
           </InputGroupAddon>
@@ -178,13 +178,15 @@ export function FilterBar({ v }: { v: Viewer }) {
             </InputGroupAddon>
           )}
         </InputGroup>
+        {/* From 768 px the wrapper has no box. On a phone the facets scroll in a row of their own. */}
+        <div className="flex min-w-0 items-center gap-2 max-md:w-full max-md:overflow-x-auto max-md:pb-1 md:contents">
         {FACETS.map(({ key, label }) => {
           const list = options[key];
           const selected = selectedOf(filters, key);
           const n = selected.length;
           return (
             <Popover key={key} open={openFacet === key} onOpenChange={(o) => setOpenFacet(o ? key : null)}>
-              <PopoverTrigger render={<Button variant="outline" size="default" disabled={!enabled} aria-label={`Filter by ${label.toLowerCase()}`} />}>
+              <PopoverTrigger render={<Button variant="outline" size="default" className="max-md:h-10" disabled={!enabled} aria-label={`Filter by ${label.toLowerCase()}`} />}>
                 {label}
                 {n > 0 && <Badge variant="secondary" className="h-4 px-1.5">{n}</Badge>}
                 <ChevronDown className="opacity-60" />
@@ -216,7 +218,7 @@ export function FilterBar({ v }: { v: Viewer }) {
           );
         })}
         {rootScope && !v.walk && (
-          <div className="ml-1 flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="ml-1 flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
             Depth
             <ToggleGroup
               value={[v.depth === null ? 'all' : String(v.depth)]}
@@ -227,25 +229,26 @@ export function FilterBar({ v }: { v: Viewer }) {
               aria-label="Depth below the scope node"
             >
               {['all', '1', '2', '3', '4'].map((d) => (
-                <ToggleGroupItem key={d} value={d} className="h-7 min-w-7 px-2 text-xs">
+                <ToggleGroupItem key={d} value={d} className="h-7 min-w-7 px-2 text-xs max-md:h-10 max-md:min-w-10">
                   {d === 'all' ? 'All' : d}
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
           </div>
         )}
+        </div>
       </div>
       {chips.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
           {chips.map((c) => (
-            <span key={`${c.key}:${c.value}`} className="inline-flex h-6 items-center gap-1 rounded-md border bg-secondary pr-0.5 pl-2 text-xs">
+            <span key={`${c.key}:${c.value}`} className="inline-flex h-6 items-center gap-1 rounded-md border bg-secondary pr-0.5 pl-2 text-xs max-md:h-9">
               {c.label}
-              <Button variant="ghost" size="icon-xs" aria-label={`Remove the filter ${c.label}`} onClick={() => removeChip(c)}>
+              <Button variant="ghost" size="icon-xs" className="max-md:size-8" aria-label={`Remove the filter ${c.label}`} onClick={() => removeChip(c)}>
                 <X />
               </Button>
             </span>
           ))}
-          <Button variant="ghost" size="xs" onClick={() => v.setFilters(EMPTY_FILTERS as Filters)}>
+          <Button variant="ghost" size="xs" className="max-md:h-9" onClick={() => v.setFilters(EMPTY_FILTERS as Filters)}>
             Clear all
           </Button>
         </div>

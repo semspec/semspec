@@ -11,10 +11,10 @@ area:
 acceptance:
   - id: pan
     text: "A 1 finger drag on the canvas pans the Graph view."
-    status: open
+    status: partial
   - id: pinch
     text: "A 2 finger pinch on the canvas zooms the Graph view."
-    status: open
+    status: partial
   - id: page-stays
     text: "A gesture on the canvas does not scroll or zoom the page."
-    status: open
+    status: partial

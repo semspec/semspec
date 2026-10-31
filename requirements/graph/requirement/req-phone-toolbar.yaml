@@ -11,10 +11,10 @@ area:
 acceptance:
   - id: toolbar
     text: "Each toolbar control stays reachable at 375 px wide."
-    status: open
+    status: partial
   - id: filters
     text: "The filters collapse into 1 control or wrap onto more lines."
-    status: open
+    status: partial
   - id: tabs
     text: "The view tabs wrap or scroll inside their own box."
-    status: open
+    status: partial

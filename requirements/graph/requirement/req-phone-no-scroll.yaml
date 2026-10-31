@@ -11,7 +11,7 @@ area:
 acceptance:
   - id: no-hscroll
     text: "At a viewport 375 px wide, the page width equals the viewport width in each view."
-    status: open
+    status: partial
   - id: all-views
     text: "The check covers the Graph view, Cards and the Table."
-    status: open
+    status: partial

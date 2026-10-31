@@ -29,6 +29,7 @@ import { Core, type Kind, type NodeStatus, type Summary, type VEdge } from '@/li
 import { SIZE, layered, placeNear, type Mode, type Pos } from '@/lib/layout';
 import { LAYOUTS, boundsOf, facingSides, findContainers, forceLayout, grouped, moveWithMembers, rectsOf, type LayoutName } from '@/lib/layouts';
 import type { Viewer } from '@/lib/use-viewer';
+import { usePhone } from '@/lib/use-phone';
 import { useTheme } from '@/lib/use-theme';
 import { cn } from '@/lib/utils';
 
@@ -165,6 +166,7 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
   const { index, canvasIds: ids, canvasEdges: edges, selected, walk } = v;
   const flow = useReactFlow();
   const { resolved: theme } = useTheme();
+  const phone = usePhone();
   const [confirmed, setConfirmed] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
   const scopeKey = v.scope ? (v.scope.type === 'all' ? 'all' : v.scope.id) : `walk:${v.walkRoot}`;
@@ -293,7 +295,7 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
     [edges, hovered, selected, v.selectedEdge, neighbours, showAll, layout, groupEdge, containers, rects],
   );
 
-  // Fit keeps the text readable: the zoom never goes below 0.7. A canvas that is larger than the
+  // Fit keeps the text readable: the zoom never goes below 0.7 (0.2 on a phone). A canvas that is larger than the
   // view starts at its top left corner, so the root of the scope is on the screen.
   const vw = useStore((s) => s.width);
   const vh = useStore((s) => s.height);
@@ -307,7 +309,7 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       const all = ids.map((id) => rects.get(id)).filter((r) => !!r);
       if (!rect || !rect.width || !all.length) return;
       const { x: minX, y: minY, w: width, h: height } = boundsOf(all);
-      const z = Math.min(1, Math.max(layout === 'layered' ? 0.7 : layout === 'grouped' ? 0.15 : 0.4, Math.min((rect.width - 48) / width, (rect.height - 110) / height)));
+      const z = Math.min(1, Math.max(Math.min(layout === 'layered' ? 0.7 : layout === 'grouped' ? 0.15 : 0.4, phone ? 0.2 : 1), Math.min((rect.width - 48) / width, (rect.height - 110) / height)));
       const x = width * z + 48 <= rect.width ? (rect.width - width * z) / 2 - minX * z : 24 - minX * z;
       // A canvas taller than the view shows the root of the scope in the middle of the left edge. The
       // grouped layout starts at the top left corner.
@@ -320,7 +322,7 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
             : 64 - minY * z;
       flow.setViewport({ x, y, zoom: z }, { duration: animate ? 250 : 0 });
     },
-    [flow, domNode, ids, positions, rects, mode, layout, v.scope, v.walkRoot],
+    [flow, domNode, ids, positions, rects, mode, layout, v.scope, v.walkRoot, phone],
   );
   // Fit on a new scope, a re-layout and a change of mode. A walk step keeps the view. A change of
   // the panel size fits again, until the reader moves or zooms the canvas.
@@ -366,7 +368,7 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
   const kinds = Array.from(new Set(ids.map((id) => index.byId.get(id)!.kind)));
   const tool = (label: string, icon: React.ReactNode, onClick: () => void, disabled = false) => (
     <Tooltip>
-      <TooltipTrigger render={<Button variant="outline" size="icon-sm" aria-label={label} disabled={disabled} onClick={onClick} />}>{icon}</TooltipTrigger>
+      <TooltipTrigger render={<Button variant="outline" size="icon-sm" className="max-md:size-10" aria-label={label} disabled={disabled} onClick={onClick} />}>{icon}</TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
   );
@@ -403,15 +405,15 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
     >
       <Background gap={20} size={1} className="opacity-60" />
       <Controls showInteractive={false} position="bottom-left" className="mb-9" />
-      <MiniMap pannable zoomable position="bottom-right" nodeColor={(n) => kindColor((n.data as NodeData).kind)} nodeStrokeWidth={0} nodeBorderRadius={4} className="rounded-md! border! bg-card!" maskColor="color-mix(in oklab, var(--foreground) 8%, transparent)" />
-      <Panel position="top-left" className="flex items-center gap-1.5 rounded-lg border bg-card/95 p-1 shadow-xs">
+      {!phone && <MiniMap pannable zoomable position="bottom-right" nodeColor={(n) => kindColor((n.data as NodeData).kind)} nodeStrokeWidth={0} nodeBorderRadius={4} className="rounded-md! border! bg-card!" maskColor="color-mix(in oklab, var(--foreground) 8%, transparent)" />}
+      <Panel position="top-left" className="flex items-center gap-1.5 rounded-lg border bg-card/95 p-1 shadow-xs max-md:max-w-[calc(100%-1.5rem)] max-md:flex-wrap">
         {tool('Re-layout the canvas', <LayoutGrid />, v.relayout)}
         {tool('Fit the canvas', <Maximize2 />, () => fit(true))}
         <span className="mx-0.5 h-4 w-px bg-border" />
         <ToggleGroup value={[layout]} onValueChange={(next) => next[0] && setChosen(next[0] as LayoutName)} variant="outline" size="sm" spacing={0} aria-label="Layout">
           {LAYOUTS.map((name) => (
             <Tooltip key={name}>
-              <TooltipTrigger render={<ToggleGroupItem value={name} aria-label={LAYOUT_LABEL[name]} disabled={name === 'grouped' && !groupEdge} />}>
+              <TooltipTrigger render={<ToggleGroupItem value={name} className="max-md:size-10" aria-label={LAYOUT_LABEL[name]} disabled={name === 'grouped' && !groupEdge} />}>
                 {LAYOUT_ICON[name]}
               </TooltipTrigger>
               <TooltipContent>{name === 'grouped' && !groupEdge ? 'The profile has no group edge' : LAYOUT_LABEL[name]}</TooltipContent>
@@ -436,7 +438,7 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
             </Button>
           </div>
         )}
-        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 rounded-lg border bg-card/95 px-2.5 py-1 text-[11px] shadow-xs">
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 rounded-lg border bg-card/95 px-2.5 py-1 text-[11px] shadow-xs max-md:hidden">
           {kinds.map((k) => (
             <span key={k} className="inline-flex items-center gap-1.5">
               <KindDot kind={k} />
