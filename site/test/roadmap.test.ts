@@ -4,8 +4,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { buildIndex, buildModel, statusOf, type ProfileInput } from '../../src/core/index';
-import { loadInputs } from '../../src/cli/inputs';
+import { buildIndex, buildModel, statusOf, type ProfileInput } from '../../packages/core/src/index';
+import { loadInputs } from '../../packages/cli/src/inputs';
 import { buildRoadmap } from '../src/lib/roadmap';
 
 // The names of a small profile. 2 sets of names show that the module reads the names from its options and from the profile.

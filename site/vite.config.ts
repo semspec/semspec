@@ -19,9 +19,9 @@ import { codeToHtml } from 'shiki';
 import type { Plugin, ViteDevServer } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { parse } from 'yaml';
-import { buildIndex, buildModel } from '../src/core/index';
-import { THEME_KEY } from '../src/app/lib/theme';
-import { loadInputs } from '../src/cli/inputs';
+import { buildIndex, buildModel } from '../packages/core/src/index';
+import { THEME_KEY } from '../packages/app/src/lib/theme';
+import { loadInputs } from '../packages/cli/src/inputs';
 import { excerptBlocks } from './src/lib/excerpt';
 import { loadDocs } from './src/lib/docs-load';
 import type { DocsData } from './src/lib/docs-load';
@@ -35,7 +35,7 @@ const repo = resolve(here('..'));
 const GRAPH = join(repo, 'requirements/graph');
 const PROFILE = join(repo, 'requirements/profile.yaml');
 
-// Sets the dark class before the first paint. The rule matches THEME_SCRIPT in src/cli/page.ts.
+// Sets the dark class before the first paint. The rule matches THEME_SCRIPT in packages/cli/src/page.ts.
 const THEME_SCRIPT = `(function(){var s=null;try{s=localStorage.getItem('${THEME_KEY}')}catch(e){}var d=s==='dark'||(s!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d)})();`;
 
 const SHELL = [

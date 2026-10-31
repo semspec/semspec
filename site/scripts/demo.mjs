@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import { buildRoot, requireRootModules, rootDir, run, siteDir } from './lib.mjs';
 
-if (!existsSync(`${rootDir}dist/cli/index.js`)) buildRoot();
+if (!existsSync(`${rootDir}packages/cli/dist/index.js`)) buildRoot();
 requireRootModules();
 
 const out = `${siteDir}public/demo/`;

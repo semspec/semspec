@@ -3,8 +3,8 @@
 // The pure logic of the docs: the page index, the sidebar order, the backlinks, the previous and the
 // next page, the heading slugs and the rewrite of links. The module has no framework dependency and
 // reads no file. The Vite config runs it at build time, so it imports the core module by a relative path.
-import { statusOf } from '../../../src/core/index';
-import type { Index } from '../../../src/core/index';
+import { statusOf } from '../../../packages/core/src/index';
+import type { Index } from '../../../packages/core/src/index';
 import { GITHUB_URL } from './links';
 import { statusDataOf } from './roadmap';
 import type { StatusData } from './roadmap';

@@ -2,8 +2,8 @@
 // Copyright 2026 The Semspec Authors
 // Turns the index of a requirements graph into the data of the roadmap. The module has no framework
 // dependency. The Vite config runs it at build time, so it imports the core module by a relative path.
-import { filterValues, isMuted, statusOf } from '../../../src/core/index';
-import type { Index, Profile, StatusTone, VNode } from '../../../src/core/index';
+import { filterValues, isMuted, statusOf } from '../../../packages/core/src/index';
+import type { Index, Profile, StatusTone, VNode } from '../../../packages/core/src/index';
 
 // The kinds and the lifecycle state that the roadmap reads. The defaults match requirements/profile.yaml.
 export interface RoadmapOptions {

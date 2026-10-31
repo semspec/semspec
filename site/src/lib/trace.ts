@@ -3,8 +3,8 @@
 // Turns the index of a requirements graph into the trace of 1 requirement: the chain from the top of
 // the tree down to a requirement, 1 of its conditions and 1 check of that condition. The module has no
 // framework dependency. The Vite config runs it at build time, so it imports the core module by a relative path.
-import { edgeLabel, kindLabel } from '../../../src/core/index';
-import type { Index, Profile, VNode } from '../../../src/core/index';
+import { edgeLabel, kindLabel } from '../../../packages/core/src/index';
+import type { Index, Profile, VNode } from '../../../packages/core/src/index';
 import { statusDataOf } from './roadmap';
 import type { StatusData } from './roadmap';
 

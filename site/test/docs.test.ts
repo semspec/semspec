@@ -4,8 +4,8 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { buildIndex, buildModel } from '../../src/core/index';
-import type { ProfileInput } from '../../src/core/index';
+import { buildIndex, buildModel } from '../../packages/core/src/index';
+import type { ProfileInput } from '../../packages/core/src/index';
 import { BRANCH, buildDocsIndex, docSources, docsPaths, editUrl, graphPath, groupPages, htmlToText, neighbours, pagePath, relatedPages, rewriteLink, slugger, slugify } from '../src/lib/docs';
 import type { DocsIndex, LinkContext, RenderedBody } from '../src/lib/docs';
 import { loadDocs } from '../src/lib/docs-load';
@@ -207,7 +207,7 @@ describe('link rewrite', () => {
 
   it('rewrites a relative link to another file of the repository to a link to GitHub', () => {
     expect(rewriteLink('../../schema/graph.schema.json', from)).toEqual({ href: 'https://github.com/semspec/semspec/blob/master/schema/graph.schema.json' });
-    expect(rewriteLink('../../src/core/#model', from).href).toBe('https://github.com/semspec/semspec/blob/master/src/core#model');
+    expect(rewriteLink('../../packages/core/src/#model', from).href).toBe('https://github.com/semspec/semspec/blob/master/packages/core/src#model');
   });
 
   it('keeps an absolute link, a link to a fragment and a link with a root path', () => {

@@ -5,8 +5,8 @@
 // leaves below it, so the subtrees do not overlap. A linked node, for example a decision, sits on the outer ring
 // at the mean angle of the nodes it links to. The module has no framework dependency. The Vite config runs it at
 // build time, so it imports the core module by a relative path.
-import { isMuted, kindsWithRole } from '../../../src/core/index';
-import type { Index, VNode } from '../../../src/core/index';
+import { isMuted, kindsWithRole } from '../../../packages/core/src/index';
+import type { Index, VNode } from '../../../packages/core/src/index';
 
 export interface HeroNode {
   id: string;

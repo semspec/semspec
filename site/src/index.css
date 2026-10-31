@@ -9,7 +9,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@import "../../src/app/tokens.css";
+@import "../../packages/app/src/tokens.css";
 
 @layer base {
   * {

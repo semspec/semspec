@@ -2,8 +2,8 @@
 // Copyright 2026 The Semspec Authors
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { buildIndex, buildModel, type ProfileInput } from '../../src/core/index';
-import { loadInputs } from '../../src/cli/inputs';
+import { buildIndex, buildModel, type ProfileInput } from '../../packages/core/src/index';
+import { loadInputs } from '../../packages/cli/src/inputs';
 import { buildTrace } from '../src/lib/trace';
 
 // The names of a small profile. 2 sets of names show that the module reads the names and the edge labels from the profile.

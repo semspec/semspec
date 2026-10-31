@@ -3,7 +3,7 @@
 // The theme store of the site. It uses the same localStorage key as the explorer, so a choice in
 // the site or in a demo page of the same origin applies to both.
 import { useCallback, useSyncExternalStore } from 'react';
-import { THEME_KEY, choiceFromStorageEvent, parseChoice, resolveTheme, type ThemeChoice } from '../../../src/app/lib/theme';
+import { THEME_KEY, choiceFromStorageEvent, parseChoice, resolveTheme, type ThemeChoice } from '../../../packages/app/src/lib/theme';
 
 const listeners = new Set<() => void>();
 let choice: ThemeChoice = 'system';

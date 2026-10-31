@@ -5,7 +5,7 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTheme } from '@/lib/use-theme';
-import type { ThemeChoice } from '../../../src/app/lib/theme';
+import type { ThemeChoice } from '../../../packages/app/src/lib/theme';
 
 const ITEMS: { value: ThemeChoice; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Light', icon: Sun },

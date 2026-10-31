@@ -4,8 +4,8 @@
 // and the tests call it. It runs in Node only.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { buildIndex, buildModel } from '../../../src/core/index';
-import { loadInputs } from '../../../src/cli/inputs';
+import { buildIndex, buildModel } from '../../../packages/core/src/index';
+import { loadInputs } from '../../../packages/cli/src/inputs';
 import { buildDocsIndex, docSources, fileOf } from './docs';
 import type { DocsIndex, DocsOptions, RenderedBody } from './docs';
 import { renderBody } from './docs-markdown';
