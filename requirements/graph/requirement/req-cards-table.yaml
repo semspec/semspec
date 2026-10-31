@@ -43,3 +43,14 @@ acceptance:
       - type: unit
         file: test/app/table-resize.test.tsx
         name: saves the widths in the store and loads them again
+  - id: resize-no-select
+    text: "A drag of a column resize handle selects no text on the page, in Safari, Chrome and Firefox."
+    status: partial
+    note: "Checked in jsdom only. Only a real Safari proves the visual result."
+    tests:
+      - type: unit
+        file: test/app/table-resize.test.tsx
+        name: stops the text selection during a handle drag and restores it after
+      - type: unit
+        file: test/app/table-resize.test.tsx
+        name: restores the body styles when the touch ends

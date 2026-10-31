@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 // DOM tests of the column resize in the Table. jsdom has no layout, so the tests read the widths in the styles.
-import { beforeEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, createEvent, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { pickInTree, renderApp } from './harness';
 
@@ -82,5 +82,40 @@ describe('the column resize of the Table', () => {
     expect([...store.keys()].some((k) => k.startsWith(OLD_KEY))).toBe(false);
     cleanup();
     expect(JSON.parse(window.localStorage.getItem(keyOf()!)!).graphs.product.widths).toEqual({ title: 420 });
+  });
+});
+
+describe('the text selection during a handle drag', () => {
+  it('stops the text selection during a handle drag and restores it after', async () => {
+    await openTable();
+    const removed = vi.spyOn(window.getSelection()!, 'removeAllRanges');
+    const ev = createEvent.mouseDown(handle('Title'), { clientX: 100, cancelable: true });
+    fireEvent(handle('Title'), ev);
+    expect(ev.defaultPrevented).toBe(true);
+    expect(removed).toHaveBeenCalled();
+    expect(document.body.style.userSelect).toBe('none');
+    expect(document.body.style.getPropertyValue('-webkit-user-select')).toBe('none');
+    expect(document.body.style.cursor).toBe('col-resize');
+    fireEvent.mouseUp(window);
+    expect(document.body.style.userSelect).toBe('');
+    expect(document.body.style.getPropertyValue('-webkit-user-select')).toBe('');
+    expect(document.body.style.cursor).toBe('');
+    // The header and the handle also carry select-none.
+    expect(handle('Title').className).toMatch(/\bselect-none\b/);
+    expect(handle('Title').closest('th')!.className).toMatch(/\bselect-none\b/);
+    // The pointer leaving the window also ends the lock.
+    fireEvent.mouseDown(handle('Title'), { clientX: 100 });
+    expect(document.body.style.userSelect).toBe('none');
+    fireEvent.mouseLeave(document);
+    expect(document.body.style.userSelect).toBe('');
+  });
+
+  it('restores the body styles when the touch ends', async () => {
+    await openTable();
+    fireEvent.touchStart(handle('Title'), { touches: [{ clientX: 100 }] });
+    expect(document.body.style.userSelect).toBe('none');
+    fireEvent.touchCancel(window);
+    expect(document.body.style.userSelect).toBe('');
+    expect(document.body.style.cursor).toBe('');
   });
 });

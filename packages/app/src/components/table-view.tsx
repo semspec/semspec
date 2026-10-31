@@ -28,6 +28,29 @@ import { cn } from '@/lib/utils';
 const PAGE_SIZES = [25, 50, 100, 200];
 // A step of the keyboard resize, in pixels.
 const RESIZE_STEP = 16;
+
+// Stops the text selection for the length of a drag. Safari needs the prefixed property.
+// It restores the body styles when the pointer goes up, the touch ends or the window loses the pointer.
+function lockSelection(touch: boolean) {
+  const body = document.body;
+  const saved = { userSelect: body.style.userSelect, webkit: body.style.getPropertyValue('-webkit-user-select'), cursor: body.style.cursor };
+  window.getSelection()?.removeAllRanges();
+  body.style.userSelect = 'none';
+  body.style.setProperty('-webkit-user-select', 'none');
+  body.style.cursor = 'col-resize';
+  const events = touch ? ['touchend', 'touchcancel', 'blur'] : ['mouseup', 'blur'];
+  const release = () => {
+    body.style.userSelect = saved.userSelect;
+    if (saved.webkit) body.style.setProperty('-webkit-user-select', saved.webkit);
+    else body.style.removeProperty('-webkit-user-select');
+    body.style.cursor = saved.cursor;
+    for (const ev of events) window.removeEventListener(ev, release);
+    document.removeEventListener('mouseleave', release);
+  };
+  for (const ev of events) window.addEventListener(ev, release);
+  // A mouse that leaves the window may release its button outside, so the lock ends there too.
+  if (!touch) document.addEventListener('mouseleave', release);
+}
 const MIN_SIZE = 64;
 
 // The widths that the viewer saved for a graph. A width below the minimum or for an unknown column is dropped.
@@ -265,7 +288,7 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
                 {hg.headers.map((h) => {
                   const sorted = h.column.getIsSorted();
                   return (
-                    <TableHead key={h.id} className="group/head relative h-8 px-2" aria-sort={sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none'}>
+                    <TableHead key={h.id} className="group/head relative h-8 px-2 select-none" aria-sort={sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none'}>
                       <button type="button" className="inline-flex items-center gap-1 text-xs font-semibold text-foreground hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none" onClick={h.column.getToggleSortingHandler()}>
                         {flexRender(h.column.columnDef.header, h.getContext())}
                         {sorted === 'asc' ? <ArrowUp className="size-3" /> : sorted === 'desc' ? <ArrowDown className="size-3" /> : <ArrowUpDown className="size-3 opacity-40" />}
@@ -278,8 +301,16 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
                           aria-label={`Resize the ${String(h.column.columnDef.header)} column`}
                           aria-valuenow={h.column.getSize()}
                           aria-valuemin={minOf[h.column.id]}
-                          onMouseDown={h.getResizeHandler()}
-                          onTouchStart={h.getResizeHandler()}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            lockSelection(false);
+                            h.getResizeHandler()(e);
+                          }}
+                          onTouchStart={(e) => {
+                            // React registers touchstart as passive, so the touch path sets only the styles. touch-none stops the scroll.
+                            lockSelection(true);
+                            h.getResizeHandler()(e);
+                          }}
                           onDoubleClick={() => setWidth(h.column.id, null)}
                           onKeyDown={(e) => {
                             const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
