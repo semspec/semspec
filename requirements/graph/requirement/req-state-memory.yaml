@@ -1,0 +1,20 @@
+id: req-state-memory
+kind: requirement
+title: Keep the state of each graph when the reader switches graphs
+state: draft
+priority: now
+statement: A switch to another graph of a workspace and back restores the state of the first graph.
+capabilities:
+  - cap-view-state
+area:
+  - app
+acceptance:
+  - id: graph-state
+    text: A switch and a switch back restore the scope, the walk, the filters, the selection, the view and the layout of the graph.
+    status: open
+  - id: canvas-state
+    text: A switch and a switch back restore the position and the zoom of the canvas.
+    status: open
+  - id: panel-state
+    text: A switch and a switch back restore the open tree groups and the column widths of the table.
+    status: open

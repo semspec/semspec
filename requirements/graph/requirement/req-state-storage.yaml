@@ -1,0 +1,29 @@
+id: req-state-storage
+kind: requirement
+title: Keep the state after a reload
+state: draft
+priority: now
+statement: The app stores the state of a workspace in the browser storage, so a reload of the page restores it.
+capabilities:
+  - cap-view-state
+area:
+  - app
+acceptance:
+  - id: reload
+    text: A reload restores the active graph and the state of each graph, as in req-state-memory.
+    status: open
+  - id: key
+    text: The storage key holds the workspace title and a hash of its graph ids, so 2 workspaces never share a state.
+    status: open
+  - id: stale
+    text: A stored node, filter value or column that the graph no longer has is dropped, and the rest of the state loads.
+    status: open
+  - id: version
+    text: The stored state has a version. A state of another version is ignored, and the page starts fresh.
+    status: open
+  - id: blocked
+    text: When the browser blocks the storage, the page works and starts fresh, with no error.
+    status: open
+  - id: file-page
+    text: A page that opens from a file keeps its state in a browser that allows storage for files.
+    status: open

@@ -1,0 +1,20 @@
+id: req-state-link
+kind: requirement
+title: Link to an exact view
+state: draft
+priority: now
+statement: The address of the page holds the active graph, the scope and the selected node, so a link opens the same view.
+capabilities:
+  - cap-view-state
+area:
+  - app
+acceptance:
+  - id: write
+    text: A change of the graph, the scope or the selection updates the hash of the address, with no new history entry for each change.
+    status: open
+  - id: read
+    text: A page that opens with such a hash shows that graph, scope and node, and the hash wins over the stored state.
+    status: open
+  - id: unknown
+    text: A hash that names an unknown graph or node opens the page with the rest of the state and no error.
+    status: open
