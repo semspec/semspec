@@ -27,3 +27,16 @@ acceptance:
       - type: unit
         file: test/app/panels.test.tsx
         name: removes the scope with the button of the chip
+  - id: sub-heading-indent
+    text: A root under a sub-heading of its kind sits 1 level below the sub-heading, and its children follow from there. A tree with 1 root kind keeps its roots at the left edge.
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/tree-depth.test.tsx
+        name: puts a root under a sub-heading 1 level below it, and its child 1 level further
+      - type: unit
+        file: test/app/tree-depth.test.tsx
+        name: keeps the depth of the roots and the lines after a search filter
+      - type: unit
+        file: test/app/tree-depth.test.tsx
+        name: keeps depth 0 for the roots of a tree with 1 root kind

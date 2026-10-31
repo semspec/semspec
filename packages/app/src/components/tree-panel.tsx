@@ -101,6 +101,7 @@ const Row = memo(function Row(props: {
       aria-selected={isSelected}
       aria-expanded={hasKids ? open : undefined}
       data-node={n.id}
+      data-depth={depth}
       title={`${Core.KIND_LABEL[n.kind]} · ${n.id}`}
       className={cn('group/row relative flex h-[26px] items-center pr-2 text-[13px] hover:bg-muted', isSelected && 'bg-accent', isScope && 'font-semibold')}
     >
@@ -219,18 +220,19 @@ export function TreePanel({ v }: { v: Viewer }) {
                     const secOpen = matches ? true : v.open.has(sec.key);
                     return (
                       <div key={sec.key} role="group">
+                        {/* The sub-heading sits at depth 1. Its roots sit at depth 2. */}
                         <button
                           type="button"
                           aria-expanded={secOpen}
                           onClick={() => v.toggleOpen(sec.key)}
-                          className="flex h-7 w-full items-center gap-1 pr-2 pl-5 text-left text-[11px] font-medium tracking-wide text-muted-foreground uppercase outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                          className="flex h-7 w-full items-center gap-1 pr-2 pl-6 text-left text-[11px] font-medium tracking-wide text-muted-foreground uppercase outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <ChevronRight className={cn('size-3.5 transition-transform', secOpen && 'rotate-90')} />
                           <KindDot kind={sec.kind} />
                           <span className="truncate">{capitalise(Core.KIND_PLURAL[sec.kind])}</span>
                           <span className="ml-auto rounded-full bg-muted px-1.5 text-[10px] leading-4 tabular-nums">{matches ? secItems.length : sec.ids.length}</span>
                         </button>
-                        {secOpen && renderList(secItems, 0, new Set())}
+                        {secOpen && renderList(secItems, 2, new Set())}
                       </div>
                     );
                   })}
