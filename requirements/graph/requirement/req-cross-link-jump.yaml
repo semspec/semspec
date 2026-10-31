@@ -1,0 +1,49 @@
+id: req-cross-link-jump
+kind: requirement
+title: Jump to the target of a cross link
+statement: "A click on a cross link opens the target node in its graph and shows it on the canvas."
+capabilities:
+  - cap-workspace
+area:
+  - app
+acceptance:
+  - id: open
+    text: "A click on a cross link switches to the target graph, selects the target node and opens the tree to it."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/cross-jump.test.tsx
+        name: "switches to the target graph, selects the node and opens the tree to it"
+  - id: visible
+    text: "When the target node is not on the canvas of the target graph, the canvas shows a scope that holds it."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/cross-jump.test.tsx
+        name: "sets the node as the scope when the canvas does not hold it"
+      - type: unit
+        file: test/app/cross-jump.test.tsx
+        name: "keeps the scope when the canvas holds the node"
+  - id: center
+    text: "After the jump, the canvas centers the target node in the view at a zoom that keeps its title readable."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/cross-jump.test.tsx
+        name: "centers the node at a zoom of at least 1 when the graph has no stored viewport"
+      - type: unit
+        file: test/app/cross-jump.test.tsx
+        name: "centers the node in place of the stored viewport of a node on the canvas"
+      - type: unit
+        file: test/app/cross-jump.test.tsx
+        name: "keeps a zoom above 1"
+      - type: unit
+        file: test/app/cross-jump.test.tsx
+        name: "still restores the stored viewport after a switch with a tab"
+  - id: back
+    text: "Back returns to the source graph with the source node selected and the canvas where it was."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/cross-jump.test.tsx
+        name: "returns to the source graph with the source node selected and the source viewport"

@@ -162,7 +162,16 @@ function sortParentsFirst(ids: string[], parentOf: Map<string, string>): string[
   return ids.map((id, i) => ({ id, i, d: depth(id) })).sort((a, b) => a.d - b.d || a.i - b.i).map((x) => x.id);
 }
 
-function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
+// A node that the canvas centers after a jump. The seq tells one jump from the next.
+export interface CenterTarget {
+  node: string;
+  seq: number;
+}
+
+// The zoom that keeps the title of a node readable after a jump.
+const JUMP_ZOOM = 1;
+
+function Inner({ v, mode, center, onCentered }: { v: Viewer; mode: Mode; center?: CenterTarget | null; onCentered?: (seq: number) => void }) {
   const { index, canvasIds: ids, canvasEdges: edges, selected, walk } = v;
   const flow = useReactFlow();
   const { resolved: theme } = useTheme();
@@ -335,18 +344,31 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
     moved.current = false;
   }, [v.layoutTick, mode, scopeKey, confirmed, layout]);
   useEffect(() => {
-    if (moved.current) return;
+    if (moved.current && !center) return;
     const t = setTimeout(() => {
-      const stored = pendingViewport.current;
-      pendingViewport.current = undefined;
-      if (stored) {
-        flow.setViewport(stored, { duration: 0 });
-        moved.current = true;
-      } else fit(false);
+      if (!moved.current) {
+        const stored = pendingViewport.current;
+        pendingViewport.current = undefined;
+        if (stored) {
+          flow.setViewport(stored, { duration: 0 });
+          moved.current = true;
+        } else fit(false);
+      }
+      // A jump centers its node after the stored viewport or the fit, so the node wins over both.
+      const rect = domNode?.getBoundingClientRect();
+      const box = center ? rects.get(center.node) : undefined;
+      if (!center || !box || !rect || !rect.width) return;
+      const zoom = Math.min(1.6, Math.max(JUMP_ZOOM, flow.getZoom()));
+      const cx = box.x + box.w / 2;
+      const cy = box.y + box.h / 2;
+      flow.setCenter(cx, cy, { zoom, duration: 250 });
+      v.saveViewport(mode, { x: rect.width / 2 - cx * zoom, y: rect.height / 2 - cy * zoom, zoom });
+      moved.current = true;
+      onCentered?.(center.seq);
     }, 80);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [v.layoutTick, mode, scopeKey, confirmed, layout, Math.round(vw / 40), Math.round(vh / 40)]);
+  }, [v.layoutTick, mode, scopeKey, confirmed, layout, center?.seq, center ? v.canvasSet.has(center.node) : false, Math.round(vw / 40), Math.round(vh / 40)]);
 
   if (ids.length > BIG && !confirmed) {
     return (
@@ -465,11 +487,11 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
   );
 }
 
-export function Canvas({ v, mode }: { v: Viewer; mode: Mode }) {
+export function Canvas({ v, mode, center, onCentered }: { v: Viewer; mode: Mode; center?: CenterTarget | null; onCentered?: (seq: number) => void }) {
   return (
     <ReactFlowProvider>
       <div className="h-full w-full" data-testid={`canvas-${mode}`}>
-        <Inner v={v} mode={mode} />
+        <Inner v={v} mode={mode} center={center} onCentered={onCentered} />
       </div>
     </ReactFlowProvider>
   );

@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Toggle } from '@/components/ui/toggle';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Canvas } from '@/components/canvas';
+import { Canvas, type CenterTarget } from '@/components/canvas';
 import { DetailsPanel, ExpandPanel } from '@/components/details-panel';
 import { FilterBar } from '@/components/filter-bar';
 import { KindDot } from '@/components/kind';
@@ -24,7 +24,7 @@ import { useTheme } from '@/lib/use-theme';
 import type { ThemeChoice } from '@/lib/theme';
 import { useViewer, type View, type Viewer } from '@/lib/use-viewer';
 import { attachAddress } from '@/lib/address';
-import { attachPersistence, hydrate, resetStored, setActive, useAppStore } from '@/lib/store';
+import { attachPersistence, hydrate, patchGraph, resetStored, setActive, useAppStore, type GraphState } from '@/lib/store';
 import { WorkspaceContext, type WorkspaceApi } from '@/lib/workspace';
 import { cn } from '@/lib/utils';
 
@@ -129,15 +129,15 @@ function Welcome({ v, onStart }: { v: Viewer; onStart?: () => void }) {
   );
 }
 
-function CenterView({ v, onStart }: { v: Viewer; onStart?: () => void }) {
+function CenterView({ v, onStart, center, onCentered }: { v: Viewer; onStart?: () => void; center?: CenterTarget | null; onCentered?: (seq: number) => void }) {
   if (!v.scope && !v.walk) return <Welcome v={v} onStart={onStart} />;
   if (v.view === 'table') return <TableView v={v} />;
   const mode = v.view === 'cards' ? 'cards' : 'graph';
-  if (!v.dock) return <Canvas key={mode} v={v} mode={mode} />;
+  if (!v.dock) return <Canvas key={mode} v={v} mode={mode} center={center} onCentered={onCentered} />;
   return (
     <ResizablePanelGroup orientation="vertical">
       <ResizablePanel defaultSize="62%" minSize="25%">
-        <Canvas key={mode} v={v} mode={mode} />
+        <Canvas key={mode} v={v} mode={mode} center={center} onCentered={onCentered} />
       </ResizablePanel>
       <ResizableHandle withHandle />
       <ResizablePanel defaultSize="38%" minSize="15%">
@@ -150,6 +150,8 @@ function CenterView({ v, onStart }: { v: Viewer; onStart?: () => void }) {
 interface Focus {
   node: string;
   seq: number;
+  // A jump centers the node on the canvas. Back does not.
+  center: boolean;
 }
 
 // The workspace state: the trail of jumps. The store holds the active graph and the state of each graph.
@@ -170,7 +172,7 @@ export function App({ data }: { data: WorkspaceData }) {
   }, [data]);
   const activeId = useAppStore((s) => s.active);
   const epoch = useAppStore((s) => s.epoch);
-  const [trail, setTrail] = useState<{ graph: string; node: string | null }[]>([]);
+  const [trail, setTrail] = useState<{ graph: string; node: string | null; viewport: GraphState['viewport'] }[]>([]);
   const [focus, setFocus] = useState<Focus | null>(null);
   const seq = useRef(0);
   const incoming = useMemo(() => incomingCrossLinks(data.graphs), [data]);
@@ -180,9 +182,10 @@ export function App({ data }: { data: WorkspaceData }) {
   setProfile(graph.model.profile);
 
   const jumpFrom = (target: string, node: string, from: string | null) => {
-    setTrail((t) => [...t, { graph: activeId, node: from }]);
+    // The trail keeps the canvas viewport of the source graph, so Back returns to the same view.
+    setTrail((t) => [...t, { graph: activeId, node: from, viewport: useAppStore.getState().graphs[activeId]?.viewport ?? {} }]);
     setActive(target);
-    setFocus({ node, seq: ++seq.current });
+    setFocus({ node, seq: ++seq.current, center: true });
   };
   const last = trail[trail.length - 1];
   const root: Omit<WorkspaceApi, 'jump'> & { jumpFrom: typeof jumpFrom } = {
@@ -197,8 +200,9 @@ export function App({ data }: { data: WorkspaceData }) {
     back: () => {
       if (!last) return;
       setTrail((t) => t.slice(0, -1));
+      patchGraph(last.graph, { viewport: last.viewport });
       setActive(last.graph);
-      setFocus(last.node ? { node: last.node, seq: ++seq.current } : null);
+      setFocus(last.node ? { node: last.node, seq: ++seq.current, center: false } : null);
     },
     canBack: trail.length > 0,
     backLabel: last ? data.graphs.find((g) => g.id === last.graph)?.label : undefined,
@@ -236,6 +240,9 @@ function GraphApp({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus]);
   const active = v.scope || v.walk;
+  // The canvas centers the node of a jump once. A later render or a new canvas does not center it again.
+  const centered = useRef(0);
+  const center = focus?.center && focus.seq !== centered.current ? { node: focus.node, seq: focus.seq } : null;
   // The nodes of the scope that have no source, when the profile has a source field.
   const noSource = active ? Core.missingSource(v.index, v.baseIds) : null;
   const status = `${v.canvasIds.length} nodes · ${v.canvasEdges.length} edges${v.walk ? ' · walk' : ''}${noSource ? ` · ${noSource.missing} of ${noSource.total} without a source` : ''}`;
@@ -276,7 +283,7 @@ function GraphApp({
     <main className="flex h-full min-h-0 flex-col">
       <FilterBar v={v} />
       <div className="min-h-0 flex-1">
-        <CenterView v={v} onStart={() => (skipOpen.current = true)} />
+        <CenterView v={v} onStart={() => (skipOpen.current = true)} center={center} onCentered={(s) => (centered.current = s)} />
       </div>
       <div className="flex h-8 shrink-0 items-center gap-3 border-t bg-card px-3 text-xs text-muted-foreground" role="status" aria-live="polite">
         <span className="truncate tabular-nums">{active ? status : 'No scope'}</span>
