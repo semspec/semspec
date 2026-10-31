@@ -5,7 +5,7 @@ title: MCP server
 description: The command semspec mcp, its tools and its resources.
 order: 9
 related: [cli, workspace, provenance, vocabularies]
-documents: [req-mcp-serve, req-mcp-read-tools, req-mcp-check-tools, req-mcp-resources, req-navigate-walk, req-navigate-search, req-search-keyword, req-search-synonyms, req-search-context]
+documents: [req-mcp-serve, req-mcp-read-tools, req-mcp-check-tools, req-mcp-resources, req-navigate-walk, req-navigate-search, req-search-keyword, req-search-synonyms, req-search-context, req-context-slice]
 ---
 ## Command
 
@@ -44,6 +44,8 @@ For one graph, use `"args": ["semspec", "mcp", "--graph", "/path/to/graph", "--p
 Each answer is one line of compact JSON in a text block. A node appears as its `id`, `kind` and `title`, with only the fields that the tool needs.
 
 `limit` caps each list. The default is 50 and the largest value is 500. When a tool cuts a list, the answer has a `truncated` object. Its keys name the lists, and its values are the numbers of omitted items.
+
+The tool `slice` answers with Markdown text by default. It answers with one line of JSON when `format` is `json`.
 
 A failed call returns `isError: true` and a text that says why. An unknown id gives `Unknown node id "<id>" in the graph "<graph>".`
 
@@ -160,6 +162,87 @@ The example walks 2 steps with `edges` set to `concerns` and `offers`, `kinds` s
 
 ```json
 {"graph":"req","node":{"id":"story-pay-by-card","kind":"story","title":"Pay by card"},"direction":"both","depth":2,"total":3,"steps":[{"step":1,"groups":[{"edge":"concerns","direction":"out","label":"Concerns","cross":true,"nodes":[{"graph":"domain","id":"pay-card","kind":"method","title":"Card payment","status":null}]}]},{"step":2,"groups":[{"edge":"offers","direction":"in","label":"Offered by","nodes":[{"graph":"domain","id":"shop-brightcart","kind":"shop","title":"Brightcart","status":null,"props":{"status":"active","how":"verified","source":"src-market-survey","retrieved":"2026-04-14","agent":"analyst-a"},"from":"pay-card"},{"graph":"domain","id":"shop-greenbasket","kind":"shop","title":"Greenbasket Foods","status":null,"props":{"status":"active","how":"verified","source":"src-market-survey","retrieved":"2026-04-14","agent":"analyst-a"},"from":"pay-card"}]}]}],"paths":["story-pay-by-card =concerns=> domain:pay-card <-offers- domain:shop-brightcart","story-pay-by-card =concerns=> domain:pay-card <-offers- domain:shop-greenbasket"],"truncated":{"nodes":3},"note":"The limit of 3 nodes cut 3 node(s). The walk stops at this step. Raise \"limit\" or narrow it with \"edges\" or \"kinds\"."}
+```
+
+### slice
+
+Returns the brief for a task on 1 node. Call it at the start of a task. See [Agent context](../guide/agent-context.md).
+
+| Input | Meaning |
+| --- | --- |
+| `id` | Required. The node id. |
+| `graph` | As above. |
+| `depth` | Optional. The levels of nodes below the node, from 1 to 5. The default is 1. |
+| `budget` | Optional. The approximate size of the Markdown text in characters. The default is 6000. |
+| `format` | Optional. `markdown` (the default) or `json`. |
+
+The slice has these sections. A section with no content is left out, except Gaps.
+
+- The node: kind, graph, lifecycle, status, statement, fields and provenance.
+- The path to the root: ids and titles, root first.
+- The parts, each with its status, its checks, or the line `No check.`
+- The checks of the node itself.
+- The linked nodes: the nodes of a linked kind that the node links to or that link to it, and the nodes of a refs field. Each has its edge label, its note, its edge properties and its statement. The source, date, agent and note of an edge are provenance and are not shown.
+- The cross links into other graphs, each with the title and the statement of the target.
+- The coded values: the label and the definition of each code that the node uses in a field, in the marker of its provenance or in an edge property.
+- The gaps of the node and its parts: status of tone warn or bad, parts with no check, nodes with no source, links to missing nodes.
+- The nodes below the node to `depth`, with title and status. A part is not listed here. `(+n)` marks children that are not listed.
+
+The `budget` counts the characters of the Markdown text. When the text is longer, the slice drops parts in this order: the levels of nodes below the node, from the deepest, then the statements of linked nodes and cross links (first to 160 characters, then fully), then all nodes below the node, then the definitions of the coded values. The node, the path, the parts and the gaps stay. The slice names each cut in the section Cut to fit the budget, and in `cut` in the JSON.
+
+The example is `slice` on `story-pay-by-card` of the workspace fixture, with `graph` set to `req`.
+
+```markdown
+# `story-pay-by-card` Pay by card
+
+Kind: Story | Graph: `req` | Lifecycle: planned | Status: Partial (rolled up from the nodes below)
+
+The buyer pays by card. A card with 3DS asks for a second step. The PSP charges the card.
+
+## Fields
+
+- priority: high
+- release: r1
+- teams: payments, web
+
+## Path to the root
+
+`prd-shop` Shop > `epic-checkout` Checkout
+
+## Parts
+
+- `story-pay-by-card#declined` [Pass] A declined card shows a message.
+  - Checks: Shows decline message (unit)
+- `story-pay-by-card#charged` [Fail] A valid card is charged once.
+  - No check.
+
+## Linked nodes
+
+- Complies with: `std-card-data` standard, Card Data Standard Clause 3(a)
+  - A merchant shall not store card data.
+- Noted by: `dec-use-two-psp` decision, Use two PSP [planned]
+  - Two PSPs share the load.
+
+## Cross links
+
+- Concerns: `domain:pay-card` Card payment [method]
+  - The buyer pays with a card at once.
+- Concerns: `domain:prov-payvale` Payvale [provider]
+  - Card and wallet payment provider.
+- Concerns: `domain:prov-tillpay` Tillpay [provider]
+  - Card provider for the central markets.
+- Concerns: `domain:prov-quillpay` Quillpay [provider]
+  - Wallet provider with a low fee.
+
+## Gaps
+
+- Status Fail: `story-pay-by-card#charged` Charged
+- No check: `story-pay-by-card#charged` Charged
+
+## Below the node (2, to depth 1)
+
+- `story-pay-by-card-3ds` Pay by card 3DS
+- `story-save-card` Save card [Pass]
 ```
 
 ### impact

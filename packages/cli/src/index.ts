@@ -9,6 +9,8 @@
 //   semspec mcp --workspace <file>
 //   semspec search --graph <file> --profile <file> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
 //   semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
+//   semspec slice --graph <file> --profile <file> <id> [--depth <n>] [--budget <n>] [--json]
+//   semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
 //   semspec check --graph <file> --profile <file> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
 //   semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
 //   semspec --version | -v
@@ -22,12 +24,13 @@ import { createServer } from 'node:http';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { EXPORT_FORMATS, buildModel, exportModel, exportWorkspace, isExportFormat, kindSchemas, type ExportOptions } from '@semspec/core';
+import { EXPORT_FORMATS, sliceMarkdown, buildModel, exportModel, exportWorkspace, isExportFormat, kindSchemas, type ExportOptions } from '@semspec/core';
 import { serveStdio } from '@semspec/mcp';
 import { UsageError, checkInputs, exitCode, formatFindings, formatJson, parseCheckArgs, sortFindings } from './check';
 import { loadInputs, loadProfile } from './inputs';
 import { mcpLoader } from './mcp';
 import { renderPage } from './page';
+import { parseSliceArgs, sliceInputs } from './slice';
 import { formatHits, parseSearchArgs, searchInputs } from './search';
 import { buildInfo, versionLine } from './version';
 import { loadWorkspace } from './workspace';
@@ -45,6 +48,8 @@ Usage:
   semspec mcp --workspace <file>
   semspec search --graph <file> --profile <file> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
   semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
+  semspec slice --graph <file> --profile <file> <id> [--depth <n>] [--budget <n>] [--json]
+  semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
   semspec check --graph <file> --profile <file> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
   semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
   semspec schema --profile <file> --out <dir>
@@ -60,6 +65,7 @@ A pattern matches a path relative to the graph folder. It supports *, ** and ?.
 The mcp command serves the graph or the workspace to an AI agent over the Model Context Protocol on stdio. See docs/reference/mcp.md.
 The check command exits with 0 for a clean graph, 1 for an error and 2 for a wrong use. See docs/reference/cli.md.
 The search command ranks the nodes for a query. See docs/reference/cli.md.
+The slice command prints the brief for a task on 1 node. See docs/reference/cli.md.
 The schema command writes 1 JSON Schema for each kind of the profile. See docs/reference/schemas.md.
 The export command writes the graph as RDF (turtle, jsonld), as SHACL shapes (shacl) or as a Cypher script (cypher).
 With --workspace, it writes all graphs into 1 file. See docs/reference/export.md.`;
@@ -184,6 +190,18 @@ export async function run(argv: string[]): Promise<number> {
       const { result, warnings } = searchInputs(args);
       warnings.forEach((w) => console.error(`warning: ${w}`));
       console.log(args.json ? JSON.stringify(result) : formatHits(result, args.flags.workspace !== undefined && args.flags.in === undefined));
+      return 0;
+    } catch (e) {
+      console.error((e as Error).message);
+      return 1;
+    }
+  }
+  if (command === 'slice') {
+    try {
+      const args = parseSliceArgs(argv.slice(1));
+      const { result, warnings } = sliceInputs(args);
+      warnings.forEach((w) => console.error(`warning: ${w}`));
+      console.log(args.json ? JSON.stringify(result) : sliceMarkdown(result).trimEnd());
       return 0;
     } catch (e) {
       console.error((e as Error).message);

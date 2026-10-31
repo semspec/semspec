@@ -5,7 +5,7 @@ title: Command line
 description: The commands and options of the semspec command.
 order: 1
 related: [getting-started, yaml-folder, workspace, export, schemas, mcp, gates]
-documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check]
+documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check, req-context-slice]
 ---
 ## Commands
 
@@ -18,6 +18,8 @@ semspec mcp --graph <graph> --profile <profile> [--exclude <pattern>]...
 semspec mcp --workspace <file>
 semspec search --graph <graph> --profile <profile> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json] [--exclude <pattern>]...
 semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
+semspec slice --graph <graph> --profile <profile> <id> [--depth <n>] [--budget <n>] [--json] [--exclude <pattern>]...
+semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
 semspec check --graph <graph> --profile <profile> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
 semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
 semspec schema --profile <profile> --out <dir>
@@ -33,6 +35,7 @@ semspec version --json
 - `mcp` serves the graph or the workspace to an AI agent over the Model Context Protocol on stdio. See [MCP server](mcp.md).
 - `check` validates the inputs and the gates of the profile, and exits with a code for a hook or a CI step. See below.
 - `search` ranks the nodes for the query and prints the hits. See below.
+- `slice` prints the brief for a task on 1 node. See below.
 - `schema` writes 1 JSON Schema for each kind of the profile. See [The schemas of the kinds](schemas.md).
 - `export` writes the graph for other tools. See [Export](export.md).
 - `semspec --version` (or `-v`) prints `semspec <version> (<commit>)`, with ` dirty` after the commit when the tree was dirty at build time. `semspec version --json` prints `{ "name", "version", "commit", "dirty" }`. The page has the same text in `<meta name="generator">`.
@@ -57,6 +60,25 @@ semspec version --json
 | `--strict` | A warning also fails the check. |
 
 Each finding takes 1 line, `<level> <file or node id>: <message>`, sorted, and a summary line ends the output. The exit code is 0 when the check finds no error, 1 when it finds an error, and 2 for a wrong use of the command.
+
+## Slice
+
+`semspec slice` prints the brief for a task on 1 node: the node, its path to the root, its parts and checks, its linked nodes, its cross links with their definitions, the definitions of its coded values, its gaps and the nodes below it. The content and the budget rules are those of the MCP tool `slice`. See [MCP server](mcp.md).
+
+| Option | Meaning |
+| --- | --- |
+| `<id>` | Required. The node id. |
+| `--in <graph>` | With `--workspace`: the graph of the node. The default is the first graph. |
+| `--depth <n>` | The levels of nodes below the node, from 1 to 5. The default is 1. |
+| `--budget <n>` | The approximate size of the text in characters. The default is 6000. |
+| `--json` | Print the slice as 1 line of JSON in place of Markdown. |
+| `--exclude <pattern>` | As for `build`. |
+
+The command exits with 0, or with 1 and a message on stderr when the node, the graph or an option is not valid.
+
+```
+semspec slice --graph requirements/graph --profile requirements/profile.yaml req-mcp-check-tools
+```
 
 ## Search
 

@@ -2,13 +2,77 @@ id: req-context-slice
 kind: requirement
 title: Give the slice of a task
 state: draft
-priority: later
-statement: A command writes the scope, the parts and the checks of 1 node as text for an agent.
+statement: A command and an MCP tool write the slice of 1 node as text for an agent. The slice holds the node, its path, its parts, its linked nodes, its cross links, its coded values, its gaps and the nodes below it.
 capabilities:
   - cap-slice
 area:
   - harness
+  - cli
 acceptance:
   - id: slice
     text: The command writes the slice of a node within a size limit.
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/slice.test.ts
+        name: writes Markdown with a heading for each section and ids in backticks
+      - type: unit
+        file: test/slice.test.ts
+        name: cuts the deep children first and says so
+      - type: unit
+        file: test/slice.test.ts
+        name: cuts the long statements of linked nodes and cross links before the parts
+      - type: unit
+        file: test/slice.test.ts
+        name: prints Markdown for a node of a workspace
+      - type: unit
+        file: test/slice.test.ts
+        name: prints the JSON slice with --json and applies --depth and --budget
+      - type: unit
+        file: test/slice.test.ts
+        name: shows the parts, the checks and the path of a requirement
+  - id: slice-sections
+    text: The slice holds the node, its path to the root, its parts with their checks, its linked nodes, its cross links with their definitions, the definitions of its coded values, its gaps and the nodes below it.
+    status: verified
+    tests:
+      - type: unit
+        file: test/slice.test.ts
+        name: holds the node with its lifecycle, status and fields
+      - type: unit
+        file: test/slice.test.ts
+        name: holds the path to the root as ids and titles, root first
+      - type: unit
+        file: test/slice.test.ts
+        name: holds the parts with their status and checks, and the part with no check
+      - type: unit
+        file: test/slice.test.ts
+        name: holds the linked nodes with the edge notes
+      - type: unit
+        file: test/slice.test.ts
+        name: holds the cross links with the definition of each target
+      - type: unit
+        file: test/slice.test.ts
+        name: holds the definitions of the coded values of the fields, the marker and the edge properties
+      - type: unit
+        file: test/slice.test.ts
+        name: holds the gaps of the node and its parts
+      - type: unit
+        file: test/slice.test.ts
+        name: lists the nodes below to the depth, and not the parts
+  - id: slice-budget
+    text: When the slice is longer than the budget, it drops the deep children first and the long statements of linked nodes next, and it says what it cut.
+    status: verified
+    tests:
+      - type: unit
+        file: test/slice.test.ts
+        name: cuts a statement to a short text first
+      - type: unit
+        file: test/slice.test.ts
+        name: keeps the same slice in JSON and in Markdown
+  - id: slice-mcp
+    text: The MCP tool slice returns the slice as Markdown or as JSON.
+    status: verified
+    tests:
+      - type: unit
+        file: test/mcp.test.ts
+        name: lists the tools and the resources, and answers each tool

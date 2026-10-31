@@ -24,10 +24,10 @@ async function connect(args: string[]): Promise<Client> {
   return client;
 }
 
-async function call(client: Client, name: string, args: Record<string, unknown> = {}) {
+async function call(client: Client, name: string, args: Record<string, unknown> = {}, raw = false) {
   const r = (await client.callTool({ name, arguments: args })) as { isError?: boolean; content: { type: string; text: string }[] };
   expect(r.content[0].type).toBe('text');
-  return { error: !!r.isError, text: r.content[0].text, json: r.isError ? undefined : JSON.parse(r.content[0].text) };
+  return { error: !!r.isError, text: r.content[0].text, json: r.isError || raw ? undefined : JSON.parse(r.content[0].text) };
 }
 
 describe('semspec mcp --workspace', () => {
@@ -37,7 +37,7 @@ describe('semspec mcp --workspace', () => {
       expect(client.getServerVersion()?.name).toBe('semspec');
       expect(client.getInstructions()).toContain('schema');
       const tools = await client.listTools();
-      expect(tools.tools.map((t) => t.name)).toEqual(['schema', 'search', 'get', 'trace', 'walk', 'impact', 'gaps', 'validate']);
+      expect(tools.tools.map((t) => t.name)).toEqual(['schema', 'search', 'get', 'trace', 'walk', 'slice', 'impact', 'gaps', 'validate']);
       for (const t of tools.tools) expect(t.inputSchema.type).toBe('object');
 
       const resources = await client.listResources();
@@ -77,6 +77,16 @@ describe('semspec mcp --workspace', () => {
       const near = await call(client, 'walk', { id: 'story-pay-by-card', direction: 'in', kinds: ['scenario'], crossLinks: false, limit: 1 });
       expect(near.json.steps[0].groups[0]).toMatchObject({ edge: 'scenario', direction: 'in', label: 'Has scenario' });
       expect(near.json.truncated.nodes).toBe(1);
+
+      const brief = await call(client, 'slice', { id: 'story-pay-by-card', graph: 'req' }, true);
+      expect(brief.text.startsWith('# `story-pay-by-card` Pay by card')).toBe(true);
+      expect(brief.text).toContain('`domain:pay-card` Card payment');
+      const json = await call(client, 'slice', { id: 'story-pay-by-card', format: 'json', depth: 1, budget: 400 });
+      expect(json.json).toMatchObject({ graph: 'req', id: 'story-pay-by-card' });
+      expect(json.json.cut.length).toBeGreaterThan(0);
+      expect((await call(client, 'slice', { id: 'nope' })).text).toContain('"nope"');
+      expect((await call(client, 'slice', { id: 'story-pay-by-card', format: 'xml' })).error).toBe(true);
+      expect((await call(client, 'slice', { id: 'story-pay-by-card', depth: 9 })).error).toBe(true);
 
       const impact = await call(client, 'impact', { id: 'pay-card', graph: 'domain' });
       expect(impact.json.groups.map((g: any) => `${g.graph}:${g.kind}`)).toContain('req:story');

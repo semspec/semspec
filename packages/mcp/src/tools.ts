@@ -3,7 +3,7 @@
 // The tools of the MCP server. Each tool maps its input to 1 function of the core.
 import Ajv from 'ajv/dist/2020.js';
 import { parse } from 'yaml';
-import { DEFAULT_LIMIT, QueryError, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, searchGraphs, trace, validateNode, walk, MAX_WALK_DEPTH, type GraphIndex, type Graph, type Model, type Profile } from '@semspec/core';
+import { DEFAULT_LIMIT, QueryError, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, searchGraphs, slice, sliceMarkdown, DEFAULT_SLICE_BUDGET, MAX_SLICE_DEPTH, trace, validateNode, walk, MAX_WALK_DEPTH, type GraphIndex, type Graph, type Model, type Profile } from '@semspec/core';
 
 // A graph as the loader returns it. `graph` is the raw graph, and `profile` is the profile with its vocabulary files read.
 export interface LoadedGraph {
@@ -181,6 +181,29 @@ export const TOOLS: Tool[] = [
         crossLinks: typeof cross === 'boolean' ? cross : true,
         limit: whole(args, 'limit', DEFAULT_LIMIT, MAX_LIMIT),
       });
+    },
+  },
+  {
+    name: 'slice',
+    description:
+      'Return the brief for a task on 1 node: the node with its fields, lifecycle, status and provenance, the path to the root, the parts with their checks, the linked nodes (decisions, rules, standards) with notes and edge properties, the cross links into other graphs with their definitions, the definitions of the coded values it uses, its gaps, and the nodes below it. Call it at the start of a task. The text stays near "budget" characters and names what it cut.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'The id of the node.' },
+        graph: graphProp,
+        depth: { type: 'integer', minimum: 1, maximum: MAX_SLICE_DEPTH, description: `The levels of nodes below the node. The default is 1 and the largest value is ${MAX_SLICE_DEPTH}.` },
+        budget: { type: 'integer', minimum: 1, description: `The approximate size of the Markdown text in characters. The default is ${DEFAULT_SLICE_BUDGET}. The slice drops the deep children first, then the long statements of linked nodes, and says what it cut.` },
+        format: { type: 'string', enum: ['markdown', 'json'], description: 'markdown: text for an agent (the default). json: the structured slice.' },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    run: (loaded, graphs, args) => {
+      const format = text(args, 'format', false) ?? 'markdown';
+      if (format !== 'markdown' && format !== 'json') throw new QueryError('The input "format" must be "markdown" or "json".');
+      const found = slice(graphs, { graph: text(args, 'graph', false), id: text(args, 'id', true)!, depth: whole(args, 'depth', 1, MAX_SLICE_DEPTH), budget: whole(args, 'budget', DEFAULT_SLICE_BUDGET, Number.MAX_SAFE_INTEGER) });
+      return format === 'json' ? found : sliceMarkdown(found);
     },
   },
   {

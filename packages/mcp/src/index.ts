@@ -14,7 +14,7 @@ export { TOOLS, callTool, type Loaded, type LoadedGraph, type Loader } from './t
 
 const INSTRUCTIONS =
   'Semspec serves a requirement graph. Call "schema" first to learn the kinds, the edges and the vocabularies. ' +
-  'Use "search" to find nodes by words, "get" for 1 node, "trace" for its place in the tree, "walk" for its neighbours by edge, "impact" for what depends on it, "gaps" for what is missing, and "validate" before you add a node. ' +
+  'Use "search" to find nodes by words, "get" for 1 node, "trace" for its place in the tree, "walk" for its neighbours by edge, "slice" for the brief of a task on 1 node, "impact" for what depends on it, "gaps" for what is missing, and "validate" before you add a node. ' +
   'A workspace has several graphs. Pass "graph" to pick one. The resources semspec://<graph>/profile and semspec://<graph>/vocabularies hold the profile and the vocabularies.';
 
 const RESOURCE_PATH = /^semspec:\/\/([^/]+)\/(profile|vocabularies)$/;
@@ -47,7 +47,7 @@ export function createMcpServer(options: McpOptions): Server {
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
       const result = callTool(options.loader, request.params.name, request.params.arguments ?? {});
-      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+      return { content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) }] };
     } catch (e) {
       return { isError: true, content: [{ type: 'text', text: (e as Error).message }] };
     }

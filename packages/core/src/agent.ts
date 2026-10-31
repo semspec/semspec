@@ -104,7 +104,7 @@ export function describeSchema(profile: Profile, kind?: string): Record<string, 
 // ---------- get ----------
 
 // The fields of a node that no other part of the answer shows.
-function plainFields(p: Profile, n: VNode): Record<string, unknown> {
+export function plainFields(p: Profile, n: VNode): Record<string, unknown> {
   const hidden = new Set<string>([
     ...allLinkFields(p),
     ...refsOf(p).map((r) => r.field),

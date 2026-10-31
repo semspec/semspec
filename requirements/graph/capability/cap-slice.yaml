@@ -2,7 +2,6 @@ id: cap-slice
 kind: capability
 title: Requirement slice
 state: draft
-priority: later
 statement: A command writes the slice of the graph for 1 task.
 features:
   - feat-context

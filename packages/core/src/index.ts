@@ -24,3 +24,4 @@ export * from './agent.js';
 export * from './gates.js';
 export * from './rank.js';
 export * from './search.js';
+export * from './slice.js';
