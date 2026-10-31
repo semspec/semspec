@@ -5,7 +5,7 @@ title: MCP server
 description: The command semspec mcp, its tools and its resources.
 order: 9
 related: [cli, workspace, provenance, vocabularies]
-documents: [req-mcp-serve, req-mcp-read-tools, req-mcp-check-tools, req-mcp-resources, req-navigate-search, req-search-keyword, req-search-synonyms, req-search-context]
+documents: [req-mcp-serve, req-mcp-read-tools, req-mcp-check-tools, req-mcp-resources, req-navigate-walk, req-navigate-search, req-search-keyword, req-search-synonyms, req-search-context]
 ---
 ## Command
 
@@ -131,6 +131,35 @@ With `down`, the answer has a nested `tree`. A node has `more` when its children
 
 ```json
 {"graph":"req","direction":"down","depth":1,"tree":{"id":"epic-checkout","kind":"epic","title":"Checkout","children":[{"id":"story-pay-by-card","kind":"story","title":"Pay by card","more":4}]},"below":5}
+```
+
+### walk
+
+Returns the neighbours of a node, grouped by edge. Use it to move through the graph step by step.
+
+| Input | Meaning |
+| --- | --- |
+| `id` | Required. The start node. |
+| `graph` | As above. |
+| `edges` | Optional. Edge names and cross link fields to follow. The default is all. |
+| `direction` | Optional. `out`, `in` or `both`. The default is `both`. |
+| `kinds` | Optional. A list of kind ids. The walk shows and follows only nodes of these kinds. |
+| `depth` | Optional. The number of steps, from 1 to 3. The default is 1. |
+| `crossLinks` | Optional. When true, the walk also follows the cross links into other graphs of a workspace. The default is true. |
+| `limit` | As above. It caps the nodes of the whole answer. |
+
+The answer has `steps`. Step 1 holds the direct neighbours. Step 2 holds the neighbours of those, and so on. A step has `groups`. A group has the edge name `edge`, the `direction` (`out` or `in`), the `label` and the `nodes`. The label is the edge label for that direction, for example "Owned by" for `out` and "Owns" for `in`. A group of a cross link has `cross: true` and the label of the cross link. A node has `graph`, `id`, `kind`, `title` and `status` (null when the profile has no status). It also has `props` and `note` when the edge has them, and `from` (the id of the node of the previous step) from step 2 on.
+
+A node shows once, in the step where the walk reaches it first. The walk does not return to the start node.
+
+With `depth` above 1, the answer also has `paths`. It has 1 line for each node from step 2 on, and the line is the way from the start node. `-edge->` and `<-edge-` are edges, `=field=>` and `<=field=` are cross links, and a node of another graph reads `graph:id`. A flat list of lines is shorter than a tree and an agent can read it at once.
+
+When the limit cuts the nodes, the walk stops at that step. The answer has `truncated.nodes` (the omitted count) and a `note`. An unknown edge or kind in `edges` or `kinds` is an error.
+
+The example walks 2 steps with `edges` set to `concerns` and `offers`, `kinds` set to `method` and `shop`, and `limit` 3.
+
+```json
+{"graph":"req","node":{"id":"story-pay-by-card","kind":"story","title":"Pay by card"},"direction":"both","depth":2,"total":3,"steps":[{"step":1,"groups":[{"edge":"concerns","direction":"out","label":"Concerns","cross":true,"nodes":[{"graph":"domain","id":"pay-card","kind":"method","title":"Card payment","status":null}]}]},{"step":2,"groups":[{"edge":"offers","direction":"in","label":"Offered by","nodes":[{"graph":"domain","id":"shop-brightcart","kind":"shop","title":"Brightcart","status":null,"props":{"status":"active","how":"verified","source":"src-market-survey","retrieved":"2026-04-14","agent":"analyst-a"},"from":"pay-card"},{"graph":"domain","id":"shop-greenbasket","kind":"shop","title":"Greenbasket Foods","status":null,"props":{"status":"active","how":"verified","source":"src-market-survey","retrieved":"2026-04-14","agent":"analyst-a"},"from":"pay-card"}]}]}],"paths":["story-pay-by-card =concerns=> domain:pay-card <-offers- domain:shop-brightcart","story-pay-by-card =concerns=> domain:pay-card <-offers- domain:shop-greenbasket"],"truncated":{"nodes":3},"note":"The limit of 3 nodes cut 3 node(s). The walk stops at this step. Raise \"limit\" or narrow it with \"edges\" or \"kinds\"."}
 ```
 
 ### impact

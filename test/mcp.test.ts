@@ -37,7 +37,7 @@ describe('semspec mcp --workspace', () => {
       expect(client.getServerVersion()?.name).toBe('semspec');
       expect(client.getInstructions()).toContain('schema');
       const tools = await client.listTools();
-      expect(tools.tools.map((t) => t.name)).toEqual(['schema', 'search', 'get', 'trace', 'impact', 'gaps', 'validate']);
+      expect(tools.tools.map((t) => t.name)).toEqual(['schema', 'search', 'get', 'trace', 'walk', 'impact', 'gaps', 'validate']);
       for (const t of tools.tools) expect(t.inputSchema.type).toBe('object');
 
       const resources = await client.listResources();
@@ -69,6 +69,14 @@ describe('semspec mcp --workspace', () => {
       expect(up.json.paths).toEqual([['story-pay-by-card', 'epic-checkout', 'prd-shop']]);
       const down = await call(client, 'trace', { id: 'epic-checkout', direction: 'down', depth: 1 });
       expect(down.json.tree.children.map((c: any) => c.id)).toEqual(['story-pay-by-card', 'story-save-card']);
+
+      const walked = await call(client, 'walk', { id: 'story-pay-by-card', depth: 2, edges: ['concerns', 'offers'] });
+      expect(walked.json.steps[0].groups[0]).toMatchObject({ edge: 'concerns', direction: 'out', cross: true });
+      expect(walked.json.paths).toContain('story-pay-by-card =concerns=> domain:pay-card <-offers- domain:shop-brightcart');
+      expect(walked.text).not.toContain('\n');
+      const near = await call(client, 'walk', { id: 'story-pay-by-card', direction: 'in', kinds: ['scenario'], crossLinks: false, limit: 1 });
+      expect(near.json.steps[0].groups[0]).toMatchObject({ edge: 'scenario', direction: 'in', label: 'Has scenario' });
+      expect(near.json.truncated.nodes).toBe(1);
 
       const impact = await call(client, 'impact', { id: 'pay-card', graph: 'domain' });
       expect(impact.json.groups.map((g: any) => `${g.graph}:${g.kind}`)).toContain('req:story');
@@ -102,6 +110,9 @@ describe('semspec mcp --workspace', () => {
         expect(r.error).toBe(true);
         expect(r.text).toContain('"nope"');
       }
+      expect((await call(client, 'walk', { id: 'nope' })).text).toContain('"nope"');
+      expect((await call(client, 'walk', { id: 'story-pay-by-card', depth: 4 })).error).toBe(true);
+      expect((await call(client, 'walk', { id: 'story-pay-by-card', direction: 'up' })).text).toContain('"direction"');
       expect((await call(client, 'gaps', { scope: 'nope' })).text).toContain('"nope"');
       expect((await call(client, 'get', { id: 'x', graph: 'zzz' })).text).toContain('Unknown graph "zzz"');
       expect((await call(client, 'get', {})).text).toContain('"id" is required');

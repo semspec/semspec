@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
-// Tests of the agent functions of the core: schema, node detail, trace, impact, gaps and the check of a new node.
+// Tests of the agent functions of the core: schema, node detail, trace, walk, impact, gaps and the check of a new node.
 // The fixtures are the 2 profiles of the workspace fixture.
 import { describe, expect, it } from 'vitest';
-import { QueryError, buildModel, describeSchema, gaps, impact, indexGraphs, nodeDetail, trace, validateNode } from '@semspec/core';
+import { QueryError, buildModel, describeSchema, gaps, impact, indexGraphs, nodeDetail, trace, validateNode, walk } from '@semspec/core';
 import { loadWorkspace } from '../packages/cli/src/workspace';
 
 const workspacePath = new URL('../fixtures/workspace/workspace.json', import.meta.url).pathname;
@@ -118,6 +118,83 @@ describe('impact', () => {
   });
   it('names an unknown id', () => {
     expect(() => impact(graphs, 'req', 'nope')).toThrow('Unknown node id "nope"');
+  });
+});
+
+describe('walk', () => {
+  const group = (r: any, step: number, edge: string, direction: string) => r.steps.find((x: any) => x.step === step)?.groups.find((x: any) => x.edge === edge && x.direction === direction);
+  const all = (r: any) => r.steps.flatMap((x: any) => x.groups.flatMap((y: any) => y.nodes.map((n: any) => `${n.graph}:${n.id}`)));
+
+  it('groups the neighbours by edge and direction, with the label of that direction (product profile)', () => {
+    const r = walk(graphs, 'req', 'story-pay-by-card') as any;
+    expect(r.steps).toHaveLength(1);
+    expect(group(r, 1, 'epics', 'out')).toMatchObject({ label: 'In epic', nodes: [{ graph: 'req', id: 'epic-checkout', kind: 'epic', title: 'Checkout', status: 'partial' }] });
+    expect(group(r, 1, 'scenario', 'in').label).toBe('Has scenario');
+    expect(ids(group(r, 1, 'scenario', 'in').nodes)).toEqual(['story-pay-by-card#declined', 'story-pay-by-card#charged']);
+    expect(group(r, 1, 'scenario', 'in').nodes[0].status).toBe('pass');
+    expect(r.paths).toBeUndefined();
+  });
+  it('returns edge properties (domain profile)', () => {
+    const r = walk(graphs, 'domain', 'shop-brightcart', { edges: ['ownedBy'], direction: 'out' }) as any;
+    expect(r.steps).toHaveLength(1);
+    expect(r.steps[0].groups).toHaveLength(1);
+    expect(r.steps[0].groups[0]).toMatchObject({ edge: 'ownedBy', direction: 'out', label: 'Owned by' });
+    expect(r.steps[0].groups[0].nodes[0].props).toMatchObject({ share: expect.any(Number), since: expect.any(String) });
+  });
+  it('filters by edge name', () => {
+    const r = walk(graphs, 'req', 'story-pay-by-card', { edges: ['complies'], crossLinks: false }) as any;
+    expect(all(r)).toEqual(['req:std-card-data']);
+  });
+  it('filters by direction', () => {
+    const out = walk(graphs, 'req', 'story-pay-by-card', { direction: 'out', crossLinks: false }) as any;
+    const inc = walk(graphs, 'req', 'story-pay-by-card', { direction: 'in', crossLinks: false }) as any;
+    expect(out.steps[0].groups.map((x: any) => x.edge)).toEqual(['epics', 'complies']);
+    expect(inc.steps[0].groups.every((x: any) => x.direction === 'in')).toBe(true);
+    expect(inc.steps[0].groups.map((x: any) => x.edge)).toContain('scenario');
+  });
+  it('keeps only the kinds that are asked for', () => {
+    const r = walk(graphs, 'req', 'story-pay-by-card', { kinds: ['scenario'] }) as any;
+    expect(all(r)).toEqual(['req:story-pay-by-card#declined', 'req:story-pay-by-card#charged']);
+    expect(() => walk(graphs, 'req', 'story-pay-by-card', { kinds: ['nope'] })).toThrow('Unknown kind "nope"');
+    expect(() => walk(graphs, 'req', 'story-pay-by-card', { edges: ['nope'] })).toThrow('Unknown edge "nope"');
+  });
+  it('follows cross links out and in, and skips them with crossLinks false', () => {
+    const out = walk(graphs, 'req', 'story-pay-by-card') as any;
+    expect(group(out, 1, 'concerns', 'out')).toMatchObject({ cross: true, label: 'Concerns' });
+    expect(group(out, 1, 'concerns', 'out').nodes[0]).toMatchObject({ graph: 'domain', id: 'pay-card' });
+    const inc = walk(graphs, 'domain', 'pay-card', { edges: ['concerns'] }) as any;
+    expect(group(inc, 1, 'concerns', 'in').nodes.map((n: any) => `${n.graph}:${n.id}`)).toContain('req:story-pay-by-card');
+    expect(all(walk(graphs, 'req', 'story-pay-by-card', { crossLinks: false })).some((x: string) => x.startsWith('domain:'))).toBe(false);
+  });
+  it('walks 2 steps with paths and never repeats a node', () => {
+    const r = walk(graphs, 'req', 'epic-checkout', { depth: 2, limit: 500 }) as any;
+    const list = all(r);
+    expect(new Set(list).size).toBe(list.length);
+    expect(list).not.toContain('req:epic-checkout');
+    expect(r.steps.map((x: any) => x.step)).toEqual([1, 2]);
+    expect(r.steps[1].groups.flatMap((x: any) => x.nodes).every((n: any) => typeof n.from === 'string')).toBe(true);
+    expect(r.paths.length).toBe(r.steps[1].groups.flatMap((x: any) => x.nodes).length);
+    expect(r.paths.every((p: string) => p.startsWith('epic-checkout ') && p.includes(' -') || p.includes(' <'))).toBe(true);
+    const step1 = new Set(r.steps[0].groups.flatMap((x: any) => x.nodes.map((n: any) => n.id)));
+    expect(r.steps[1].groups.flatMap((x: any) => x.nodes).some((n: any) => step1.has(n.id))).toBe(false);
+    expect(r.total).toBe(list.length);
+  });
+  it('passes into the other graph at depth 2 and names the way', () => {
+    const r = walk(graphs, 'req', 'story-pay-by-card', { depth: 2, edges: ['concerns', 'offers'], limit: 500 }) as any;
+    expect(r.paths).toContain('story-pay-by-card =concerns=> domain:pay-card <-offers- domain:shop-brightcart');
+  });
+  it('cuts the nodes at the limit and says so', () => {
+    const r = walk(graphs, 'domain', 'pay-card', { depth: 3, limit: 3 }) as any;
+    expect(all(r)).toHaveLength(3);
+    expect(r.truncated.nodes).toBeGreaterThan(0);
+    expect(r.note).toContain('limit of 3');
+    expect(walk(graphs, 'domain', 'pay-card', { depth: 1, limit: 500 })).not.toHaveProperty('truncated');
+  });
+  it('names an unknown id, graph, direction and depth', () => {
+    expect(() => walk(graphs, 'req', 'nope')).toThrow('Unknown node id "nope"');
+    expect(() => walk(graphs, 'zzz', 'x')).toThrow('Unknown graph "zzz"');
+    expect(() => walk(graphs, 'req', 'prd-shop', { direction: 'up' as any })).toThrow('"direction"');
+    expect(() => walk(graphs, 'req', 'prd-shop', { depth: 4 })).toThrow('"depth"');
   });
 });
 

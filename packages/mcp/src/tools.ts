@@ -3,7 +3,7 @@
 // The tools of the MCP server. Each tool maps its input to 1 function of the core.
 import Ajv from 'ajv/dist/2020.js';
 import { parse } from 'yaml';
-import { DEFAULT_LIMIT, QueryError, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, searchGraphs, trace, validateNode, type GraphIndex, type Graph, type Model, type Profile } from '@semspec/core';
+import { DEFAULT_LIMIT, QueryError, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, searchGraphs, trace, validateNode, walk, MAX_WALK_DEPTH, type GraphIndex, type Graph, type Model, type Profile } from '@semspec/core';
 
 // A graph as the loader returns it. `graph` is the raw graph, and `profile` is the profile with its vocabulary files read.
 export interface LoadedGraph {
@@ -147,6 +147,40 @@ export const TOOLS: Tool[] = [
       const direction = text(args, 'direction', true);
       if (direction !== 'up' && direction !== 'down') throw new QueryError('The input "direction" must be "up" or "down".');
       return trace(graphs, text(args, 'graph', false), text(args, 'id', true)!, direction, whole(args, 'depth', 2, 20), whole(args, 'limit', DEFAULT_LIMIT, MAX_LIMIT));
+    },
+  },
+  {
+    name: 'walk',
+    description:
+      'Return the neighbours of a node, grouped by edge and direction, so that you can move through the graph step by step. A step with a depth above 1 lists the new nodes at that distance, and "paths" gives the way to each one. A node shows only once. The walk also follows the cross links into other graphs of a workspace.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'The id of the start node.' },
+        graph: graphProp,
+        edges: { type: 'array', items: { type: 'string' }, description: 'The edge names and cross link fields to follow. The default is all.' },
+        direction: { type: 'string', enum: ['out', 'in', 'both'], description: 'out: edges that leave the node. in: edges that arrive at it. The default is both.' },
+        kinds: { type: 'array', items: { type: 'string' }, description: 'Keep only nodes of these kinds. The walk does not pass through other nodes.' },
+        depth: { type: 'integer', minimum: 1, maximum: MAX_WALK_DEPTH, description: `The number of steps. The default is 1 and the largest value is ${MAX_WALK_DEPTH}.` },
+        crossLinks: { type: 'boolean', description: 'Also follow the cross links into other graphs. The default is true.' },
+        limit: { type: 'integer', minimum: 1, maximum: MAX_LIMIT, description: `The most nodes in the answer. The default is ${DEFAULT_LIMIT}. The answer has "truncated" and a note when it cuts nodes.` },
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    run: (loaded, graphs, args) => {
+      const direction = text(args, 'direction', false);
+      if (direction !== undefined && direction !== 'out' && direction !== 'in' && direction !== 'both') throw new QueryError('The input "direction" must be "out", "in" or "both".');
+      const cross = args.crossLinks;
+      if (cross !== undefined && cross !== null && typeof cross !== 'boolean') throw new QueryError('The input "crossLinks" must be true or false.');
+      return walk(graphs, text(args, 'graph', false), text(args, 'id', true)!, {
+        edges: list(args, 'edges'),
+        direction,
+        kinds: list(args, 'kinds'),
+        depth: whole(args, 'depth', 1, MAX_WALK_DEPTH),
+        crossLinks: typeof cross === 'boolean' ? cross : true,
+        limit: whole(args, 'limit', DEFAULT_LIMIT, MAX_LIMIT),
+      });
     },
   },
   {

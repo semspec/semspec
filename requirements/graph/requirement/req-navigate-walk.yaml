@@ -2,7 +2,6 @@ id: req-navigate-walk
 kind: requirement
 title: Walk with a tool
 state: draft
-priority: next
 statement: An MCP server returns the neighbours of a node by edge.
 capabilities:
   - cap-mcp
@@ -11,4 +10,20 @@ area:
 acceptance:
   - id: walk
     text: A walk tool returns the neighbours of a node, grouped by edge.
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/agent.test.ts
+        name: groups the neighbours by edge and direction, with the label of that direction (product profile)
+      - type: unit
+        file: test/agent.test.ts
+        name: follows cross links out and in, and skips them with crossLinks false
+      - type: unit
+        file: test/agent.test.ts
+        name: walks 2 steps with paths and never repeats a node
+      - type: unit
+        file: test/agent.test.ts
+        name: cuts the nodes at the limit and says so
+      - type: unit
+        file: test/mcp.test.ts
+        name: lists the tools and the resources, and answers each tool

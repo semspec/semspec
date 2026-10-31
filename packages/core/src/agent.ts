@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 // Answers for an agent: the schema of a profile, one node with its context, the path to the root, the
-// tree below a node, the impact of a node, the gaps of a scope, and the check of a new node.
+// tree below a node, the neighbours of a node, the impact of a node, the gaps of a scope, and the check of a new node.
 // Each answer is plain data. A list that exceeds the limit is cut, and `truncated` says by how much.
 import { computeScope, statusOf } from './explore.js';
 import { buildModel, buildIndex } from './model.js';
@@ -290,6 +290,143 @@ export function impact(graphs: GraphIndex[], graphId: string | undefined, id: st
     .sort((a, b) => order(a) - order(b))
     .map((gr) => ({ graph: gr.graph, kind: gr.kind, count: gr.items.length, items: cap(gr.items, limit, `${gr.graph}.${gr.kind}`, truncated) }));
   return withTruncated({ graph: g.id, node: brief(node), total: [...groups.values()].reduce((a, x) => a + x.items.length, 0), groups: out }, truncated);
+}
+
+// ---------- walk ----------
+
+export type WalkDirection = 'out' | 'in' | 'both';
+
+export interface WalkOptions {
+  // Edge names and cross link fields to follow. The default is all.
+  edges?: string[];
+  direction?: WalkDirection;
+  // Node kinds to keep. A node of another kind is neither shown nor followed.
+  kinds?: string[];
+  depth?: number;
+  crossLinks?: boolean;
+  limit?: number;
+}
+
+export const MAX_WALK_DEPTH = 3;
+
+interface WalkNode {
+  graph: string;
+  id: string;
+  kind: string;
+  title: string;
+  status: string | null;
+  props?: Record<string, unknown>;
+  note?: string;
+  from?: string;
+}
+
+interface WalkGroup {
+  edge: string;
+  direction: 'out' | 'in';
+  label: string;
+  cross?: true;
+  nodes: WalkNode[];
+}
+
+// The neighbours of a node, step by step. Step 1 holds the direct neighbours, step 2 the neighbours of those, down to `depth`.
+// A step groups its new nodes by edge and direction. A node shows once, in the step where the walk first reaches it.
+// With depth above 1, `paths` gives 1 line for each node from step 2 on: the way from the start node to it.
+// The walk follows the edges of the graph and, unless `crossLinks` is false, the cross links into and out of other graphs.
+export function walk(graphs: GraphIndex[], graphId: string | undefined, id: string, options: WalkOptions = {}): Record<string, unknown> {
+  const g = graphById(graphs, graphId);
+  const start = nodeById(g, id);
+  const direction = options.direction ?? 'both';
+  const depth = options.depth ?? 1;
+  const limit = options.limit ?? DEFAULT_LIMIT;
+  const withCross = options.crossLinks ?? true;
+  if (!['out', 'in', 'both'].includes(direction)) throw new QueryError('The input "direction" must be "out", "in" or "both".');
+  if (!Number.isInteger(depth) || depth < 1 || depth > MAX_WALK_DEPTH) throw new QueryError(`The input "depth" must be a whole number from 1 to ${MAX_WALK_DEPTH}.`);
+  const edgeNames = new Set(graphs.flatMap((x) => [...Object.keys(x.index.profile.edges), ...(x.index.profile.crossLinks ?? []).map((c) => c.field)]));
+  for (const e of options.edges ?? []) if (!edgeNames.has(e)) throw new QueryError(`Unknown edge "${e}". The edges are: ${[...edgeNames].join(', ')}.`);
+  const kindNames = new Set(graphs.flatMap((x) => x.index.profile.kinds.map((k) => k.id)));
+  for (const k of options.kinds ?? []) if (!kindNames.has(k)) throw new QueryError(`Unknown kind "${k}". The kinds are: ${[...kindNames].join(', ')}.`);
+  const edgeFilter = options.edges?.length ? new Set(options.edges) : undefined;
+  const kindFilter = options.kinds?.length ? new Set(options.kinds) : undefined;
+  const incoming = withCross && direction !== 'out' ? incomingCrossLinks(graphs.map((x) => ({ id: x.id, label: x.label, model: x.index.model }))) : undefined;
+
+  const key = (graph: string, nid: string) => `${graph}\u0000${nid}`;
+  const name = (graph: string, nid: string) => (graph === g.id ? nid : `${graph}:${nid}`);
+  const visited = new Set<string>([key(g.id, id)]);
+  const pathOf = new Map<string, string>([[key(g.id, id), name(g.id, id)]]);
+  const steps: { step: number; groups: WalkGroup[] }[] = [];
+  const paths: string[] = [];
+  let frontier: { gi: GraphIndex; node: VNode }[] = [{ gi: g, node: start }];
+  let budget = limit;
+  let omitted = 0;
+
+  for (let level = 1; level <= depth && frontier.length && omitted === 0; level++) {
+    const groups = new Map<string, WalkGroup>();
+    const next: { gi: GraphIndex; node: VNode }[] = [];
+    const cut = new Set<string>();
+    const reach = (from: { gi: GraphIndex; node: VNode }, targetGraph: string, targetId: string, edge: string, dir: 'out' | 'in', label: string, cross: boolean, e?: VEdge) => {
+      if (edgeFilter && !edgeFilter.has(edge)) return;
+      const target = graphs.find((x) => x.id === targetGraph);
+      const node = target?.index.byId.get(targetId);
+      if (!target || !node) return;
+      if (kindFilter && !kindFilter.has(node.kind)) return;
+      const k = key(targetGraph, targetId);
+      if (visited.has(k)) return;
+      if (budget <= 0) {
+        cut.add(k);
+        return;
+      }
+      budget--;
+      visited.add(k);
+      const arrow = cross ? (dir === 'out' ? ` =${edge}=> ` : ` <=${edge}= `) : dir === 'out' ? ` -${edge}-> ` : ` <-${edge}- `;
+      const path = pathOf.get(key(from.gi.id, from.node.id))! + arrow + name(targetGraph, targetId);
+      pathOf.set(k, path);
+      if (level > 1) paths.push(path);
+      const status = target.index.profile.status ? statusOf(target.index, targetId).value : null;
+      const groupKey = `${cross ? 'x' : 'e'}\u0000${edge}\u0000${dir}`;
+      const group = groups.get(groupKey) ?? { edge, direction: dir, label, ...(cross ? { cross: true as const } : {}), nodes: [] };
+      group.nodes.push({
+        graph: targetGraph,
+        id: targetId,
+        kind: node.kind,
+        title: node.title,
+        status: status ?? null,
+        ...(e?.p ? { props: e.p } : {}),
+        ...(e?.n ? { note: e.n } : {}),
+        ...(level > 1 ? { from: from.node.id } : {}),
+      });
+      groups.set(groupKey, group);
+      next.push({ gi: target, node });
+    };
+    for (const from of frontier) {
+      const profile = from.gi.index.profile;
+      if (direction !== 'in') {
+        for (const e of from.gi.index.out.get(from.node.id) ?? []) reach(from, from.gi.id, e.t, e.k, 'out', profile.edges[e.k]?.labels[0] ?? e.k, false, e);
+      }
+      if (direction !== 'out') {
+        for (const e of from.gi.index.inc.get(from.node.id) ?? []) reach(from, from.gi.id, e.s, e.k, 'in', profile.edges[e.k]?.labels[1] ?? e.k, false, e);
+      }
+      if (withCross && direction !== 'in') {
+        for (const c of from.gi.index.crossOut.get(from.node.id) ?? []) reach(from, c.graph, c.t, c.field, 'out', profile.crossLinks?.find((x) => x.field === c.field)?.label ?? c.field, true);
+      }
+      if (incoming && direction !== 'out') {
+        for (const c of incoming.get(from.gi.id)?.get(from.node.id) ?? []) reach(from, c.graph, c.s, c.field, 'in', c.label, true);
+      }
+    }
+    omitted = cut.size;
+    if (groups.size) steps.push({ step: level, groups: [...groups.values()] });
+    frontier = next;
+  }
+  const shown = steps.reduce((a, s) => a + s.groups.reduce((b, x) => b + x.nodes.length, 0), 0);
+  return {
+    graph: g.id,
+    node: brief(start),
+    direction,
+    depth,
+    total: shown,
+    steps,
+    ...(depth > 1 ? { paths } : {}),
+    ...(omitted ? { truncated: { nodes: omitted }, note: `The limit of ${limit} nodes cut ${omitted} node(s). The walk stops at this step. Raise "limit" or narrow it with "edges" or "kinds".` } : {}),
+  };
 }
 
 // ---------- gaps ----------
