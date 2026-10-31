@@ -2,7 +2,6 @@ id: req-search-eval
 kind: requirement
 title: Measure search with an evaluation set
 state: draft
-priority: next
 statement: "A set of questions with expected nodes measures the recall of the search."
 capabilities:
   - cap-search
@@ -11,10 +10,31 @@ area:
 acceptance:
   - id: eval-set
     text: "The evaluation set is a file of questions. Each question lists the expected node ids."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search-eval.test.ts
+        name: meets the floor on the requirements of Semspec
+      - type: unit
+        file: test/search-eval.test.ts
+        name: meets the floor on the workspace fixture
   - id: recall
     text: "A test computes the recall at a fixed rank for the evaluation set and fails when the recall falls below a set value."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search-eval.test.ts
+        name: meets the floor on the requirements of Semspec
+      - type: unit
+        file: test/search-eval.test.ts
+        name: meets the floor on the workspace fixture
   - id: two-profiles
     text: "The evaluation set has questions for at least 2 profiles."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search-eval.test.ts
+        name: meets the floor on the requirements of Semspec
+      - type: unit
+        file: test/search-eval.test.ts
+        name: meets the floor on the workspace fixture

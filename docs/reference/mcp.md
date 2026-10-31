@@ -5,7 +5,7 @@ title: MCP server
 description: The command semspec mcp, its tools and its resources.
 order: 9
 related: [cli, workspace, provenance, vocabularies]
-documents: [req-mcp-serve, req-mcp-read-tools, req-mcp-check-tools, req-mcp-resources]
+documents: [req-mcp-serve, req-mcp-read-tools, req-mcp-check-tools, req-mcp-resources, req-navigate-search, req-search-keyword, req-search-synonyms, req-search-context]
 ---
 ## Command
 
@@ -20,7 +20,7 @@ The command serves a graph or a workspace to an AI agent over the Model Context 
 - Stdout carries only protocol messages. The server writes warnings and logs to stderr.
 - The server reads all inputs again on each tool call and on each resource read. An edit of a file shows in the next answer. If a file is not valid at that time, the call returns an error with the message.
 - A single graph has the id `graph`. A workspace uses the ids of its workspace file.
-- Every tool takes an optional `graph`. The default is the first graph.
+- Every tool takes an optional `graph`. The default is the first graph. The tool `search` is the exception: its default is all graphs.
 
 ## Client configuration
 
@@ -62,6 +62,37 @@ The answer has `kinds` (id, label, role, parent fields), `edges` (name, labels, 
 
 ```json
 {"graph":"domain","kinds":[{"id":"shop","label":"Shop","role":"hierarchy","prefix":"shop-","parentFields":["ownedBy"]}],"edges":[{"name":"ownedBy","labels":["Owned by","Owns"],"down":true,"from":["shop"],"to":["group"],"properties":{"share":{"type":"number","required":true}}}],"vocabularies":[{"id":"how","label":"How known","concepts":[{"code":"verified","label":"Verified"}]}],"provenance":{"marker":{"field":"how","vocabulary":"how"},"requireSource":["verified"]},"crossLinks":[{"field":"area","graph":"req","label":"Area in the requirements"}]}
+```
+
+### search
+
+Finds nodes by words.
+
+| Input | Meaning |
+| --- | --- |
+| `query` | Required. The words to find, as keywords or as a question. |
+| `graph` | Optional. The id of 1 graph. The default is all graphs of the workspace. |
+| `kinds` | Optional. A list of kind ids. A hit has one of these kinds. |
+| `lifecycles` | Optional. A list of lifecycle states. |
+| `statuses` | Optional. A list of status values. The value is the own status or the roll-up. |
+| `scope` | Optional. A node id. A hit is the node, a node below it in the scope, or a linked node or check of those. |
+| `limit` | As above. It caps the hits. |
+
+The ranking is BM25 over the id, the title, the statement, the text of the parts, and the labels and definitions of the coded fields of each node. A word is lower case, and a plural ending is cut. A code such as `PSD2` stays whole. A query word with no match also matches the words that start with it. See [The profile](profile.md) for the keys `search.fields` and `search.boost`.
+
+The query widens with synonyms. A synonym counts less than a word of the query. The synonyms are:
+
+- The alt labels of a vocabulary concept. A query word that matches the label, the code or an alt label of a concept also searches the other words of the concept. See [Vocabularies](vocabularies.md).
+- The fields that `search.synonymFields` names. A query word that matches the title of a node also searches the words of these fields of the node, and the other way round.
+
+A node whose id equals the query, or a word of the query, comes first. A node whose title equals the query comes next. Nodes of the role check are not searched.
+
+The answer has the `total` of matching nodes and the `hits`. A hit has `graph`, `id`, `kind`, `title`, `score`, `parent` (the first parent, or null), `status` (null when the profile has no status) and `snippet`. The snippet puts the matched words in `**`. Scores of different graphs are not on the same scale. The answer sorts by score all the same. A query with no match returns an empty list. When the limit cuts the hits, `truncated.hits` gives the omitted count.
+
+The example uses `limit` 1.
+
+```json
+{"query":"prepaid code","total":7,"hits":[{"graph":"domain","id":"pay-voucher","kind":"method","title":"Voucher payment","score":9.51,"parent":null,"status":null,"snippet":"The buyer pays with a **prepaid** **code**."}],"truncated":{"hits":6}}
 ```
 
 ### get

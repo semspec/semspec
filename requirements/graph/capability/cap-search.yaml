@@ -2,7 +2,6 @@ id: cap-search
 kind: capability
 title: Search
 state: draft
-priority: next
 statement: Semspec ranks nodes for a text query.
 features:
   - feat-navigate

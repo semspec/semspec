@@ -14,7 +14,7 @@ export { TOOLS, callTool, type Loaded, type LoadedGraph, type Loader } from './t
 
 const INSTRUCTIONS =
   'Semspec serves a requirement graph. Call "schema" first to learn the kinds, the edges and the vocabularies. ' +
-  'Use "get" for 1 node, "trace" for its place in the tree, "impact" for what depends on it, "gaps" for what is missing, and "validate" before you add a node. ' +
+  'Use "search" to find nodes by words, "get" for 1 node, "trace" for its place in the tree, "impact" for what depends on it, "gaps" for what is missing, and "validate" before you add a node. ' +
   'A workspace has several graphs. Pass "graph" to pick one. The resources semspec://<graph>/profile and semspec://<graph>/vocabularies hold the profile and the vocabularies.';
 
 const RESOURCE_PATH = /^semspec:\/\/([^/]+)\/(profile|vocabularies)$/;

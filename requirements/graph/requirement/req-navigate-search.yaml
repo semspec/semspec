@@ -2,7 +2,6 @@ id: req-navigate-search
 kind: requirement
 title: Search with a tool
 state: draft
-priority: next
 statement: An MCP server finds nodes by text, kind and status.
 capabilities:
   - cap-mcp
@@ -11,4 +10,11 @@ area:
 acceptance:
   - id: search
     text: A search tool returns the matching nodes with their kind and status.
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/mcp.test.ts
+        name: lists the tools and the resources, and answers each tool
+      - type: unit
+        file: test/search.test.ts
+        name: prints the ranked hits of a workspace as text and as JSON

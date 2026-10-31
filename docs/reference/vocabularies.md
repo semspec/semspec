@@ -51,3 +51,5 @@ The explorer shows the label of a code:
 - The lifecycle filter and the field filters show the label, and order the options by `order`, then by label. A value that is not a code comes after the codes. A concept with a `broader` concept is in a group under the label of the broader concept. A `values` entry or a `groupBy` of a field filter wins over the vocabulary.
 - The details panel shows a coded property as the label, the code in small mono text and the definition below it. This applies to the properties of a node and to the properties of a selected edge.
 - The chips, the table columns for the lifecycle, the level and the field filters, and the line of edge properties show the label.
+
+The search uses `altLabels`. A query word that matches a label, a code or an alt label also searches the other words of the concept, with a lower weight. See [MCP server](mcp.md).

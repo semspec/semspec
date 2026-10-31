@@ -5,7 +5,7 @@ title: Command line
 description: The commands and options of the semspec command.
 order: 1
 related: [getting-started, yaml-folder, workspace, export, schemas, mcp]
-documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve]
+documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword]
 ---
 ## Commands
 
@@ -16,6 +16,8 @@ semspec serve --workspace <file> [--port 4173] [--host 127.0.0.1]
 semspec build --workspace <file> --out workspace.html
 semspec mcp --graph <graph> --profile <profile> [--exclude <pattern>]...
 semspec mcp --workspace <file>
+semspec search --graph <graph> --profile <profile> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json] [--exclude <pattern>]...
+semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
 semspec schema --profile <profile> --out <dir>
 semspec export --graph <graph> --profile <profile> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
 semspec export --workspace <file> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
@@ -27,6 +29,7 @@ semspec version --json
 - `build` writes 1 HTML file. The file has the data, the script and the style inline. It opens from disk and makes no network request.
 - The page has a Light, Dark and System switch in the header. It keeps the choice in the browser storage of the viewer.
 - `mcp` serves the graph or the workspace to an AI agent over the Model Context Protocol on stdio. See [MCP server](mcp.md).
+- `search` ranks the nodes for the query and prints the hits. See below.
 - `schema` writes 1 JSON Schema for each kind of the profile. See [The schemas of the kinds](schemas.md).
 - `export` writes the graph for other tools. See [Export](export.md).
 - `semspec --version` (or `-v`) prints `semspec <version> (<commit>)`, with ` dirty` after the commit when the tree was dirty at build time. `semspec version --json` prints `{ "name", "version", "commit", "dirty" }`. The page has the same text in `<meta name="generator">`.
@@ -38,3 +41,17 @@ semspec version --json
 `--workspace` reads a workspace file instead of `--graph` and `--profile`. See [Workspace](../guide/workspace.md). It cannot combine with `--graph`, `--profile` or `--exclude`.
 
 `serve`, `build` and `mcp` check the 2 inputs first and stop with a message when an input is not valid. A message about a YAML node names its file. `mcp` writes the message to stderr and exits with code 1.
+
+## Search
+
+`semspec search` finds nodes by words. The words that are not an option make the query. The ranking and the synonyms are those of the MCP tool `search`. See [MCP server](mcp.md).
+
+| Option | Meaning |
+| --- | --- |
+| `--kind <kind>` | Keep only nodes of this kind. The option can repeat. A comma separates several kinds. |
+| `--scope <id>` | Keep only nodes in the scope of this node. |
+| `--in <graph>` | With `--workspace`: search 1 graph. The default is all graphs. |
+| `--limit <n>` | The most hits. The default is 50. |
+| `--json` | Print the result as 1 line of JSON, as the MCP tool does, with `omitted` in place of `truncated`. |
+
+Each hit takes 2 lines: the rank, the id, the kind, the title, the parent and the status, then the snippet with the matched words in `**`. A workspace hit has the graph id before the node id. A line at the end gives the count of hits that the limit cuts. A query with no match prints `No node matches "<query>".` and exits with code 0. A wrong option or an unknown kind writes a message to stderr and exits with code 1.

@@ -2,7 +2,6 @@ id: req-search-context
 kind: requirement
 title: Return graph context with each hit
 state: draft
-priority: next
 statement: "Each search hit carries graph context."
 capabilities:
   - cap-search
@@ -11,4 +10,11 @@ area:
 acceptance:
   - id: context-fields
     text: "Each hit has the kind, the parent and the status of its node."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search.test.ts
+        name: gives each hit the kind, the parent, the status and a snippet with the matched words marked
+      - type: unit
+        file: test/mcp.test.ts
+        name: lists the tools and the resources, and answers each tool

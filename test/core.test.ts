@@ -150,7 +150,8 @@ describe('filters', () => {
   const none = { q: '', kinds: [], lifecycles: [], deliveries: [], modules: [], statuses: [] };
   it('applies on top of a scope', () => {
     expect(applyFilters(pIndex, ids, { ...none, kinds: ['story'], deliveries: ['r2'] })).toEqual(['story-save-card']);
-    expect(applyFilters(pIndex, ids, { ...none, q: 'second step', kinds: ['story'] })).toEqual(['story-pay-by-card']);
+    // A search text ranks the nodes: the node with both words comes first, and a node with 1 word follows.
+    expect(applyFilters(pIndex, ids, { ...none, q: 'second step', kinds: ['story'] })).toEqual(['story-pay-by-card', 'story-pay-by-card-3ds']);
     expect(applyFilters(pIndex, ids, { ...none, modules: ['epic-search'] })).toEqual([]);
     expect(applyFilters(pIndex, ids, { ...none, modules: ['epic-checkout'], kinds: ['story'] }).length).toBe(3);
   });

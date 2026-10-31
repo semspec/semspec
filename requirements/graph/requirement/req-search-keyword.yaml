@@ -2,7 +2,6 @@ id: req-search-keyword
 kind: requirement
 title: Rank nodes by keyword
 state: draft
-priority: next
 statement: "The tool search returns ranked node ids for a query. The ranking is BM25 over ids, titles, statements and definitions."
 capabilities:
   - cap-search
@@ -11,13 +10,47 @@ area:
 acceptance:
   - id: bm25
     text: "The tool search ranks nodes with BM25 over the id, the title, the statement and the definition of each node."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search.test.ts
+        name: ranks by the words of the query across all graphs
+      - type: unit
+        file: test/search.test.ts
+        name: puts an exact id first, then an exact title
+      - type: unit
+        file: test/search.test.ts
+        name: reads the text of the parts and the labels of coded fields
+      - type: unit
+        file: test/search.test.ts
+        name: finds a word by its plural and by a prefix
   - id: ranked-ids
     text: "The tool search returns the node ids in rank order, with a limit on the count."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search.test.ts
+        name: cuts the list at the limit and counts the omitted hits
+      - type: unit
+        file: test/mcp.test.ts
+        name: lists the tools and the resources, and answers each tool
   - id: filters
     text: "The tool search accepts filters for kind, status and scope. A hit that fails a filter is not returned."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search.test.ts
+        name: filters by kind, lifecycle and status, and refuses an unknown kind or graph
+      - type: unit
+        file: test/search.test.ts
+        name: keeps only the nodes in the scope of a node
+      - type: unit
+        file: test/mcp.test.ts
+        name: returns an error that names an unknown id, graph, tool or resource
   - id: no-hit
     text: "A query with no match returns an empty list, not an error."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search.test.ts
+        name: returns an empty list for a query with no match, not an error

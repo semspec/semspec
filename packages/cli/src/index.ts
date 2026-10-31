@@ -7,6 +7,8 @@
 //   semspec build --workspace <file> --out <file.html>
 //   semspec mcp --graph <file> --profile <file> [--exclude <pattern>]...
 //   semspec mcp --workspace <file>
+//   semspec search --graph <file> --profile <file> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
+//   semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
 //   semspec --version | -v
 //   semspec version --json
 //   semspec schema --profile <file> --out <dir>
@@ -23,6 +25,7 @@ import { serveStdio } from '@semspec/mcp';
 import { loadInputs, loadProfile } from './inputs';
 import { mcpLoader } from './mcp';
 import { renderPage } from './page';
+import { formatHits, parseSearchArgs, searchInputs } from './search';
 import { buildInfo, versionLine } from './version';
 import { loadWorkspace } from './workspace';
 
@@ -37,6 +40,8 @@ Usage:
   semspec build --workspace <file> --out <file.html>
   semspec mcp --graph <file> --profile <file> [--exclude <pattern>]...
   semspec mcp --workspace <file>
+  semspec search --graph <file> --profile <file> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
+  semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
   semspec schema --profile <file> --out <dir>
   semspec --version | -v
   semspec version --json
@@ -48,6 +53,7 @@ The graph is a JSON file, a YAML file or a folder of YAML files. The profile is 
 A pattern matches a path relative to the graph folder. It supports *, ** and ?.
 --workspace reads a workspace file that lists several graphs. It cannot combine with --graph, --profile or --exclude.
 The mcp command serves the graph or the workspace to an AI agent over the Model Context Protocol on stdio. See docs/reference/mcp.md.
+The search command ranks the nodes for a query. See docs/reference/cli.md.
 The schema command writes 1 JSON Schema for each kind of the profile. See docs/reference/schemas.md.
 The export command writes the graph as RDF (turtle, jsonld), as SHACL shapes (shacl) or as a Cypher script (cypher).
 With --workspace, it writes all graphs into 1 file. See docs/reference/export.md.`;
@@ -154,6 +160,18 @@ export async function run(argv: string[]): Promise<number> {
   if (!command || command === '--help' || command === 'help') {
     console.log(USAGE);
     return command ? 0 : 1;
+  }
+  if (command === 'search') {
+    try {
+      const args = parseSearchArgs(argv.slice(1));
+      const { result, warnings } = searchInputs(args);
+      warnings.forEach((w) => console.error(`warning: ${w}`));
+      console.log(args.json ? JSON.stringify(result) : formatHits(result, args.flags.workspace !== undefined && args.flags.in === undefined));
+      return 0;
+    } catch (e) {
+      console.error((e as Error).message);
+      return 1;
+    }
   }
   if (command === 'schema') {
     if (!flags.profile || !flags.out) {

@@ -37,7 +37,7 @@ describe('semspec mcp --workspace', () => {
       expect(client.getServerVersion()?.name).toBe('semspec');
       expect(client.getInstructions()).toContain('schema');
       const tools = await client.listTools();
-      expect(tools.tools.map((t) => t.name)).toEqual(['schema', 'get', 'trace', 'impact', 'gaps', 'validate']);
+      expect(tools.tools.map((t) => t.name)).toEqual(['schema', 'search', 'get', 'trace', 'impact', 'gaps', 'validate']);
       for (const t of tools.tools) expect(t.inputSchema.type).toBe('object');
 
       const resources = await client.listResources();
@@ -49,6 +49,16 @@ describe('semspec mcp --workspace', () => {
       expect(schema.json.vocabularies.map((v: any) => v.id)).toContain('segment');
       expect(schema.json.crossLinks).toEqual([{ field: 'area', graph: 'req', label: 'Area in the requirements' }]);
       expect((await call(client, 'schema', { kind: 'story' })).json.schema.title).toBe('Story');
+
+      const found = await call(client, 'search', { query: 'prepaid code' });
+      expect(found.json.hits[0]).toMatchObject({ graph: 'domain', id: 'pay-voucher', kind: 'method' });
+      expect(found.json.hits[0].snippet).toContain('**prepaid**');
+      expect(found.text).not.toContain('\n');
+      const limited = await call(client, 'search', { query: 'buyer', graph: 'req', kinds: ['story'], limit: 2 });
+      expect(limited.json.hits.length).toBe(2);
+      expect(limited.json.hits.every((h: any) => h.graph === 'req' && h.kind === 'story')).toBe(true);
+      expect(limited.json.truncated.hits).toBe(limited.json.total - 2);
+      expect((await call(client, 'search', { query: 'zzqqxx' })).json).toMatchObject({ total: 0, hits: [] });
 
       const get = await call(client, 'get', { id: 'story-pay-by-card' });
       expect(get.json).toMatchObject({ graph: 'req', kind: 'story', title: 'Pay by card', status: { value: 'partial' } });
@@ -95,6 +105,9 @@ describe('semspec mcp --workspace', () => {
       expect((await call(client, 'gaps', { scope: 'nope' })).text).toContain('"nope"');
       expect((await call(client, 'get', { id: 'x', graph: 'zzz' })).text).toContain('Unknown graph "zzz"');
       expect((await call(client, 'get', {})).text).toContain('"id" is required');
+      expect((await call(client, 'search', {})).text).toContain('"query" is required');
+      expect((await call(client, 'search', { query: 'shop', kinds: ['nope'] })).text).toContain('Unknown kind "nope"');
+      expect((await call(client, 'search', { query: 'shop', kinds: 'shop' })).error).toBe(true);
       expect((await call(client, 'validate', { node: '[1, 2]' })).error).toBe(true);
       expect((await call(client, 'get', { id: 'x', limit: 0 })).error).toBe(true);
       await expect(client.readResource({ uri: 'semspec://req/other' })).rejects.toThrow();

@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The Semspec Authors
+# Questions about the requirements of Semspec, as a user or an agent asks them. Each question lists
+# the node ids that the search should return in its top 5. Most questions use other words than the node.
+# test/search-eval.test.ts computes recall at 5 and the mean reciprocal rank.
+graph: graph
+profile: profile.yaml
+questions:
+  - { q: how does an agent talk to semspec, expect: [cap-mcp, req-mcp-serve] }
+  - { q: stop a commit when the requirements are broken, expect: [cap-gate, req-gate-check, req-gate-hooks] }
+  - { q: will it work on a small mobile screen, expect: [cap-phone-layout, req-phone-no-scroll] }
+  - { q: can I get the table as a spreadsheet, expect: [cap-csv] }
+  - { q: protect exported cells against formulas, expect: [req-csv-safe] }
+  - { q: write the requirements in a knowledge graph format, expect: [cap-export-graph, req-export-rdf-cypher] }
+  - { q: how do I ignore some folders when the tool reads, expect: [cap-exclude, req-exclude-use] }
+  - { q: open a page from a file that works offline, expect: [req-self-contained, cap-html] }
+  - { q: which version of the tool am I running, expect: [req-build-info] }
+  - { q: what type does a node get when none is given, expect: [req-default-kind] }
+  - { q: turn my notes in markdown into nodes, expect: [cap-read-markdown, req-read-markdown] }
+  - { q: what must a task hand over when it is done, expect: [cap-deliverables, req-deliverables] }
+  - { q: give an AI the context for one task, expect: [cap-slice, req-context-slice, feat-context] }
+  - { q: check a new node before I save it, expect: [req-mcp-check-tools] }
+  - { q: find nodes by words, expect: [cap-search, req-search-keyword] }
+  - { q: colour the nodes by whether they are done, expect: [req-graph-view, cap-status] }
+  - { q: how does the state of the children reach the parent, expect: [req-status-rollup, cap-status] }
+  - { q: link a requirement to a node in another project file, expect: [req-cross-links] }
+  - { q: show several models on one screen, expect: [cap-workspace, req-workspace-page] }
+  - { q: which kinds may an edge connect, expect: [req-edge-types] }
+  - { q: put a weight and a date on a relation, expect: [req-edge-properties] }
+  - { q: make a readable name from the identifier when there is no title, expect: [req-titles] }
+  - { q: keep the allowed values of a field with a definition for each, expect: [req-vocabularies] }
+  - { q: does the tool depend on one particular project, expect: [dec-profile-only, req-profile-only] }
+  - { q: in which file format do people write the requirements, expect: [dec-yaml-writing] }
+  - { q: how many npm packages does the code have, expect: [cap-packages, req-pkg-split] }
+  - { q: can I use the library without the user interface, expect: [req-pkg-core, feat-distribution] }
+  - { q: add and remove neighbours on the canvas one step at a time, expect: [cap-walk, req-walk-reversible] }
+  - { q: how many neighbours are not on the canvas, expect: [req-walk-badge] }
+  - { q: restrict how deep I look below a node, expect: [req-scope-limits] }
+  - { q: where does a node without a parent go in the tree, expect: [req-tree, req-placement] }
+  - { q: switch between layered, force and grouped drawing, expect: [req-layouts] }
+  - { q: write a formal specification of a condition, expect: [req-verify-models, cap-formal] }
+  - { q: test results change whether a condition is met, expect: [req-verify-conformance, feat-verify] }
+  - { q: vector similarity together with keywords, expect: [req-embed-hybrid, cap-embeddings] }
+  - { q: which AI model comes with the tool, expect: [req-embed-license, req-embed-provider] }
+  - { q: where a fact came from and when it was read, expect: [req-provenance] }
+  - { q: the error says which file holds the bad data, expect: [req-name-bad-file] }
+  - { q: refresh the page when I edit the files, expect: [req-serve] }
+  - { q: pinch to zoom on a touch screen, expect: [req-phone-touch] }
+  - { q: reject a graph with repeated ids, expect: [req-validate-graph] }
+  - { q: give my editor autocomplete for the yaml files, expect: [cap-schemas, req-schema-per-kind] }
+  - { q: how does an assistant read the codes and their definitions, expect: [req-mcp-resources] }

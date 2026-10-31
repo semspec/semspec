@@ -236,6 +236,16 @@
       "description": "The vocabulary of a field, by field path. The field is a node field, the lifecycle field or the field of a field filter. A value that is not a code of the vocabulary is an error.",
       "additionalProperties": { "type": "string", "description": "The id of a vocabulary." }
     },
+    "search": {
+      "type": "object",
+      "description": "The words that the search reads. Every part is optional.",
+      "additionalProperties": false,
+      "properties": {
+        "synonymFields": { "type": "array", "items": { "type": "string" }, "description": "Node fields with words that mean the same as the title, for example a list of words to avoid. A query that matches the title also searches these words, and the other way round." },
+        "fields": { "type": "array", "items": { "type": "string" }, "description": "More node fields to index. A field path can have dots." },
+        "boost": { "type": "object", "description": "The weight of a field in the ranking, by field name. The built-in names are id, title, sub, statement and parts. The defaults are 2, 3, 1, 1 and 1.", "additionalProperties": { "type": "number", "exclusiveMinimum": 0 } }
+      }
+    },
     "provenance": {
       "type": "object",
       "description": "Where a fact comes from, in the shape of W3C PROV-O. The fields apply to a node, to an edge property and to a refs item. Every part is optional.",

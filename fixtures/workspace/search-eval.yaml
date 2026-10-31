@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The Semspec Authors
+# Questions about the workspace fixture. Each question lists the node ids that the search should return in its top 5.
+workspace: workspace.json
+questions:
+  - { q: which shop sells phones and laptops, expect: [shop-orbit, cat-phones, cat-laptops] }
+  - { q: who gives credit for paying by invoice, expect: [prov-ledgerly, pay-invoice] }
+  - { q: how long can a buyer cancel after the goods arrive, expect: [art-withdrawal-period, rule-withdrawal] }
+  - { q: how fast must the money come back, expect: [art-refund-time, rule-refund] }
+  - { q: who supervises the markets on the coast, expect: [auth-coast, zone-coast] }
+  - { q: a carrier for heavy goods, expect: [car-hollin] }
+  - { q: which shops merged, expect: [shop-oldcart, src-merger-notice] }
+  - { q: pay with a prepaid code, expect: [pay-voucher] }
+  - { q: must stored card data be encrypted, expect: [std-card-storage] }
+  - { q: the second step of a card payment, expect: [story-pay-by-card-3ds, story-pay-by-card] }

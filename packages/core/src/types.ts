@@ -223,6 +223,12 @@ export interface RefsSpec {
 // A profile as a file holds it: `refs` is 1 entry or a list.
 export type ProfileInput = Omit<Profile, 'refs' | 'vocabularies'> & { refs?: RefsSpec | RefsSpec[]; vocabularies?: Record<string, VocabularyInput> };
 
+export interface SearchSpec {
+  synonymFields?: string[];
+  fields?: string[];
+  boost?: Record<string, number>;
+}
+
 export interface Profile {
   // The name of the project, shown as secondary text.
   project: string;
@@ -260,6 +266,9 @@ export interface Profile {
   // The property that a node field maps to, by field name, as a full IRI or a CURIE.
   fieldIris?: Record<string, string>;
   iri?: IriSpec;
+  // The words that the search reads. `synonymFields` name node fields with words that mean the same as the title. `fields`
+  // name more node fields to read. `boost` sets the weight of a field. The built-in names are id, title, sub, statement and parts.
+  search?: SearchSpec;
   facets?: { groupKind: string; groupLabel: string };
   entry?: { kind: string; childKind: string; title: string; countLabel: string };
   groups?: { hierarchy: string };

@@ -2,7 +2,6 @@ id: req-search-synonyms
 kind: requirement
 title: Widen the query with synonyms
 state: draft
-priority: next
 statement: "The query widens with synonyms from the vocabularies and the terms."
 capabilities:
   - cap-search
@@ -11,10 +10,22 @@ area:
 acceptance:
   - id: alt-labels
     text: "A query term that matches a vocabulary term also searches the altLabels of that term."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search.test.ts
+        name: widens the query with the alt labels of a concept
   - id: avoid-lists
     text: "A query term that matches a term with an avoid list also searches the words of the avoid list."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search.test.ts
+        name: widens the query with the synonym fields of the profile
   - id: weight
     text: "A synonym counts less than the word in the query."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search.test.ts
+        name: counts a synonym less than the word of the query

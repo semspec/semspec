@@ -5,6 +5,7 @@ import type { Chip, Filters, Groups, Index, NodeStatus, Summary, VEdge, VNode, W
 import { filterValues } from './tagged.js';
 import { fieldLabel } from './vocabulary.js';
 import { markerOf } from './provenance.js';
+import { rankIndexOf, rankQuery } from './rank.js';
 import { getPath, isMuted, kindLabel, kindOf, kindPlural, linkedKinds, treeKinds } from './profile.js';
 
 // ---------- scope ----------
@@ -247,8 +248,13 @@ function facetValues(index: Index, n: VNode, key: string, f: Filters, skip?: str
   return [(n[NODE_FIELD[key as keyof typeof NODE_FIELD]] as string) || ''];
 }
 
+// The most ranked nodes that a search text adds to the nodes that contain the text.
+const RANKED_LIMIT = 40;
+
 // Filters on top of a scope. Each facet is a list. An empty list allows everything.
 // The values of 1 facet are OR. The facets are AND. `skip` names a facet to leave out.
+// A search text ranks the nodes with BM25 (see rank.ts). The result lists the best ranked nodes first, then the other nodes
+// that contain the text in their id, title, sub or statement, in the order of `ids`.
 // The key of a field filter is "field:" and the field.
 export function applyFilters(index: Index, ids: Iterable<string>, f: Filters, skip?: string): string[] {
   const q = (f.q || '').trim().toLowerCase();
@@ -267,10 +273,16 @@ export function applyFilters(index: Index, ids: Iterable<string>, f: Filters, sk
       }
     }
     if (!ok || !matchFields(index, id, active)) continue;
-    if (q && `${n.id}\n${n.title}\n${n.sub}\n${n.statement}`.toLowerCase().indexOf(q) < 0) continue;
     result.push(id);
   }
-  return result;
+  if (!q) return result;
+  const contains = (id: string) => {
+    const n = index.byId.get(id)!;
+    return `${n.id}\n${n.title}\n${n.sub}\n${n.statement}`.toLowerCase().indexOf(q) >= 0;
+  };
+  const ranked = rankQuery(rankIndexOf(index), q, new Set(result)).hits.slice(0, RANKED_LIMIT).map((h) => h.id);
+  const first = new Set(ranked);
+  return [...ranked, ...result.filter((id) => !first.has(id) && contains(id))];
 }
 
 // The number of nodes for each value of 1 facet, with every other filter applied.

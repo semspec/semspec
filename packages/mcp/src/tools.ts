@@ -3,7 +3,7 @@
 // The tools of the MCP server. Each tool maps its input to 1 function of the core.
 import Ajv from 'ajv/dist/2020.js';
 import { parse } from 'yaml';
-import { DEFAULT_LIMIT, QueryError, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, trace, validateNode, type GraphIndex, type Graph, type Model, type Profile } from '@semspec/core';
+import { DEFAULT_LIMIT, QueryError, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, searchGraphs, trace, validateNode, type GraphIndex, type Graph, type Model, type Profile } from '@semspec/core';
 
 // A graph as the loader returns it. `graph` is the raw graph, and `profile` is the profile with its vocabulary files read.
 export interface LoadedGraph {
@@ -52,6 +52,13 @@ function whole(args: Record<string, unknown>, name: string, fallback: number, ma
   return v;
 }
 
+function list(args: Record<string, unknown>, name: string): string[] | undefined {
+  const v = args[name];
+  if (v === undefined || v === null) return undefined;
+  if (!Array.isArray(v) || v.some((x) => typeof x !== 'string')) throw new QueryError(`The input "${name}" must be a list of texts.`);
+  return v as string[];
+}
+
 // Parses the text of a node, as YAML or JSON.
 function parseNode(source: string): Record<string, unknown> {
   let value: unknown;
@@ -82,6 +89,37 @@ export const TOOLS: Tool[] = [
     run: (loaded, graphs, args) => {
       const g = graphById(graphs, text(args, 'graph', false));
       return { graph: g.id, ...describeSchema(g.index.profile, text(args, 'kind', false)) };
+    },
+  },
+  {
+    name: 'search',
+    description:
+      'Find nodes by words. The tool ranks the nodes with BM25 over the id, title, statement, parts and coded labels, and widens the query with the synonyms of the profile. It searches all graphs unless "graph" is set. Each hit has the kind, the parent, the status and a snippet with the matched words in ** marks.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'The words to find, as a question or as keywords.' },
+        graph: { type: 'string', description: 'The id of 1 graph. The default is all graphs.' },
+        kinds: { type: 'array', items: { type: 'string' }, description: 'Return only nodes of these kinds.' },
+        lifecycles: { type: 'array', items: { type: 'string' }, description: 'Return only nodes in these lifecycle states.' },
+        statuses: { type: 'array', items: { type: 'string' }, description: 'Return only nodes with these status values.' },
+        scope: { type: 'string', description: 'The id of a node. Return only nodes in the scope of this node.' },
+        limit: { type: 'integer', minimum: 1, maximum: MAX_LIMIT, description: `The most hits. The default is ${DEFAULT_LIMIT}. The answer has "truncated" when it cuts the hits.` },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+    run: (loaded, graphs, args) => {
+      const query = text(args, 'query', true)!;
+      const found = searchGraphs(graphs, query, {
+        graph: text(args, 'graph', false),
+        kinds: list(args, 'kinds'),
+        lifecycles: list(args, 'lifecycles'),
+        statuses: list(args, 'statuses'),
+        scope: text(args, 'scope', false),
+        limit: whole(args, 'limit', DEFAULT_LIMIT, MAX_LIMIT),
+      });
+      return { query, total: found.total, hits: found.hits, ...(found.omitted ? { truncated: { hits: found.omitted } } : {}) };
     },
   },
   {
