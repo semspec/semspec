@@ -27,7 +27,7 @@ The page does not keep the positions that you gave to single nodes, the sort and
 
 - In memory: a switch to another graph and back restores the graph.
 - In the browser storage: a reload restores all graphs. The page uses `localStorage` with the key `semspec:<workspace title>:<hash of the graph ids>`. Two workspaces never share a state.
-- In the hash of the address: `#graph=<id>&scope=<id>&node=<id>`. A link with this hash opens the same graph, scope and node. The hash wins over the stored state for these 3 values. An unknown id is ignored. The page changes the hash without a new history entry. A page that opens from a file uses the same hash.
+- In the hash of the address: `#graph=<id>&scope=<id>&node=<id>`. A link with this hash opens the same graph, scope and node. The hash wins over the stored state for these 3 values. An unknown id is ignored. The page changes the hash without a new history entry. A page that opens from a file uses the same hash. The page ignores a hashchange event that its own write caused, so a late event never brings back an older selection.
 
 The stored state has a version. A state of another version is ignored. A node, a filter value or a column that the graph no longer has is dropped when the page loads, and the rest of the state loads. When the browser blocks the storage, the page works and starts fresh.
 

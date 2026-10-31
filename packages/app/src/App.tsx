@@ -23,8 +23,8 @@ import { usePhone } from '@/lib/use-phone';
 import { useTheme } from '@/lib/use-theme';
 import type { ThemeChoice } from '@/lib/theme';
 import { useViewer, type View, type Viewer } from '@/lib/use-viewer';
-import { applyLink, attachPersistence, hydrate, linkOf, resetStored, setActive, useAppStore } from '@/lib/store';
-import { formatLink, parseLink } from '@/lib/link';
+import { attachAddress } from '@/lib/address';
+import { attachPersistence, hydrate, resetStored, setActive, useAppStore } from '@/lib/store';
 import { WorkspaceContext, type WorkspaceApi } from '@/lib/workspace';
 import { cn } from '@/lib/utils';
 
@@ -152,23 +152,6 @@ interface Focus {
   seq: number;
 }
 
-// Writes the hash of the address when the graph, the scope or the selection changes. It adds no history entry.
-function writeLink() {
-  let hash = '';
-  try {
-    hash = formatLink(linkOf());
-    if (window.location.hash === hash) return;
-    window.history.replaceState(null, '', window.location.pathname + window.location.search + hash);
-  } catch {
-    // Some browsers refuse replaceState on a file: address. A hash-only replace adds no history entry either.
-    try {
-      window.location.replace(hash || '#');
-    } catch {
-      // The page may not change its address, for example in a sandbox. The link is optional.
-    }
-  }
-}
-
 // The workspace state: the trail of jumps. The store holds the active graph and the state of each graph.
 export function App({ data }: { data: WorkspaceData }) {
   // The store loads the stored state and the hash once for each workspace, before the first render of a graph.
@@ -179,13 +162,9 @@ export function App({ data }: { data: WorkspaceData }) {
   }
   useEffect(() => {
     const detach = attachPersistence();
-    writeLink();
-    const unsubscribe = useAppStore.subscribe(writeLink);
-    const onHash = () => applyLink(parseLink(window.location.hash));
-    window.addEventListener('hashchange', onHash);
+    const detachAddress = attachAddress();
     return () => {
-      window.removeEventListener('hashchange', onHash);
-      unsubscribe();
+      detachAddress();
       detach();
     };
   }, [data]);

@@ -52,3 +52,16 @@ acceptance:
       - type: unit
         file: test/app/state.test.tsx
         name: "ignores a broken hash"
+  - id: no-revert
+    text: "A selection, a scope or a graph that the reader sets stays set. No later write or read of the hash or the stored state brings back an earlier value."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/no-revert.test.tsx
+        name: "keeps the node of a cross link when an older hash event arrives later"
+      - type: unit
+        file: test/app/no-revert.test.tsx
+        name: "keeps the last of several selections when older hash events arrive later"
+      - type: unit
+        file: test/app/no-revert.test.tsx
+        name: "still follows a hash that the page did not write"
