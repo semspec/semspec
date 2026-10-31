@@ -1,7 +1,6 @@
 id: req-search-synonyms
 kind: requirement
 title: Widen the query with synonyms
-state: draft
 statement: "The query widens with synonyms from the vocabularies and the terms."
 capabilities:
   - cap-search

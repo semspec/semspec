@@ -1,7 +1,6 @@
 id: req-mcp-resources
 kind: requirement
 title: Offer the profile as MCP resources
-state: draft
 statement: "The MCP server offers the profile and the vocabularies as resources."
 capabilities:
   - cap-mcp

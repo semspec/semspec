@@ -1,7 +1,6 @@
 id: req-mcp-read-tools
 kind: requirement
 title: Read nodes with MCP tools
-state: draft
 statement: "The MCP server has the tools get, trace and impact."
 capabilities:
   - cap-mcp

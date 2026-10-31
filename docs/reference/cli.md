@@ -5,7 +5,7 @@ title: Command line
 description: The commands and options of the semspec command.
 order: 1
 related: [getting-started, yaml-folder, workspace, export, schemas, mcp, gates]
-documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check, req-context-slice]
+documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check, req-context-slice, req-deliverables]
 ---
 ## Commands
 
@@ -20,6 +20,8 @@ semspec search --graph <graph> --profile <profile> "<query>" [--kind <kind>]... 
 semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
 semspec slice --graph <graph> --profile <profile> <id> [--depth <n>] [--budget <n>] [--json] [--exclude <pattern>]...
 semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
+semspec deliverables --graph <graph> --profile <profile> [--scope <id>] [--kind <kind>]... [--json]
+semspec deliverables --workspace <file> [--in <graph>] [--scope <id>] [--kind <kind>]... [--json]
 semspec check --graph <graph> --profile <profile> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
 semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
 semspec schema --profile <profile> --out <dir>
@@ -36,6 +38,7 @@ semspec version --json
 - `check` validates the inputs and the gates of the profile, and exits with a code for a hook or a CI step. See below.
 - `search` ranks the nodes for the query and prints the hits. See below.
 - `slice` prints the brief for a task on 1 node. See below.
+- `deliverables` lists the nodes that miss a deliverable of the profile. See below.
 - `schema` writes 1 JSON Schema for each kind of the profile. See [The schemas of the kinds](schemas.md).
 - `export` writes the graph for other tools. See [Export](export.md).
 - `semspec --version` (or `-v`) prints `semspec <version> (<commit>)`, with ` dirty` after the commit when the tree was dirty at build time. `semspec version --json` prints `{ "name", "version", "commit", "dirty" }`. The page has the same text in `<meta name="generator">`.
@@ -61,9 +64,28 @@ semspec version --json
 
 Each finding takes 1 line, `<level> <file or node id>: <message>`, sorted, and a summary line ends the output. The exit code is 0 when the check finds no error, 1 when it finds an error, and 2 for a wrong use of the command.
 
+## Deliverables
+
+`semspec deliverables` lists the nodes that miss a deliverable of the profile key `deliverables`. See [The profile](profile.md#deliverables).
+
+```
+semspec deliverables --graph <graph> --profile <profile> [--scope <id>] [--kind <kind>]... [--json] [--exclude <pattern>]...
+semspec deliverables --workspace <file> [--in <graph>] [--scope <id>] [--kind <kind>]... [--json]
+```
+
+| Option | Meaning |
+| --- | --- |
+| `--scope <id>` | Keep only the node and the nodes in its scope. |
+| `--kind <kind>` | Keep only nodes of this kind. The option can repeat. A comma separates several kinds. |
+| `--in <graph>` | With `--workspace`: report 1 graph. The default is all graphs. With `--scope`, the default is the first graph. |
+| `--json` | Print `{ "nodes", "findings" }` as 1 line of JSON. A finding has `graph`, `node`, `kind`, `title`, `deliverable`, `item` and `message`. |
+| `--exclude <pattern>` | As for `build`. |
+
+Each finding takes 1 line, `<node id>: <message>`. A workspace finding has the graph id before the node id. A summary line ends the output. The command exits with 0, or with 1 and a message on stderr when an input or an option is not valid. A missing deliverable does not change the exit code. To fail on it, list `missing-deliverable` in `gates.fail` and run `semspec check`.
+
 ## Slice
 
-`semspec slice` prints the brief for a task on 1 node: the node, its path to the root, its parts and checks, its linked nodes, its cross links with their definitions, the definitions of its coded values, its gaps and the nodes below it. The content and the budget rules are those of the MCP tool `slice`. See [MCP server](mcp.md).
+`semspec slice` prints the brief for a task on 1 node: the node, its path to the root, its parts and checks, its linked nodes, its cross links with their definitions, the definitions of its coded values, its gaps, its missing deliverables and the nodes below it. The content and the budget rules are those of the MCP tool `slice`. See [MCP server](mcp.md).
 
 | Option | Meaning |
 | --- | --- |

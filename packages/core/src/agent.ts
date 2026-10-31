@@ -3,6 +3,7 @@
 // Answers for an agent: the schema of a profile, one node with its context, the path to the root, the
 // tree below a node, the neighbours of a node, the impact of a node, the gaps of a scope, and the check of a new node.
 // Each answer is plain data. A list that exceeds the limit is cut, and `truncated` says by how much.
+import { deliverableFindings, type DeliverableFinding } from './deliverables.js';
 import { computeScope, statusOf } from './explore.js';
 import { buildModel, buildIndex } from './model.js';
 import { allLinkFields, parentFields, refsOf } from './profile.js';
@@ -10,7 +11,7 @@ import { derivedEdgeName, provenanceOf, sourceCheck } from './provenance.js';
 import { kindSchemas } from './schema.js';
 import { validateGraph } from './validate.js';
 import { incomingCrossLinks, type WorkspaceGraph } from './workspace.js';
-import type { CrossLink, Graph, Index, Profile, VEdge, VNode } from './types.js';
+import type { CrossLink, Graph, Index, Model, Profile, VEdge, VNode } from './types.js';
 
 export const DEFAULT_LIMIT = 50;
 
@@ -439,6 +440,7 @@ export interface GapLists {
   unplaced: Brief[];
   unresolvedLinks: { from: string; edge: string; to: string }[];
   brokenCrossLinks: { from: string; field: string; graph: string; to: string }[];
+  missingDeliverables: DeliverableFinding[];
 }
 
 // Finds the gaps of the nodes in `ids`. `graphs` are all graphs of the workspace, for the cross links.
@@ -461,7 +463,8 @@ export function gapLists(graphs: GraphIndex[], g: GraphIndex, ids: Set<string>):
     const target = graphs.find((x) => x.id === c.graph);
     if (target && !target.index.byId.has(c.t)) brokenCrossLinks.push({ from: c.s, field: c.field, graph: c.graph, to: c.t });
   }
-  return { status, uncheckedParts, withoutSource, unplaced, unresolvedLinks, brokenCrossLinks };
+  const missingDeliverables = deliverableFindings(index, g.id, ids);
+  return { status, uncheckedParts, withoutSource, unplaced, unresolvedLinks, brokenCrossLinks, missingDeliverables };
 }
 
 // The gaps in a scope. A scope is a node id, or the whole graph when `scopeId` is not set.
@@ -472,12 +475,12 @@ export function gaps(graphs: GraphIndex[], graphId: string | undefined, scopeId?
   if (scopeId !== undefined) nodeById(g, scopeId);
   const ids = scopeId === undefined ? new Set(index.model.nodes.map((n) => n.id)) : computeScope(index, { id: scopeId }).ids;
   const truncated: Truncated = {};
-  const { status: badStatus, uncheckedParts: unchecked, withoutSource: noSource, unplaced, unresolvedLinks: unresolved, brokenCrossLinks: broken } = gapLists(graphs, g, ids);
+  const { status: badStatus, uncheckedParts: unchecked, withoutSource: noSource, unplaced, unresolvedLinks: unresolved, brokenCrossLinks: broken, missingDeliverables: missing } = gapLists(graphs, g, ids);
   const result = {
     graph: g.id,
     scope: scopeId ?? null,
     nodes: ids.size,
-    counts: { status: badStatus.length, uncheckedParts: unchecked.length, withoutSource: noSource.length, unplaced: unplaced.length, unresolvedLinks: unresolved.length, brokenCrossLinks: broken.length },
+    counts: { status: badStatus.length, uncheckedParts: unchecked.length, withoutSource: noSource.length, unplaced: unplaced.length, unresolvedLinks: unresolved.length, brokenCrossLinks: broken.length, missingDeliverables: missing.length },
     ...(scopeId !== undefined && p.status ? { rollup: statusOf(index, scopeId) } : {}),
     status: cap(badStatus, limit, 'status', truncated),
     uncheckedParts: cap(unchecked, limit, 'uncheckedParts', truncated),
@@ -485,8 +488,45 @@ export function gaps(graphs: GraphIndex[], graphId: string | undefined, scopeId?
     unplaced: cap(unplaced, limit, 'unplaced', truncated),
     unresolvedLinks: cap(unresolved, limit, 'unresolvedLinks', truncated),
     brokenCrossLinks: cap(broken, limit, 'brokenCrossLinks', truncated),
+    missingDeliverables: cap(missing, limit, 'missingDeliverables', truncated),
   };
   return withTruncated(result, truncated);
+}
+
+// ---------- deliverables ----------
+
+export interface DeliverableReport {
+  // The nodes of a kind with deliverables that the report looked at.
+  nodes: number;
+  findings: DeliverableFinding[];
+}
+
+export interface DeliverableOptions {
+  // The graph to report. The default is every graph of the workspace, or the graph of the scope.
+  graph?: string;
+  // A node id. The report covers this node and the nodes in its scope.
+  scope?: string;
+  // Only the nodes of these kinds.
+  kinds?: string[];
+}
+
+// Lists each node of a kind with deliverables and what it misses. `input` is a model, or the graphs of a workspace.
+export function deliverableReport(input: Model | GraphIndex[], options: DeliverableOptions = {}): DeliverableReport {
+  const graphs = Array.isArray(input) ? input : [{ id: 'graph', label: input.profile.project, index: buildIndex(input) }];
+  const chosen = options.graph !== undefined || options.scope !== undefined ? [graphById(graphs, options.graph)] : graphs;
+  const findings: DeliverableFinding[] = [];
+  let nodes = 0;
+  for (const g of chosen) {
+    if (options.scope !== undefined) nodeById(g, options.scope);
+    const ids = options.scope === undefined ? g.index.model.nodes.map((n) => n.id) : [...computeScope(g.index, { id: options.scope }).ids];
+    const specs = g.index.profile.deliverables ?? {};
+    nodes += ids.filter((id) => {
+      const kind = g.index.byId.get(id)?.kind;
+      return kind !== undefined && specs[kind] !== undefined && (!options.kinds?.length || options.kinds.includes(kind));
+    }).length;
+    findings.push(...deliverableFindings(g.index, g.id, ids, options.kinds));
+  }
+  return { nodes, findings };
 }
 
 // ---------- validate ----------

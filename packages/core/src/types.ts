@@ -103,10 +103,29 @@ export interface StatusSpec {
 //   unplaced: a node of a kind with `placedUnder` that no parent field places under a node of that kind.
 //   unresolved-link: a link that names a node that is not in the graph.
 //   broken-cross-link: a cross link that names a node that is not in the other graph of the workspace.
-export const GATE_KINDS = ['bad-status', 'no-check', 'no-source', 'unplaced', 'unresolved-link', 'broken-cross-link'] as const;
+//   missing-deliverable: a node that misses a deliverable that the profile states for its kind.
+export const GATE_KINDS = ['bad-status', 'no-check', 'no-source', 'unplaced', 'unresolved-link', 'broken-cross-link', 'missing-deliverable'] as const;
 export type GateKind = (typeof GATE_KINDS)[number];
 export interface GateSpec {
   fail?: GateKind[];
+}
+
+// What a task on a node of 1 kind must deliver. Every part is optional.
+//   parts: the node has at least `min` parts.
+//   checks: `each-part` means each part of the node has a check. `node` means the node has a check.
+//   status: the status of the node (rolled up from the nodes below) is one of these values or tones.
+//   fields: these node fields have a value.
+//   links: for each edge or cross link field, the node has at least `min` links. `direction` is `out` (the default) or `in`.
+//   provenance: the node has the marker and the source that the profile provenance names.
+export const DELIVERABLE_KEYS = ['parts', 'checks', 'status', 'fields', 'links', 'provenance'] as const;
+export type DeliverableKey = (typeof DELIVERABLE_KEYS)[number];
+export interface DeliverableSpec {
+  parts?: { min: number };
+  checks?: 'each-part' | 'node';
+  status?: string[];
+  fields?: string[];
+  links?: Record<string, { min: number; direction?: 'out' | 'in' }>;
+  provenance?: boolean;
 }
 
 export type StatusTone = 'good' | 'warn' | 'bad';
@@ -284,6 +303,8 @@ export interface Profile {
   search?: SearchSpec;
   // The gates of the check command. See `GateSpec`.
   gates?: GateSpec;
+  // What a task on a node of a kind must deliver, by kind id. See `DeliverableSpec`.
+  deliverables?: Record<string, DeliverableSpec>;
   facets?: { groupKind: string; groupLabel: string };
   entry?: { kind: string; childKind: string; title: string; countLabel: string };
   groups?: { hierarchy: string };

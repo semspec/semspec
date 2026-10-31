@@ -1,7 +1,6 @@
 id: req-navigate-search
 kind: requirement
 title: Search with a tool
-state: draft
 statement: An MCP server finds nodes by text, kind and status.
 capabilities:
   - cap-mcp

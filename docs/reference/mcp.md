@@ -186,9 +186,10 @@ The slice has these sections. A section with no content is left out, except Gaps
 - The cross links into other graphs, each with the title and the statement of the target.
 - The coded values: the label and the definition of each code that the node uses in a field, in the marker of its provenance or in an edge property.
 - The gaps of the node and its parts: status of tone warn or bad, parts with no check, nodes with no source, links to missing nodes.
+- The deliverables: what the profile key `deliverables` says a node of this kind, or one of its parts, must deliver, and what is missing. The section says `All delivered.` when nothing is missing. The slice has no section when the profile states no deliverable for these kinds. In the JSON, `deliverables` has `defined` and `missing`.
 - The nodes below the node to `depth`, with title and status. A part is not listed here. `(+n)` marks children that are not listed.
 
-The `budget` counts the characters of the Markdown text. When the text is longer, the slice drops parts in this order: the levels of nodes below the node, from the deepest, then the statements of linked nodes and cross links (first to 160 characters, then fully), then all nodes below the node, then the definitions of the coded values. The node, the path, the parts and the gaps stay. The slice names each cut in the section Cut to fit the budget, and in `cut` in the JSON.
+The `budget` counts the characters of the Markdown text. When the text is longer, the slice drops parts in this order: the levels of nodes below the node, from the deepest, then the statements of linked nodes and cross links (first to 160 characters, then fully), then all nodes below the node, then the definitions of the coded values. The node, the path, the parts, the gaps and the deliverables stay. The slice names each cut in the section Cut to fit the budget, and in `cut` in the JSON.
 
 The example is `slice` on `story-pay-by-card` of the workspace fixture, with `graph` set to `req`.
 
@@ -277,11 +278,12 @@ The answer has `counts` and these lists:
 - `unplaced`: nodes that the profile wants under a kind, and that are not.
 - `unresolvedLinks`: links to a node that the graph lacks.
 - `brokenCrossLinks`: cross links to a node that the other graph lacks.
+- `missingDeliverables`: what a node misses of the deliverables that the profile states for its kind. Each item has `node`, `kind`, `title`, `deliverable`, `item` and `message`. See [The profile](profile.md#deliverables).
 
 With a `scope` and a profile with a status, the answer also has `rollup`.
 
 ```json
-{"graph":"req","scope":null,"nodes":24,"counts":{"status":2,"uncheckedParts":1,"withoutSource":0,"unplaced":2,"unresolvedLinks":0,"brokenCrossLinks":0},"status":[{"id":"story-loose-child","kind":"story","title":"Loose child","status":"fail","tone":"bad"}],"uncheckedParts":[{"id":"story-pay-by-card#charged","kind":"scenario","title":"Charged","owner":"story-pay-by-card"}],"withoutSource":[],"unplaced":[{"id":"story-loose","kind":"story","title":"Loose"}],"unresolvedLinks":[],"brokenCrossLinks":[]}
+{"graph":"req","scope":null,"nodes":24,"counts":{"status":2,"uncheckedParts":1,"withoutSource":0,"unplaced":2,"unresolvedLinks":0,"brokenCrossLinks":0,"missingDeliverables":0},"status":[{"id":"story-loose-child","kind":"story","title":"Loose child","status":"fail","tone":"bad"}],"uncheckedParts":[{"id":"story-pay-by-card#charged","kind":"scenario","title":"Charged","owner":"story-pay-by-card"}],"withoutSource":[],"unplaced":[{"id":"story-loose","kind":"story","title":"Loose"}],"unresolvedLinks":[],"brokenCrossLinks":[],"missingDeliverables":[]}
 ```
 
 ### validate

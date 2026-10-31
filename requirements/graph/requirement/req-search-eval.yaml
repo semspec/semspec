@@ -1,7 +1,6 @@
 id: req-search-eval
 kind: requirement
 title: Measure search with an evaluation set
-state: draft
 statement: "A set of questions with expected nodes measures the recall of the search."
 capabilities:
   - cap-search

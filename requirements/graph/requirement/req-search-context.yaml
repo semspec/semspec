@@ -1,7 +1,6 @@
 id: req-search-context
 kind: requirement
 title: Return graph context with each hit
-state: draft
 statement: "Each search hit carries graph context."
 capabilities:
   - cap-search

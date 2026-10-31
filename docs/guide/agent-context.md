@@ -5,13 +5,14 @@ title: Agent context
 description: Give an agent the brief for a task with slice, and let it use validate and check around each change.
 order: 9
 related: [mcp, cli, gates]
-documents: [feat-context, cap-slice, req-context-slice]
+documents: [feat-context, cap-slice, req-context-slice, req-deliverables]
 ---
 An agent that works from a requirement graph needs 3 things: the context of its task, a check of each node it writes, and a check of the graph before it commits. Semspec gives each one as a tool of the MCP server and as a command.
 
 | Step | MCP tool | Command |
 | --- | --- | --- |
 | Start of a task | `slice` | `semspec slice` |
+| Know when it is done | `gaps`, `slice` | `semspec deliverables` |
 | Before a write | `validate` | none |
 | Before a commit | none | `semspec check` |
 
@@ -25,6 +26,7 @@ The tool `slice` returns 1 brief for a node. The brief holds what the agent need
 - the nodes that govern it, such as decisions, rules and standards, with their notes,
 - the nodes of other graphs that it links to, with their definitions,
 - the definitions of the coded values that it uses,
+- the deliverables that the profile states for the kind of the node, and the ones that are missing,
 - the gaps, and the nodes below it.
 
 The agent calls it with the id of the task node:
@@ -44,6 +46,12 @@ semspec slice --workspace workspace.json --in req story-pay-by-card
 ```
 
 See [MCP server](../reference/mcp.md) and [Command line](../reference/cli.md) for all inputs.
+
+## Know when the task is done
+
+The profile key `deliverables` states what a task on a node of each kind must deliver, for example at least 1 part, a check for each part, a status, fields or links. The brief lists each missing deliverable of the node and its parts. The task is done when the list is empty. The tool `gaps` gives the same list for a scope, and `semspec deliverables` gives it from the command line. See [The profile](../reference/profile.md#deliverables).
+
+To block a commit while a deliverable is missing, list `missing-deliverable` in `gates.fail`. See [Gates](gates.md).
 
 ## Validate before a write
 
@@ -68,5 +76,6 @@ The requirements of this project are a graph in `requirements/graph`. The profil
 - Before you write or change a node, call `validate` with the node. Fix each error. Fix each warning, or say why you keep it.
 - Write only YAML files in `requirements/graph`. Keep one node in one file.
 - When your change makes a condition true, set its status and link the test in the same change.
+- A task on a node is done when the section Deliverables of its brief says `All delivered.`
 - Before each commit, run `npx semspec check --graph requirements/graph --profile requirements/profile.yaml`. Do not commit while it reports an error.
 ```

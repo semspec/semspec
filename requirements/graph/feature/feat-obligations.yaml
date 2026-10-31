@@ -1,8 +1,6 @@
 id: feat-obligations
 kind: feature
 title: Obligations
-state: draft
-priority: later
 statement: The profile states what a task must deliver.
 products:
   - prd-semspec

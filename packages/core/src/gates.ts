@@ -26,6 +26,7 @@ export function gateFindings(graphs: GraphIndex[]): GateFinding[] {
     lists.unplaced.forEach((n) => add('unplaced', n.id, `The ${n.kind} "${n.title}" is not placed in the hierarchy.`));
     lists.unresolvedLinks.forEach((u) => add('unresolved-link', u.from, `The edge "${u.edge}" names the node "${u.to}", which is not in the graph.`));
     lists.brokenCrossLinks.forEach((c) => add('broken-cross-link', c.from, `The cross link "${c.field}" names the node "${c.to}", which is not in the graph "${c.graph}".`));
+    lists.missingDeliverables.forEach((d) => add('missing-deliverable', d.node, d.message));
   }
   return found;
 }

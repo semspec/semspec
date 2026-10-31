@@ -254,8 +254,28 @@
         "fail": {
           "type": "array",
           "uniqueItems": true,
-          "description": "The gap kinds that fail the check. bad-status: a node whose own status has the tone bad. no-check: a part with no check. no-source: a node that needs a source and has none. unplaced: a node that no parent field places. unresolved-link: a link to a node that is not in the graph. broken-cross-link: a cross link to a node that is not in the other graph.",
-          "items": { "enum": ["bad-status", "no-check", "no-source", "unplaced", "unresolved-link", "broken-cross-link"] }
+          "description": "The gap kinds that fail the check. bad-status: a node whose own status has the tone bad. no-check: a part with no check. no-source: a node that needs a source and has none. unplaced: a node that no parent field places. unresolved-link: a link to a node that is not in the graph. broken-cross-link: a cross link to a node that is not in the other graph. missing-deliverable: a node that misses a deliverable of its kind.",
+          "items": { "enum": ["bad-status", "no-check", "no-source", "unplaced", "unresolved-link", "broken-cross-link", "missing-deliverable"] }
+        }
+      }
+    },
+    "deliverables": {
+      "type": "object",
+      "description": "What a task on a node of a kind must deliver, by kind id. The check command, the gaps tool and the slice report what a node misses.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parts": { "type": "object", "description": "The node has at least min parts.", "additionalProperties": false, "required": ["min"], "properties": { "min": { "type": "integer", "minimum": 1 } } },
+          "checks": { "enum": ["each-part", "node"], "description": "each-part: each part of the node has a check. node: the node has a check." },
+          "status": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 }, "description": "The status of the node is one of these status values or tones." },
+          "fields": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 }, "description": "These node fields have a value." },
+          "links": {
+            "type": "object",
+            "description": "For each edge or cross link field, the node has at least min links.",
+            "additionalProperties": { "type": "object", "additionalProperties": false, "required": ["min"], "properties": { "min": { "type": "integer", "minimum": 1 }, "direction": { "enum": ["out", "in"], "description": "out (the default): the links of the node. in: the links that name the node." } } }
+          },
+          "provenance": { "type": "boolean", "description": "The node has the marker and the source that the profile provenance names." }
         }
       }
     },

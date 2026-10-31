@@ -1,7 +1,6 @@
 id: req-context-slice
 kind: requirement
 title: Give the slice of a task
-state: draft
 statement: A command and an MCP tool write the slice of 1 node as text for an agent. The slice holds the node, its path, its parts, its linked nodes, its cross links, its coded values, its gaps and the nodes below it.
 capabilities:
   - cap-slice

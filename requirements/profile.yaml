@@ -49,6 +49,10 @@ status:
     - { value: open, label: Open, tone: bad }
 gates:
   fail: [unplaced, unresolved-link, no-source]
+deliverables:
+  requirement:
+    parts: { min: 1 }
+    checks: each-part
 vocabularies:
   priority:
     label: Priority

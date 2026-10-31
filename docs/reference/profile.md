@@ -5,7 +5,7 @@ title: The profile
 description: The keys of a profile.
 order: 2
 related: [markdown-folder, kinds-and-roles, edges, vocabularies, provenance, export, layouts, cross-links]
-documents: [feat-profile, req-profile-only, req-validate-profile]
+documents: [feat-profile, req-profile-only, req-validate-profile, req-deliverables]
 ---
 The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../schema/profile.schema.json) and the 2 examples in [`fixtures/`](../../fixtures/).
 
@@ -28,7 +28,8 @@ The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../s
 | `fieldFilters` | Filters on a list field or a text field: the field, a label, labels for values, a separator that groups the values in the picker, and an optional `from`. A node without the field takes the values of the nodes above or below it. The table has a column for each field. |
 | `vocabularies`, `fieldVocabularies` | The codes that a field can take, and what each code means. See [Vocabularies](vocabularies.md). |
 | `search` | The words that the search reads. `synonymFields` names node fields with words that mean the same as the title, for example a list of words to avoid. `fields` names more node fields to index. `boost` maps a field name to a weight. The built-in names are `id`, `title`, `sub`, `statement` and `parts`, with the weights 2, 3, 1, 1 and 1. A coded field is indexed under its own name with the weight 1. See [MCP server](mcp.md). |
-| `gates` | The gap kinds that fail `semspec check`: `gates.fail` lists any of `bad-status`, `no-check`, `no-source`, `unplaced`, `unresolved-link` and `broken-cross-link`. The default is none. See [Gates](../guide/gates.md). |
+| `gates` | The gap kinds that fail `semspec check`: `gates.fail` lists any of `bad-status`, `no-check`, `no-source`, `unplaced`, `unresolved-link`, `broken-cross-link` and `missing-deliverable`. The default is none. See [Gates](../guide/gates.md). |
+| `deliverables` | What a task on a node of a kind must deliver, by kind id. See [Deliverables](#deliverables). |
 | `provenance` | Where a fact comes from: the fields of the marker, the source, the date, the agent and the note, and the markers that need a source. See [Provenance](provenance.md). |
 | `iri`, `fieldIris` | The IRIs of the export: a base, prefixes, the field that holds a node IRI, and the property of a field. A kind, an edge, an edge property, a vocabulary and a concept can name an `iri` too. See [Export](export.md). |
 | `layout` | The layout of the Graph and Cards views. The optional `default` is `layered`, `grouped` or `force`. The optional `groupEdge` names the edge whose target is the container of its source. The value `grouped` needs `groupEdge`. See [Layouts](../guide/layouts.md). |
@@ -36,3 +37,33 @@ The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../s
 | `details` | The sections of the details panel: properties, text sections, option lists, source lists, object lists, tagged lists and citations. |
 
 A profile can also read a node from a Markdown page. See [Markdown pages as nodes](../guide/markdown-folder.md).
+
+## Deliverables
+
+The key `deliverables` states what a task on a node of each kind must deliver. An agent that reads the slice of a node knows when the task is done. The command `semspec deliverables`, the tool `gaps` and the gate `missing-deliverable` list what a node still misses.
+
+```yaml
+deliverables:
+  requirement:
+    parts: { min: 1 }
+    checks: each-part
+    status: [good]
+    fields: [rationale]
+    links: { governs: { min: 1, direction: in } }
+  condition:
+    checks: node
+```
+
+The key is a map from a kind id to an entry. Each part of an entry is optional. A node of a kind with no entry has no deliverable.
+
+| Part | The node delivers |
+|---|---|
+| `parts` | At least `min` parts, as the profile key `parts` defines them. |
+| `checks` | `each-part`: each part of the node has a check. `node`: the node has a check. Needs the profile key `checks`. |
+| `status` | A status that is in the list. An item is a status value or a tone (`good`, `warn`, `bad`). The status of a node with parts or children rolls up from them. Needs the profile key `status`. |
+| `fields` | A value in each listed node field. An empty text and an empty list have no value. |
+| `links` | For each key, at least `min` links. A key is an edge or a cross link field. `direction` is `out` (the default) for the links of the node, or `in` for the links that name the node. `direction` has no effect on a cross link field. |
+| `provenance` | `true`: the node has a value in the marker field and in the source field of the profile key `provenance`. |
+
+Each missing item makes 1 finding with a short message, for example `The requirement "Pay" has the part "pay#declined" with no check.` Semspec rejects a profile that names an unknown kind, edge, cross link field or status. It also rejects a part that needs a profile key that the profile does not have.
+

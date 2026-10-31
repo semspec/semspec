@@ -5,7 +5,7 @@ title: Gates
 description: Block a change that breaks the graph with semspec check, an agent hook, a pre-commit hook and a CI step.
 order: 8
 related: [cli, profile]
-documents: [feat-gates, cap-gate, req-gate-check, req-gate-hooks]
+documents: [feat-gates, cap-gate, req-gate-check, req-gate-hooks, req-deliverables]
 ---
 The command `semspec check` reads the graph and the profile with the rules of `build`. It exits with a code that a hook or a CI step can use. The examples on this page are copies for your project. Semspec installs none of them.
 
@@ -52,8 +52,9 @@ gates:
 | `unplaced` | A node of a kind with `placedUnder` that no parent field places under a node of that kind. |
 | `unresolved-link` | A link that names a node that is not in the graph. Without this gate, the link is a warning. |
 | `broken-cross-link` | A cross link that names a node that is not in the other graph of the workspace. |
+| `missing-deliverable` | A node that misses a deliverable that the profile key `deliverables` states for its kind. One finding for each missing item. See [The profile](../reference/profile.md#deliverables). |
 
-These are the same gaps as the MCP tool `gaps`. In a workspace, each graph uses the `gates` of its own profile.
+These are the same gaps as the MCP tool `gaps`. `semspec deliverables` lists the missing deliverables with no gate. In a workspace, each graph uses the `gates` of its own profile.
 
 ## Agent hook
 

@@ -186,7 +186,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'slice',
     description:
-      'Return the brief for a task on 1 node: the node with its fields, lifecycle, status and provenance, the path to the root, the parts with their checks, the linked nodes (decisions, rules, standards) with notes and edge properties, the cross links into other graphs with their definitions, the definitions of the coded values it uses, its gaps, and the nodes below it. Call it at the start of a task. The text stays near "budget" characters and names what it cut.',
+      'Return the brief for a task on 1 node: the node with its fields, lifecycle, status and provenance, the path to the root, the parts with their checks, the linked nodes (decisions, rules, standards) with notes and edge properties, the cross links into other graphs with their definitions, the definitions of the coded values it uses, its gaps, its missing deliverables, and the nodes below it. Call it at the start of a task. The text stays near "budget" characters and names what it cut.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -214,7 +214,7 @@ export const TOOLS: Tool[] = [
   },
   {
     name: 'gaps',
-    description: 'List the gaps in a scope: nodes with a warn or bad status, parts with no check, facts with no source, unplaced nodes and links to missing nodes. The scope is a node id, or the whole graph.',
+    description: 'List the gaps in a scope: nodes with a warn or bad status, parts with no check, facts with no source, unplaced nodes, links to missing nodes and missing deliverables (what the profile says a node of its kind must deliver). The scope is a node id, or the whole graph.',
     inputSchema: { type: 'object', properties: { scope: { type: 'string', description: 'The id of a node. The default is the whole graph.' }, graph: graphProp, limit: limitProp }, additionalProperties: false },
     run: (loaded, graphs, args) => gaps(graphs, text(args, 'graph', false), text(args, 'scope', false), whole(args, 'limit', DEFAULT_LIMIT, MAX_LIMIT)),
   },

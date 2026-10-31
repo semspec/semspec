@@ -2,9 +2,10 @@
 // Copyright 2026 The Semspec Authors
 // The slice of a node: 1 compact brief for an agent that starts a task on the node.
 // The slice holds the node, its path to the root, its parts and checks, the linked nodes, the cross links with
-// their definitions, the definitions of the coded values, the gaps and the nodes below it.
+// their definitions, the definitions of the coded values, the gaps, the missing deliverables and the nodes below it.
 // The budget counts the characters of the Markdown text. When the text is longer, the slice drops the
 // least important parts first and names each cut in `cut`.
+import type { DeliverableFinding } from './deliverables.js';
 import { gapLists, graphById, nodeById, plainFields, QueryError, type Brief, type GraphIndex } from './agent.js';
 import { statusOf } from './explore.js';
 import { getPath, refsOf } from './profile.js';
@@ -111,6 +112,8 @@ export interface Slice {
     unresolvedLinks: { from: string; edge: string; to: string }[];
     brokenCrossLinks: { from: string; field: string; graph: string; to: string }[];
   };
+  // `defined` is true when the profile states deliverables for the kind of the node or of one of its parts.
+  deliverables: { defined: boolean; missing: DeliverableFinding[] };
   below: { depth: number; total: number; nodes: SliceChild[] };
   // What the slice cut to fit the budget. Absent when nothing was cut.
   cut?: string[];
@@ -308,6 +311,7 @@ function build(graphs: GraphIndex[], g: GraphIndex, n: VNode, depth: number, sha
       unresolvedLinks: found.unresolvedLinks,
       brokenCrossLinks: found.brokenCrossLinks,
     },
+    deliverables: { defined: [n, ...parts.map((x) => index.byId.get(x.id)!)].some((x) => p.deliverables?.[x.kind] !== undefined), missing: found.missingDeliverables },
     below: { depth: shape.childDepth, total, nodes },
   };
   const notes: string[] = [];
@@ -424,6 +428,11 @@ export function sliceMarkdown(s: Slice): string {
   for (const x of gaps.missingSources) line(`- No source: ${code(x.id)} ${x.title}`);
   for (const x of gaps.unresolvedLinks) line(`- Link to a missing node: ${code(x.from)} ${x.edge} ${code(x.to)}`);
   for (const x of gaps.brokenCrossLinks) line(`- Cross link to a missing node: ${code(x.from)} ${x.field} ${code(`${x.graph}:${x.to}`)}`);
+  if (s.deliverables.defined) {
+    section('Deliverables');
+    if (!s.deliverables.missing.length) line('All delivered.');
+    for (const x of s.deliverables.missing) line(`- ${x.message} (${code(x.node)})`);
+  }
   if (s.below.total) {
     section(`Below the node (${s.below.total}, to depth ${s.below.depth})`);
     const walk = (nodes: SliceChild[], indent: string) => {

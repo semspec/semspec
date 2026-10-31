@@ -1,7 +1,6 @@
 id: req-search-keyword
 kind: requirement
 title: Rank nodes by keyword
-state: draft
 statement: "The tool search returns ranked node ids for a query. The ranking is BM25 over ids, titles, statements and definitions."
 capabilities:
   - cap-search

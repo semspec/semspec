@@ -1,7 +1,6 @@
 id: req-mcp-check-tools
 kind: requirement
 title: Check the graph with MCP tools
-state: draft
 statement: "The MCP server has the tools gaps, validate and schema."
 capabilities:
   - cap-mcp

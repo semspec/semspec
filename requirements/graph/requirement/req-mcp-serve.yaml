@@ -1,7 +1,6 @@
 id: req-mcp-serve
 kind: requirement
 title: Serve the graph over MCP
-state: draft
 statement: "The command semspec mcp serves a graph or a workspace over stdio with the Model Context Protocol."
 capabilities:
   - cap-mcp

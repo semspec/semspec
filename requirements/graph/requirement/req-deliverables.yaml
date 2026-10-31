@@ -1,17 +1,85 @@
 id: req-deliverables
 kind: requirement
 title: State what a task must deliver
-state: draft
-priority: later
-statement: The profile states for each kind which parts, checks and status a task must deliver.
+statement: The profile states for each kind which parts, checks, status, fields, links and provenance a task must deliver. A command, the gaps tool, the slice and the check command report what a node misses.
 capabilities:
   - cap-deliverables
 area:
   - harness
+  - core
+  - cli
 acceptance:
   - id: profile-key
-    text: The profile schema has a key for the deliverables of a kind.
-    status: open
+    text: The profile schema has a key for the deliverables of a kind. The profile check refuses a wrong shape and a name that the profile does not define.
+    status: verified
+    tests:
+      - type: unit
+        file: test/deliverables.test.ts
+        name: accepts a valid entry and refuses a wrong shape or a name that the profile does not define
+  - id: types
+    text: A kind states a minimum of parts, a check for each part or for the node, the allowed status, the required fields, the minimum of links on an edge or a cross link field, and the provenance.
+    status: verified
+    tests:
+      - type: unit
+        file: test/deliverables.test.ts
+        name: reports a node with fewer parts than the minimum
+      - type: unit
+        file: test/deliverables.test.ts
+        name: reports each part with no check
+      - type: unit
+        file: test/deliverables.test.ts
+        name: reports a node with no check of its own
+      - type: unit
+        file: test/deliverables.test.ts
+        name: reports a status that is not allowed, by value and by tone, and a missing status
+      - type: unit
+        file: test/deliverables.test.ts
+        name: reports a link rule on an edge, in both directions, and on a cross link field
+      - type: unit
+        file: test/deliverables.test.ts
+        name: reports a field with no value
+      - type: unit
+        file: test/deliverables.test.ts
+        name: reports a node with no source and keeps the marker apart
   - id: report
-    text: A command lists the nodes that miss a deliverable.
-    status: open
+    text: A command lists the nodes that miss a deliverable, with 1 finding for each missing item. It can limit the list by scope and by kind.
+    status: verified
+    tests:
+      - type: unit
+        file: test/deliverables.test.ts
+        name: reads a workspace or a model, and has no finding without the profile key
+      - type: unit
+        file: test/deliverables.test.ts
+        name: limits the report by kind and by scope
+      - type: unit
+        file: test/deliverables.test.ts
+        name: prints the findings of the requirements of this repository as JSON and as text
+      - type: unit
+        file: test/deliverables.test.ts
+        name: reads a workspace, names the graph in each line and refuses a wrong use
+  - id: gate
+    text: The check command fails on a missing deliverable when the profile lists the gate kind missing-deliverable in gates.fail.
+    status: verified
+    tests:
+      - type: unit
+        file: test/deliverables.test.ts
+        name: names the gate in the core and fails on a missing deliverable only when the profile lists it
+      - type: unit
+        file: test/deliverables.test.ts
+        name: fails the check on a missing deliverable when the profile lists the gate
+      - type: unit
+        file: test/deliverables.test.ts
+        name: passes the check when the profile does not list the gate
+  - id: agent
+    text: The gaps tool and the slice list the missing deliverables of the node.
+    status: verified
+    tests:
+      - type: unit
+        file: test/deliverables.test.ts
+        name: adds the missing deliverables to the gaps of a scope
+      - type: unit
+        file: test/deliverables.test.ts
+        name: adds the missing deliverables of the node and its parts to the slice, and says when all are delivered
+      - type: unit
+        file: test/deliverables.test.ts
+        name: leaves the section out when the profile states no deliverable for the node
