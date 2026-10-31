@@ -9,6 +9,8 @@
 //   semspec mcp --workspace <file>
 //   semspec search --graph <file> --profile <file> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
 //   semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
+//   semspec check --graph <file> --profile <file> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
+//   semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
 //   semspec --version | -v
 //   semspec version --json
 //   semspec schema --profile <file> --out <dir>
@@ -22,6 +24,7 @@ import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { EXPORT_FORMATS, buildModel, exportModel, exportWorkspace, isExportFormat, kindSchemas, type ExportOptions } from '@semspec/core';
 import { serveStdio } from '@semspec/mcp';
+import { UsageError, checkInputs, exitCode, formatFindings, formatJson, parseCheckArgs, sortFindings } from './check';
 import { loadInputs, loadProfile } from './inputs';
 import { mcpLoader } from './mcp';
 import { renderPage } from './page';
@@ -42,6 +45,8 @@ Usage:
   semspec mcp --workspace <file>
   semspec search --graph <file> --profile <file> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
   semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
+  semspec check --graph <file> --profile <file> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
+  semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
   semspec schema --profile <file> --out <dir>
   semspec --version | -v
   semspec version --json
@@ -53,6 +58,7 @@ The graph is a JSON file, a YAML file or a folder of YAML files. The profile is 
 A pattern matches a path relative to the graph folder. It supports *, ** and ?.
 --workspace reads a workspace file that lists several graphs. It cannot combine with --graph, --profile or --exclude.
 The mcp command serves the graph or the workspace to an AI agent over the Model Context Protocol on stdio. See docs/reference/mcp.md.
+The check command exits with 0 for a clean graph, 1 for an error and 2 for a wrong use. See docs/reference/cli.md.
 The search command ranks the nodes for a query. See docs/reference/cli.md.
 The schema command writes 1 JSON Schema for each kind of the profile. See docs/reference/schemas.md.
 The export command writes the graph as RDF (turtle, jsonld), as SHACL shapes (shacl) or as a Cypher script (cypher).
@@ -160,6 +166,17 @@ export async function run(argv: string[]): Promise<number> {
   if (!command || command === '--help' || command === 'help') {
     console.log(USAGE);
     return command ? 0 : 1;
+  }
+  if (command === 'check') {
+    try {
+      const args = parseCheckArgs(argv.slice(1));
+      const findings = sortFindings(checkInputs(args));
+      console.log(args.json ? formatJson(findings, args.strict) : formatFindings(findings, args.strict));
+      return exitCode(findings, args.strict);
+    } catch (e) {
+      console.error(e instanceof UsageError ? `${e.message}\n\n${USAGE}` : (e as Error).message);
+      return e instanceof UsageError ? 2 : 1;
+    }
   }
   if (command === 'search') {
     try {

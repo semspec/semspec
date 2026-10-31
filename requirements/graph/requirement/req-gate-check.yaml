@@ -2,7 +2,6 @@ id: req-gate-check
 kind: requirement
 title: Fail on a broken graph
 state: draft
-priority: later
 statement: A check command exits with an error when the graph breaks a rule of the profile.
 capabilities:
   - cap-gate
@@ -11,4 +10,90 @@ area:
 acceptance:
   - id: exit-code
     text: The command exits with a code other than 0 and names each broken rule.
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/check.test.ts
+        name: exits with 1 and names the profile file for a profile that breaks a rule
+      - type: unit
+        file: test/check.test.ts
+        name: exits with 1 for a graph file that does not exist
+      - type: unit
+        file: test/check.test.ts
+        name: exits with 1 for an unknown kind, a repeated id and a bad YAML file, and names the file
+      - type: unit
+        file: test/check.test.ts
+        name: exits with 1 for an edge property that the vocabulary does not hold
+      - type: unit
+        file: test/check.test.ts
+        name: exits with 1 for a workspace file that names a graph that does not exist
+      - type: unit
+        file: test/check.test.ts
+        name: exits with 0 on each fixture and on the requirements of the repository
+  - id: gates
+    text: "The profile key gates.fail lists the gap kinds that fail the check: bad-status, no-check, no-source, unplaced, unresolved-link and broken-cross-link. A gap kind that is not listed never fails the check."
+    status: verified
+    tests:
+      - type: unit
+        file: test/check.test.ts
+        name: lets no gap fail the check when the profile has no gates
+      - type: unit
+        file: test/check.test.ts
+        name: accepts the gates key in the profile schema and refuses an unknown gap kind
+      - type: unit
+        file: test/check.test.ts
+        name: fails on a node whose status has the tone bad with bad-status
+      - type: unit
+        file: test/check.test.ts
+        name: fails on a part with no check with no-check
+      - type: unit
+        file: test/check.test.ts
+        name: fails on a node that needs a source with no-source
+      - type: unit
+        file: test/check.test.ts
+        name: fails on a node that is not placed with unplaced
+      - type: unit
+        file: test/check.test.ts
+        name: fails on a link to a missing node with unresolved-link, and only warns without the gate
+      - type: unit
+        file: test/check.test.ts
+        name: fails on a cross link to a missing node with broken-cross-link
+      - type: unit
+        file: test/check.test.ts
+        name: names every gap kind in the profile schema and in the core
+  - id: changed
+    text: "The option --changed limits the gate findings to the nodes of the listed files. A rule error always counts."
+    status: verified
+    tests:
+      - type: unit
+        file: test/check.test.ts
+        name: limits the gate findings to the nodes of the changed files with --changed
+      - type: unit
+        file: test/check.test.ts
+        name: counts all gate findings with --changed when the profile file changed
+      - type: unit
+        file: test/check.test.ts
+        name: counts a rule error with --changed even when its file did not change
+      - type: unit
+        file: test/check.test.ts
+        name: gives a part the file of its owner with --changed
+  - id: output
+    text: "The command prints 1 sorted line for each finding and a summary line. The option --json prints the findings as JSON. A warning fails the check only with --strict."
+    status: verified
+    tests:
+      - type: unit
+        file: test/check.test.ts
+        name: prints 1 sorted line for each finding and a summary line
+      - type: unit
+        file: test/check.test.ts
+        name: prints the findings as JSON with --json
+      - type: unit
+        file: test/check.test.ts
+        name: fails on a warning only with --strict
+  - id: usage-error
+    text: The command exits with the code 2 for a wrong use.
+    status: verified
+    tests:
+      - type: unit
+        file: test/check.test.ts
+        name: exits with 2 for a wrong use of the command

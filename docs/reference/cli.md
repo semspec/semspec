@@ -4,8 +4,8 @@ kind: reference
 title: Command line
 description: The commands and options of the semspec command.
 order: 1
-related: [getting-started, yaml-folder, workspace, export, schemas, mcp]
-documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword]
+related: [getting-started, yaml-folder, workspace, export, schemas, mcp, gates]
+documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check]
 ---
 ## Commands
 
@@ -18,6 +18,8 @@ semspec mcp --graph <graph> --profile <profile> [--exclude <pattern>]...
 semspec mcp --workspace <file>
 semspec search --graph <graph> --profile <profile> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json] [--exclude <pattern>]...
 semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
+semspec check --graph <graph> --profile <profile> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
+semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
 semspec schema --profile <profile> --out <dir>
 semspec export --graph <graph> --profile <profile> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
 semspec export --workspace <file> --format turtle|jsonld|shacl|cypher --out <file> [--annotations annotation|reified]
@@ -29,6 +31,7 @@ semspec version --json
 - `build` writes 1 HTML file. The file has the data, the script and the style inline. It opens from disk and makes no network request.
 - The page has a Light, Dark and System switch in the header. It keeps the choice in the browser storage of the viewer.
 - `mcp` serves the graph or the workspace to an AI agent over the Model Context Protocol on stdio. See [MCP server](mcp.md).
+- `check` validates the inputs and the gates of the profile, and exits with a code for a hook or a CI step. See below.
 - `search` ranks the nodes for the query and prints the hits. See below.
 - `schema` writes 1 JSON Schema for each kind of the profile. See [The schemas of the kinds](schemas.md).
 - `export` writes the graph for other tools. See [Export](export.md).
@@ -41,6 +44,19 @@ semspec version --json
 `--workspace` reads a workspace file instead of `--graph` and `--profile`. See [Workspace](../guide/workspace.md). It cannot combine with `--graph`, `--profile` or `--exclude`.
 
 `serve`, `build` and `mcp` check the 2 inputs first and stop with a message when an input is not valid. A message about a YAML node names its file. `mcp` writes the message to stderr and exits with code 1.
+
+## Check
+
+`semspec check` reads the graph, or all graphs of a workspace, with the rules of `build`. It also fails on the gaps that the profile key `gates.fail` lists. See [Gates](../guide/gates.md) for the gap kinds, the hooks and a CI example.
+
+| Option | Meaning |
+| --- | --- |
+| `--exclude <pattern>` | As for `build`. The option can repeat. |
+| `--changed <file>...` | Keep only the gate findings of the nodes in these files. A rule error always counts. The option takes all values up to the next option, and can take none. |
+| `--json` | Print the findings as 1 line of JSON. |
+| `--strict` | A warning also fails the check. |
+
+Each finding takes 1 line, `<level> <file or node id>: <message>`, sorted, and a summary line ends the output. The exit code is 0 when the check finds no error, 1 when it finds an error, and 2 for a wrong use of the command.
 
 ## Search
 

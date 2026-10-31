@@ -431,6 +431,39 @@ export function walk(graphs: GraphIndex[], graphId: string | undefined, id: stri
 
 // ---------- gaps ----------
 
+// The raw gaps of the nodes in `ids`, as the tool gaps and the check command read them.
+export interface GapLists {
+  status: (Brief & { status: string; tone: string | undefined })[];
+  uncheckedParts: (Brief & { owner?: string })[];
+  withoutSource: Brief[];
+  unplaced: Brief[];
+  unresolvedLinks: { from: string; edge: string; to: string }[];
+  brokenCrossLinks: { from: string; field: string; graph: string; to: string }[];
+}
+
+// Finds the gaps of the nodes in `ids`. `graphs` are all graphs of the workspace, for the cross links.
+export function gapLists(graphs: GraphIndex[], g: GraphIndex, ids: Set<string>): GapLists {
+  const { index } = g;
+  const p = index.profile;
+  const inScope = (id: string) => ids.has(id);
+  const tone = (v: string) => p.status?.values.find((x) => x.value === v)?.tone;
+  const status = index.model.nodes.filter((n) => inScope(n.id) && n.status && tone(n.status) !== 'good').map((n) => ({ ...brief(n), status: n.status!, tone: tone(n.status!) }));
+  const partKinds = new Set((p.parts ?? []).map((x) => x.kind));
+  const checkEdge = p.checks && p.edges[p.checks.edge] ? p.checks.edge : undefined;
+  const uncheckedParts = checkEdge ? index.model.nodes.filter((n) => inScope(n.id) && partKinds.has(n.kind) && !(index.out.get(n.id) ?? []).some((e) => e.k === checkEdge)).map((n) => ({ ...brief(n), ...(n.parents[0] ? { owner: n.parents[0] } : {}) })) : [];
+  const source = sourceCheck(index, ids);
+  const withoutSource = (source?.missing ?? []).map((m) => brief(index.byId.get(m)!));
+  const unplaced = index.model.unplaced.filter(inScope).map((u) => brief(index.byId.get(u)!));
+  const unresolvedLinks = index.model.unresolved.filter((u) => inScope(u.s)).map((u) => ({ from: u.s, edge: u.k, to: u.t }));
+  const brokenCrossLinks: GapLists['brokenCrossLinks'] = [];
+  for (const c of index.model.crossLinks as CrossLink[]) {
+    if (!inScope(c.s)) continue;
+    const target = graphs.find((x) => x.id === c.graph);
+    if (target && !target.index.byId.has(c.t)) brokenCrossLinks.push({ from: c.s, field: c.field, graph: c.graph, to: c.t });
+  }
+  return { status, uncheckedParts, withoutSource, unplaced, unresolvedLinks, brokenCrossLinks };
+}
+
 // The gaps in a scope. A scope is a node id, or the whole graph when `scopeId` is not set.
 export function gaps(graphs: GraphIndex[], graphId: string | undefined, scopeId?: string, limit = DEFAULT_LIMIT): Record<string, unknown> {
   const g = graphById(graphs, graphId);
@@ -438,23 +471,8 @@ export function gaps(graphs: GraphIndex[], graphId: string | undefined, scopeId?
   const p = index.profile;
   if (scopeId !== undefined) nodeById(g, scopeId);
   const ids = scopeId === undefined ? new Set(index.model.nodes.map((n) => n.id)) : computeScope(index, { id: scopeId }).ids;
-  const inScope = (id: string) => ids.has(id);
   const truncated: Truncated = {};
-  const tone = (v: string) => p.status?.values.find((x) => x.value === v)?.tone;
-  const badStatus = index.model.nodes.filter((n) => inScope(n.id) && n.status && tone(n.status) !== 'good').map((n) => ({ ...brief(n), status: n.status!, tone: tone(n.status!) }));
-  const partKinds = new Set((p.parts ?? []).map((x) => x.kind));
-  const hasChecks = !!p.edges[p.checks!.edge];
-  const unchecked = hasChecks ? index.model.nodes.filter((n) => inScope(n.id) && partKinds.has(n.kind) && !(index.out.get(n.id) ?? []).some((e) => e.k === p.checks!.edge)).map((n) => ({ ...brief(n), ...(n.parents[0] ? { owner: n.parents[0] } : {}) })) : [];
-  const source = sourceCheck(index, ids);
-  const noSource = (source?.missing ?? []).map((m) => brief(index.byId.get(m)!));
-  const unplaced = index.model.unplaced.filter(inScope).map((u) => brief(index.byId.get(u)!));
-  const unresolved = index.model.unresolved.filter((u) => inScope(u.s)).map((u) => ({ from: u.s, edge: u.k, to: u.t }));
-  const broken: { from: string; field: string; graph: string; to: string }[] = [];
-  for (const c of index.model.crossLinks as CrossLink[]) {
-    if (!inScope(c.s)) continue;
-    const target = graphs.find((x) => x.id === c.graph);
-    if (target && !target.index.byId.has(c.t)) broken.push({ from: c.s, field: c.field, graph: c.graph, to: c.t });
-  }
+  const { status: badStatus, uncheckedParts: unchecked, withoutSource: noSource, unplaced, unresolvedLinks: unresolved, brokenCrossLinks: broken } = gapLists(graphs, g, ids);
   const result = {
     graph: g.id,
     scope: scopeId ?? null,

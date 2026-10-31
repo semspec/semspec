@@ -96,6 +96,19 @@ export interface StatusSpec {
   detail?: { field: string; label: string };
 }
 
+// The gap kinds that can fail the check command. A gap that the profile does not list never fails the check.
+//   bad-status: a node whose own status has the tone `bad`.
+//   no-check: a part with no check.
+//   no-source: a node that the provenance of the profile needs a source for, and that has none.
+//   unplaced: a node of a kind with `placedUnder` that no parent field places under a node of that kind.
+//   unresolved-link: a link that names a node that is not in the graph.
+//   broken-cross-link: a cross link that names a node that is not in the other graph of the workspace.
+export const GATE_KINDS = ['bad-status', 'no-check', 'no-source', 'unplaced', 'unresolved-link', 'broken-cross-link'] as const;
+export type GateKind = (typeof GATE_KINDS)[number];
+export interface GateSpec {
+  fail?: GateKind[];
+}
+
 export type StatusTone = 'good' | 'warn' | 'bad';
 
 // A filter on a list field or a text field of a node.
@@ -269,6 +282,8 @@ export interface Profile {
   // The words that the search reads. `synonymFields` name node fields with words that mean the same as the title. `fields`
   // name more node fields to read. `boost` sets the weight of a field. The built-in names are id, title, sub, statement and parts.
   search?: SearchSpec;
+  // The gates of the check command. See `GateSpec`.
+  gates?: GateSpec;
   facets?: { groupKind: string; groupLabel: string };
   entry?: { kind: string; childKind: string; title: string; countLabel: string };
   groups?: { hierarchy: string };

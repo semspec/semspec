@@ -246,6 +246,19 @@
         "boost": { "type": "object", "description": "The weight of a field in the ranking, by field name. The built-in names are id, title, sub, statement and parts. The defaults are 2, 3, 1, 1 and 1.", "additionalProperties": { "type": "number", "exclusiveMinimum": 0 } }
       }
     },
+    "gates": {
+      "type": "object",
+      "description": "The gaps that fail the check command. Every part is optional. A gap that is not listed never fails the check.",
+      "additionalProperties": false,
+      "properties": {
+        "fail": {
+          "type": "array",
+          "uniqueItems": true,
+          "description": "The gap kinds that fail the check. bad-status: a node whose own status has the tone bad. no-check: a part with no check. no-source: a node that needs a source and has none. unplaced: a node that no parent field places. unresolved-link: a link to a node that is not in the graph. broken-cross-link: a cross link to a node that is not in the other graph.",
+          "items": { "enum": ["bad-status", "no-check", "no-source", "unplaced", "unresolved-link", "broken-cross-link"] }
+        }
+      }
+    },
     "provenance": {
       "type": "object",
       "description": "Where a fact comes from, in the shape of W3C PROV-O. The fields apply to a node, to an edge property and to a refs item. Every part is optional.",

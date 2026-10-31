@@ -47,6 +47,8 @@ status:
     - { value: verified, label: Verified, tone: good }
     - { value: partial, label: Partial, tone: warn }
     - { value: open, label: Open, tone: bad }
+gates:
+  fail: [unplaced, unresolved-link, no-source]
 vocabularies:
   priority:
     label: Priority

@@ -14,6 +14,7 @@ What Semspec does today:
 - `semspec schema` writes a JSON Schema for each kind, so editors and agents can check the YAML files.
 - `serve` runs a live local page. `build` writes 1 self-contained HTML file.
 - A workspace holds several graphs, each with its own profile, on 1 page. A node of 1 graph can link to a node of another graph.
+- `semspec check` validates a graph and exits with a code for a hook or a CI step. The profile key `gates` lists the gaps that fail it.
 - `semspec export` writes a graph or a workspace as RDF (Turtle, JSON-LD), as SHACL shapes or as a Cypher script.
 
 The tool knows no project. Every kind, edge, field, colour and label comes from the profile.

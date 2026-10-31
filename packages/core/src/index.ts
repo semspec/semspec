@@ -21,5 +21,6 @@ export * from './export.js';
 export * from './tree-groups.js';
 export * from './validate.js';
 export * from './agent.js';
+export * from './gates.js';
 export * from './rank.js';
 export * from './search.js';

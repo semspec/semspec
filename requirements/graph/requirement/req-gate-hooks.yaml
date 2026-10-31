@@ -11,10 +11,25 @@ area:
 acceptance:
   - id: agent-hook
     text: An agent hook runs the check after a change.
-    status: open
+    status: partial
+    tests:
+      - type: unit
+        file: test/check.test.ts
+        name: runs the agent hook script of the guide for a file inside and a file outside the graph folder
+      - type: unit
+        file: test/check.test.ts
+        name: has a settings example of the guide that runs the script after Write and Edit
   - id: pre-commit
     text: A pre-commit hook runs the check.
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/check.test.ts
+        name: runs the pre-commit script of the guide against a git repository and blocks a broken commit
   - id: ci
     text: A CI step runs the check.
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/check.test.ts
+        name: has a workflow for this repository that runs the check on the requirements with pinned actions
