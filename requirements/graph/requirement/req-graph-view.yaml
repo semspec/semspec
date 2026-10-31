@@ -10,6 +10,24 @@ acceptance:
   - id: layout
     text: The root of the scope sits at the left edge. The canvas fits the layout.
     status: partial
+    note: The tests run in jsdom with a fixed canvas size. No test measures the fit in a browser.
+    tests:
+      - type: unit
+        file: test/app/graph.test.tsx
+        name: puts the root of the scope left of the nodes below it
+      - type: unit
+        file: test/app/graph.test.tsx
+        name: puts the root of the scope at the left edge when no node comes before it
+      - type: unit
+        file: test/app/graph.test.tsx
+        name: fits the canvas to the layout
   - id: colour
     text: The status mode colours each node by its status tone.
-    status: partial
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/graph.test.tsx
+        name: colours each node by its status tone when the toggle is on, and by its kind when it is off
+      - type: unit
+        file: test/app/graph.test.tsx
+        name: takes the tones of the profile of another fixture

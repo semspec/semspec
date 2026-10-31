@@ -15,5 +15,11 @@ export default defineConfig({
       { find: /^@\//, replacement: here('./packages/app/src/') },
     ],
   },
-  test: { include: ['test/**/*.test.ts'], environment: 'node' },
+  test: {
+    // The Node tests stay in one project. The app tests render components, so they run in jsdom.
+    projects: [
+      { extends: true, test: { name: 'node', include: ['test/**/*.test.ts'], environment: 'node' } },
+      { extends: true, test: { name: 'dom', include: ['test/app/**/*.test.tsx'], environment: 'jsdom', setupFiles: ['test/app/setup.ts'] } },
+    ],
+  },
 });

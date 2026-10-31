@@ -141,4 +141,14 @@ acceptance:
         name: show a value that is not a code as it is
   - id: panel
     text: The filters group and order the options by the vocabulary. The details panel shows a coded field as its label, the code in small mono text and the definition below it.
-    status: partial
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: list the options of a coded field in the order of the vocabulary
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: groups an option under the label of its broader concept
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: shows a coded field as its label, its code and its definition

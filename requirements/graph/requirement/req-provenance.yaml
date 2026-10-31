@@ -124,4 +124,11 @@ acceptance:
         name: is null when the profile has no source field, and counts a node with an empty source as missing
   - id: panel
     text: The details panel of a node and of an edge has a Provenance section with the marker label, the source, the date and the agent. An edge in a list has a small marker badge.
-    status: partial
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: shows the provenance of a node and a marker badge on an edge in a list
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: shows the provenance of an edge

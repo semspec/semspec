@@ -16,4 +16,14 @@ acceptance:
         name: shows the chips that the profile names for each kind
   - id: table
     text: The Table shows the columns, filters and pinned header.
-    status: partial
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: has a column for each field filter and pins its header
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: takes the field filter columns of the profile
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: filters the rows with a column filter

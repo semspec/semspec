@@ -12,6 +12,8 @@ acceptance:
   - id: no-hscroll
     text: "At a viewport 375 px wide, the page width equals the viewport width in each view."
     status: partial
+    note: jsdom has no layout, so no test can measure the page width. A check in a real browser at 375 px is not automated.
   - id: all-views
     text: "The check covers the Graph view, Cards and the Table."
     status: partial
+    note: jsdom has no layout, so no test can measure the page width in the 3 views. A check in a real browser is not automated.

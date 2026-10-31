@@ -9,4 +9,11 @@ area:
 acceptance:
   - id: sections
     text: The panel shows properties, text sections, checks and citations.
-    status: partial
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: shows the properties, the text sections, the checks and the citations that the profile names
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: shows no section that the node lacks

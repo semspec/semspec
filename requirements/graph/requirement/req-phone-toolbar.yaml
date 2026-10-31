@@ -12,9 +12,27 @@ acceptance:
   - id: toolbar
     text: "Each toolbar control stays reachable at 375 px wide."
     status: partial
+    note: The tests read the classes and the buttons. jsdom computes no CSS, so no test measures the controls at 375 px.
+    tests:
+      - type: unit
+        file: test/app/phone.test.tsx
+        name: keeps each control of the header reachable
+      - type: unit
+        file: test/app/phone.test.tsx
+        name: wraps the tools of the canvas and hides the mini map and the legend
   - id: filters
     text: "The filters collapse into 1 control or wrap onto more lines."
     status: partial
+    note: The test reads the classes of the filters. jsdom computes no CSS, so no test measures the wrap.
+    tests:
+      - type: unit
+        file: test/app/phone.test.tsx
+        name: wraps the filters and scrolls the facets in a row of their own
   - id: tabs
     text: "The view tabs wrap or scroll inside their own box."
     status: partial
+    note: The test reads the classes of the tabs. jsdom computes no CSS, so no test measures the row.
+    tests:
+      - type: unit
+        file: test/app/phone.test.tsx
+        name: gives the view tabs a row of their own

@@ -66,4 +66,14 @@ acceptance:
         name: joins the properties with a middle dot
   - id: panel
     text: The details panel shows the properties after each edge. A click on an edge in the canvas selects it, and the panel shows its kind, source, target, note and properties, with buttons to select the source or the target.
-    status: partial
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: shows the kind, the source, the target, the note and the properties of an edge that a click selects
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: selects the source or the target with a button
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: shows the properties after each edge in the list of a node

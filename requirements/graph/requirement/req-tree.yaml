@@ -16,4 +16,14 @@ acceptance:
         name: puts a node that follows another node under it, and keeps every parent field for the scope
   - id: ui
     text: The tree selects a node as the scope.
-    status: partial
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: selects a node of the product fixture as the scope
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: selects a node of the safety fixture as the scope
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: removes the scope with the button of the chip

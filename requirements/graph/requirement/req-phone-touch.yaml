@@ -12,9 +12,12 @@ acceptance:
   - id: pan
     text: "A 1 finger drag on the canvas pans the Graph view."
     status: partial
+    note: jsdom has no touch gestures, so no test can drag the canvas. A check on a device is not automated.
   - id: pinch
     text: "A 2 finger pinch on the canvas zooms the Graph view."
     status: partial
+    note: jsdom has no touch gestures, so no test can pinch the canvas. A check on a device is not automated.
   - id: page-stays
     text: "A gesture on the canvas does not scroll or zoom the page."
     status: partial
+    note: jsdom has no touch gestures and no page scroll, so no test can show that the page stays. A check on a device is not automated.

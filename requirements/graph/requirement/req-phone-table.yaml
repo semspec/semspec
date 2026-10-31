@@ -12,3 +12,8 @@ acceptance:
   - id: table-scroll
     text: "The Table box scrolls sideways. The page does not."
     status: partial
+    note: The test reads the classes of the box. jsdom computes no CSS, so no test scrolls the box.
+    tests:
+      - type: unit
+        file: test/app/phone.test.tsx
+        name: scrolls the Table in its own box and keeps the page from scrolling
