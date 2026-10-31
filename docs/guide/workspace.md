@@ -26,4 +26,4 @@ A user can keep several graphs about 1 system, for example a requirements graph 
 - Each graph and each profile is checked as in the single-graph form. A message names the graph id.
 - `serve` reads all inputs again on each page load.
 - The page title is the workspace title. The header shows the label of the active graph and a switch when the workspace has more than 1 graph.
-- Each graph keeps its scope, filters, view, selection, walk and canvas positions. A return to the graph restores them.
+- Each graph keeps its state. A return to the graph restores it. See [What the page remembers](state.md).

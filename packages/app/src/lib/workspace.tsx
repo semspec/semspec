@@ -17,6 +17,8 @@ export interface WorkspaceApi {
   backLabel?: string;
   back: () => void;
   canBack: boolean;
+  // Forgets the stored state of the workspace and starts fresh.
+  resetView: () => void;
   // The incoming cross links of a node of the active graph.
   incoming: (node: string) => IncomingCrossLink[];
   // A node of any graph of the workspace.

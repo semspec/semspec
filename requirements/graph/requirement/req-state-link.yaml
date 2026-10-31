@@ -1,20 +1,54 @@
 id: req-state-link
 kind: requirement
-title: Link to an exact view
-state: draft
-priority: now
-statement: The address of the page holds the active graph, the scope and the selected node, so a link opens the same view.
+title: "Link to an exact view"
+statement: "The address of the page holds the active graph, the scope and the selected node, so a link opens the same view."
 capabilities:
   - cap-view-state
 area:
   - app
 acceptance:
   - id: write
-    text: A change of the graph, the scope or the selection updates the hash of the address, with no new history entry for each change.
-    status: open
+    text: "A change of the graph, the scope or the selection updates the hash of the address, with no new history entry for each change."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "writes the graph, the scope and the node into the hash with no new history entry"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "encodes the ids"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "keeps the path and the query of the address"
   - id: read
-    text: A page that opens with such a hash shows that graph, scope and node, and the hash wins over the stored state.
-    status: open
+    text: "A page that opens with such a hash shows that graph, scope and node, and the hash wins over the stored state."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "shows the graph, the scope and the node of the hash, and the hash wins over the stored state"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "wins over a stored scope and selection of the same graph"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "shows a node as the scope when the hash names a node only"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "follows a change of the hash on the open page"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "opens the tree to the node of the hash"
   - id: unknown
-    text: A hash that names an unknown graph or node opens the page with the rest of the state and no error.
-    status: open
+    text: "A hash that names an unknown graph or node opens the page with the rest of the state and no error."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "ignores an unknown graph, scope and node and loads the rest of the state"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "ignores a node of another graph"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "ignores a broken hash"

@@ -2,76 +2,47 @@
 // Copyright 2026 The Semspec Authors
 // The state of the viewer: scope, filters, view, selection and the walk on the canvas.
 // The rules live in the core module. This hook only holds the state and calls them.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Core, type Filters, type Index, type Model, type VEdge, type VNode, type Walk } from './core';
+import { useCallback, useMemo, type SetStateAction } from 'react';
+import { Core, type Model, type VEdge, type Walk } from './core';
+import { EMPTY_FILTERS, patchGraph, positionsOf, useAppStore, type CanvasMode, type GraphState, type Panel, type Scope, type View, type Viewport } from './store';
+import { revealed } from './tree-open';
 
-export type View = 'graph' | 'cards' | 'table';
-export type Scope = { type: 'node'; id: string } | { type: 'all' } | null;
-export type Panel = 'details' | 'expand';
+export type { Panel, Scope, View };
+export { EMPTY_FILTERS };
 
-export const EMPTY_FILTERS: Filters = { q: '', kinds: [], lifecycles: [], deliveries: [], modules: [], statuses: [], markers: [], fields: {} };
-
-// The tree group that holds a node. A reveal opens it.
-function groupOf(index: Index, id: string): string {
-  let n = index.byId.get(id)!;
-  const seen = new Set<string>();
-  while (n.parents.length && !seen.has(n.id)) {
-    seen.add(n.id);
-    n = index.byId.get(n.parents[0])!;
-  }
-  if (Core.LINKED_KINDS.includes(n.kind)) return `g:${n.kind}`;
-  if (!Core.kindSpec(n.kind)?.parents?.length) {
-    const kinds = Core.hierarchyRootKinds(index.profile, Array.from(index.byId.values(), (x) => x.kind));
-    return Core.hierarchyGroupKey(kinds, n.kind);
-  }
-  if (index.unplaced.has(n.id)) return `g:unplaced:${n.kind}`;
-  return `g:un:${n.kind}`;
+// 1 field of the state of the graph. The state lives in the store, so a switch of the graph keeps it.
+function useField<K extends keyof GraphState>(graph: string, key: K) {
+  const value = useAppStore((s) => s.graphs[graph][key]);
+  const set = useCallback(
+    (next: SetStateAction<GraphState[K]>) =>
+      patchGraph(graph, (g) => ({ [key]: typeof next === 'function' ? (next as (prev: GraphState[K]) => GraphState[K])(g[key]) : next }) as Partial<GraphState>),
+    [graph, key],
+  );
+  return [value, set] as const;
 }
 
-type Positions = Record<'graph' | 'cards', { map: Map<string, { x: number; y: number }>; tick: number; key: string }>;
-
-// The state of a viewer. A workspace keeps it when the user leaves a graph, and gives it back
-// when the user returns.
-export interface ViewerState {
-  scope: Scope;
-  depth: number | null;
-  filters: Filters;
-  view: View;
-  selected: string | null;
-  // The selected edge. A node and an edge are never selected together.
-  selectedEdge: VEdge | null;
-  selectSeq: number;
-  walk: Walk | null;
-  walkRoot: string | null;
-  history: (Walk | null)[];
-  layoutTick: number;
-  dock: boolean;
-  statusColour: boolean;
-  panel: Panel;
-  open: Set<string>;
-  positions: Positions;
-}
-
-// `session` restores a saved state at the start. The hook saves the state after each render.
-export function useViewer(model: Model, session?: { initial?: ViewerState; save: (state: ViewerState) => void }) {
+// The state of a viewer: scope, filters, view, selection and the walk on the canvas. The store holds
+// it for each graph. The hook reads and writes through the store.
+export function useViewer(model: Model, graph: string) {
   const index = useMemo(() => Core.buildIndex(model), [model]);
-  const init = session?.initial;
-  const [scope, setScopeState] = useState<Scope>(init?.scope ?? null);
-  const [depth, setDepth] = useState<number | null>(init?.depth ?? null);
-  const [filters, setFilters] = useState<Filters>(init?.filters ?? EMPTY_FILTERS);
-  const [view, setView] = useState<View>(init?.view ?? 'graph');
-  const [selected, setSelected] = useState<string | null>(init?.selected ?? null);
-  const [selectedEdge, setSelectedEdge] = useState<VEdge | null>(init?.selectedEdge ?? null);
-  const [selectSeq, setSelectSeq] = useState(init?.selectSeq ?? 0);
-  const [walk, setWalk] = useState<Walk | null>(init?.walk ?? null);
-  const [walkRoot, setWalkRoot] = useState<string | null>(init?.walkRoot ?? null);
-  const [history, setHistory] = useState<(Walk | null)[]>(init?.history ?? []);
-  const [layoutTick, setLayoutTick] = useState(init?.layoutTick ?? 0);
-  const [dock, setDock] = useState(init?.dock ?? false);
+  const [scope] = useField(graph, 'scope');
+  const [depth, setDepth] = useField(graph, 'depth');
+  const [filters, setFilters] = useField(graph, 'filters');
+  const [view, setView] = useField(graph, 'view');
+  const [selected, setSelected] = useField(graph, 'selected');
+  const [selectedEdge, setSelectedEdge] = useField(graph, 'selectedEdge');
+  const [walk] = useField(graph, 'walk');
+  const [walkRoot] = useField(graph, 'walkRoot');
+  const [history] = useField(graph, 'history');
+  const [layoutTick] = useField(graph, 'layoutTick');
+  const [layoutChoice, setLayoutChoice] = useField(graph, 'layoutChoice');
+  const [dock, setDock] = useField(graph, 'dock');
   // The canvas colours each node by its status. It is off by default.
-  const [statusColour, setStatusColour] = useState(init?.statusColour ?? false);
-  const [panel, setPanel] = useState<Panel>(init?.panel ?? 'details');
-  const [open, setOpen] = useState<Set<string>>(() => init?.open ?? new Set(['g:hier', ...Core.hierarchySections(model.profile, model.nodes).map((s) => s.key)]));
+  const [statusColour, setStatusColour] = useField(graph, 'statusColour');
+  const [panel, setPanel] = useField(graph, 'panel');
+  const [open] = useField(graph, 'open');
+  const [widths, setWidths] = useField(graph, 'widths');
+  const selectSeq = useAppStore((s) => s.graphs[graph].selectSeq);
 
   // The nodes of the scope, before the filters.
   const scopeIds = useMemo<string[]>(() => {
@@ -89,76 +60,46 @@ export function useViewer(model: Model, session?: { initial?: ViewerState; save:
   const canvasEdges = useMemo<VEdge[]>(() => Core.scopedEdges(index, canvasSet), [index, canvasSet]);
   const tableIds = filteredIds;
 
-  const reveal = useCallback(
-    (id: string) => {
-      setOpen((prev) => {
-        const next = new Set(prev);
-        next.add(groupOf(index, id));
-        let n: VNode | undefined = index.byId.get(id);
-        const seen = new Set<string>();
-        while (n && n.parents.length && !seen.has(n.id)) {
-          seen.add(n.id);
-          n = index.byId.get(n.parents[0]);
-          if (n) next.add(n.id);
-        }
-        return next;
-      });
-    },
-    [index],
-  );
-
   const select = useCallback(
     (id: string | null, opts?: { panel?: Panel }) => {
-      setSelected(id);
-      setSelectedEdge(null);
-      if (id) {
-        reveal(id);
-        setSelectSeq((s) => s + 1);
-        if (opts?.panel) setPanel(opts.panel);
-      }
+      patchGraph(graph, (g) => ({
+        selected: id,
+        selectedEdge: null,
+        ...(id ? { open: revealed(index, g.open, id), selectSeq: g.selectSeq + 1, ...(opts?.panel ? { panel: opts.panel } : {}) } : {}),
+      }));
     },
-    [reveal],
+    [graph, index],
   );
 
-  const selectEdge = useCallback((edge: VEdge | null) => {
-    setSelectedEdge(edge);
-    if (edge) {
-      setSelected(null);
-      setPanel('details');
-    }
-  }, []);
+  const selectEdge = useCallback(
+    (edge: VEdge | null) => {
+      patchGraph(graph, edge ? { selectedEdge: edge, selected: null, panel: 'details' } : { selectedEdge: null });
+    },
+    [graph],
+  );
 
+  // A new scope, a new walk and a new layout drop the stored viewport, so the canvas fits.
   const setScope = useCallback(
     (next: Scope) => {
-      setScopeState(next);
-      setWalk(null);
-      setWalkRoot(null);
-      setHistory([]);
-      setDepth(null);
-      setLayoutTick((t) => t + 1);
+      patchGraph(graph, (g) => ({ scope: next, walk: null, walkRoot: null, history: [], depth: null, viewport: {}, layoutTick: g.layoutTick + 1 }));
       if (next && next.type === 'node') select(next.id);
     },
-    [select],
+    [graph, select],
   );
 
   const commit = useCallback(
     (next: Walk | null) => {
-      setHistory((h) => [...h.slice(-49), walk]);
-      setWalk(next);
+      patchGraph(graph, (g) => ({ history: [...g.history.slice(-49), walk], walk: next }));
     },
-    [walk],
+    [graph, walk],
   );
 
   const startFrom = useCallback(
     (id: string) => {
-      setScopeState(null);
-      setHistory([]);
-      setWalk(Core.walkStart([id]));
-      setWalkRoot(id);
-      setLayoutTick((t) => t + 1);
+      patchGraph(graph, (g) => ({ scope: null, history: [], walk: Core.walkStart([id]), walkRoot: id, viewport: {}, layoutTick: g.layoutTick + 1 }));
       select(id);
     },
-    [select],
+    [graph, select],
   );
 
   const expand = useCallback(
@@ -186,52 +127,40 @@ export function useViewer(model: Model, session?: { initial?: ViewerState; save:
       commit(Core.walkHide(base, id));
       if (selected === id) setSelected(null);
     },
-    [walk, canvasIds, commit, selected],
+    [walk, canvasIds, commit, selected, setSelected],
   );
 
   const undo = useCallback(() => {
-    setHistory((h) => {
-      if (!h.length) return h;
-      setWalk(h[h.length - 1]);
-      return h.slice(0, -1);
-    });
-  }, []);
+    patchGraph(graph, (g) => (g.history.length ? { walk: g.history[g.history.length - 1], history: g.history.slice(0, -1) } : {}));
+  }, [graph]);
 
   const resetWalk = useCallback(() => {
-    setWalk(null);
-    setWalkRoot(null);
-    setHistory([]);
-    setLayoutTick((t) => t + 1);
-  }, []);
+    patchGraph(graph, (g) => ({ walk: null, walkRoot: null, history: [], viewport: {}, layoutTick: g.layoutTick + 1 }));
+  }, [graph]);
 
-  const relayout = useCallback(() => setLayoutTick((t) => t + 1), []);
-  const toggleOpen = useCallback((key: string) => {
-    setOpen((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }, []);
+  const relayout = useCallback(() => patchGraph(graph, (g) => ({ viewport: {}, layoutTick: g.layoutTick + 1 })), [graph]);
+  const toggleOpen = useCallback(
+    (key: string) => {
+      patchGraph(graph, (g) => {
+        const next = new Set(g.open);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return { open: next };
+      });
+    },
+    [graph],
+  );
 
   // The canvas positions of each mode. A switch between Graph and Cards keeps the walk and the
   // positions of each mode.
-  const positions = useRef<Positions>(
-    init?.positions ?? {
-      graph: { map: new Map(), tick: -1, key: '' },
-      cards: { map: new Map(), tick: -1, key: '' },
-    },
-  );
+  const positions = positionsOf(graph);
 
-  const latest: ViewerState = { scope, depth, filters, view, selected, selectedEdge, selectSeq, walk, walkRoot, history, layoutTick, dock, statusColour, panel, open, positions: positions.current };
-  const current = useRef(latest);
-  current.current = latest;
-  const saver = useRef(session?.save);
-  saver.current = session?.save;
-  // The state is saved after each render, so the next viewer of this graph reads the last state.
-  useEffect(() => {
-    saver.current?.(current.current);
-  });
+  // The viewport of the canvas. It is not reactive, because a pan must not render the viewer.
+  const viewportOf = useCallback((mode: CanvasMode) => useAppStore.getState().graphs[graph]?.viewport[mode], [graph]);
+  const saveViewport = useCallback(
+    (mode: CanvasMode, vp: Viewport) => patchGraph(graph, (g) => ({ viewport: { ...g.viewport, [mode]: vp } })),
+    [graph],
+  );
 
   return {
     model,
@@ -276,6 +205,13 @@ export function useViewer(model: Model, session?: { initial?: ViewerState; save:
     tableIds,
     filteredCount: filteredIds.length,
     positions,
+    graph,
+    layoutChoice,
+    setLayoutChoice,
+    widths,
+    setWidths,
+    viewportOf,
+    saveViewport,
   };
 }
 

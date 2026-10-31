@@ -42,4 +42,4 @@ acceptance:
         name: resets a column with a double click
       - type: unit
         file: test/app/table-resize.test.tsx
-        name: saves the widths and loads them again
+        name: saves the widths in the store and loads them again

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Info, ListTree, Menu, Monitor, Moon, Network, Palette, Sun, Table2, TriangleAlert, X } from 'lucide-react';
+import { ArrowLeft, Info, ListTree, Menu, Monitor, Moon, Network, Palette, RotateCcw, Sun, Table2, TriangleAlert, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
@@ -22,7 +22,9 @@ import { Core, setProfile, type Model } from '@/lib/core';
 import { usePhone } from '@/lib/use-phone';
 import { useTheme } from '@/lib/use-theme';
 import type { ThemeChoice } from '@/lib/theme';
-import { useViewer, type View, type Viewer, type ViewerState } from '@/lib/use-viewer';
+import { useViewer, type View, type Viewer } from '@/lib/use-viewer';
+import { applyLink, attachPersistence, hydrate, linkOf, resetStored, setActive, useAppStore } from '@/lib/store';
+import { formatLink, parseLink } from '@/lib/link';
 import { WorkspaceContext, type WorkspaceApi } from '@/lib/workspace';
 import { cn } from '@/lib/utils';
 
@@ -150,22 +152,57 @@ interface Focus {
   seq: number;
 }
 
-// The workspace state: the active graph, the trail of jumps and the saved state of each graph.
+// Writes the hash of the address when the graph, the scope or the selection changes. It adds no history entry.
+function writeLink() {
+  let hash = '';
+  try {
+    hash = formatLink(linkOf());
+    if (window.location.hash === hash) return;
+    window.history.replaceState(null, '', window.location.pathname + window.location.search + hash);
+  } catch {
+    // Some browsers refuse replaceState on a file: address. A hash-only replace adds no history entry either.
+    try {
+      window.location.replace(hash || '#');
+    } catch {
+      // The page may not change its address, for example in a sandbox. The link is optional.
+    }
+  }
+}
+
+// The workspace state: the trail of jumps. The store holds the active graph and the state of each graph.
 export function App({ data }: { data: WorkspaceData }) {
-  const [activeId, setActiveId] = useState(data.graphs[0].id);
+  // The store loads the stored state and the hash once for each workspace, before the first render of a graph.
+  const [loaded, setLoaded] = useState<WorkspaceData | null>(null);
+  if (loaded !== data) {
+    hydrate(data);
+    setLoaded(data);
+  }
+  useEffect(() => {
+    const detach = attachPersistence();
+    writeLink();
+    const unsubscribe = useAppStore.subscribe(writeLink);
+    const onHash = () => applyLink(parseLink(window.location.hash));
+    window.addEventListener('hashchange', onHash);
+    return () => {
+      window.removeEventListener('hashchange', onHash);
+      unsubscribe();
+      detach();
+    };
+  }, [data]);
+  const activeId = useAppStore((s) => s.active);
+  const epoch = useAppStore((s) => s.epoch);
   const [trail, setTrail] = useState<{ graph: string; node: string | null }[]>([]);
   const [focus, setFocus] = useState<Focus | null>(null);
-  const saved = useRef(new Map<string, ViewerState>());
   const seq = useRef(0);
   const incoming = useMemo(() => incomingCrossLinks(data.graphs), [data]);
   const nodes = useMemo(() => new Map(data.graphs.map((g) => [g.id, new Map(g.model.nodes.map((n) => [n.id, n]))])), [data]);
-  const graph = data.graphs.find((g) => g.id === activeId)!;
+  const graph = data.graphs.find((g) => g.id === activeId) ?? data.graphs[0];
   // The profile is global for the app. The graph that shows is the only one that reads it.
   setProfile(graph.model.profile);
 
   const jumpFrom = (target: string, node: string, from: string | null) => {
     setTrail((t) => [...t, { graph: activeId, node: from }]);
-    setActiveId(target);
+    setActive(target);
     setFocus({ node, seq: ++seq.current });
   };
   const last = trail[trail.length - 1];
@@ -175,46 +212,42 @@ export function App({ data }: { data: WorkspaceData }) {
     setActive: (id) => {
       setTrail([]);
       setFocus(null);
-      setActiveId(id);
+      setActive(id);
     },
     jumpFrom,
     back: () => {
       if (!last) return;
       setTrail((t) => t.slice(0, -1));
-      setActiveId(last.graph);
+      setActive(last.graph);
       setFocus(last.node ? { node: last.node, seq: ++seq.current } : null);
     },
     canBack: trail.length > 0,
     backLabel: last ? data.graphs.find((g) => g.id === last.graph)?.label : undefined,
     incoming: (node) => incoming.get(activeId)?.get(node) ?? [],
     nodeOf: (g, node) => nodes.get(g)?.get(node),
+    resetView: () => {
+      setTrail([]);
+      setFocus(null);
+      resetStored();
+    },
   };
-  return (
-    <GraphApp
-      key={activeId}
-      label={graph.label}
-      model={graph.model}
-      root={root}
-      focus={focus}
-      session={{ initial: saved.current.get(activeId), save: (s) => saved.current.set(activeId, s) }}
-    />
-  );
+  return <GraphApp key={`${activeId}:${epoch}`} graph={graph.id} label={graph.label} model={graph.model} root={root} focus={focus} />;
 }
 
 function GraphApp({
+  graph,
   label,
   model,
   root,
   focus,
-  session,
 }: {
+  graph: string;
   label: string;
   model: Model;
   root: Omit<WorkspaceApi, 'jump'> & { jumpFrom: (graph: string, node: string, from: string | null) => void };
   focus: Focus | null;
-  session: { initial?: ViewerState; save: (state: ViewerState) => void };
 }) {
-  const v = useViewer(model, session);
+  const v = useViewer(model, graph);
   const ws: WorkspaceApi = { ...root, jump: (graph, node) => root.jumpFrom(graph, node, v.selected) };
   // A jump or a Back selects the node. The scope shows the node when the canvas does not.
   useEffect(() => {
@@ -329,6 +362,16 @@ function GraphApp({
               </TabsList>
             </Tabs>
             <ThemeSwitch />
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="outline" size="icon-sm" aria-label="Menu" />}>
+                <Menu />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={ws.resetView}>
+                  <RotateCcw /> Reset the view
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         )}
@@ -480,6 +523,10 @@ function PhoneHeader({
                 <DropdownMenuRadioItem value="system"><Monitor /> System</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={ws.resetView}>
+              <RotateCcw /> Reset the view
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

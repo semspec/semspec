@@ -65,6 +65,13 @@ window.matchMedia = ((query: string) => {
 afterEach(() => {
   cleanup();
   setPhone(false);
+  // The page writes the link into the hash. A test must not see the hash of the test before.
+  try {
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  } catch {
+    // A file: address refuses replaceState in jsdom. A hash replace works there.
+    window.location.replace('#');
+  }
   try {
     window.localStorage.clear();
   } catch {

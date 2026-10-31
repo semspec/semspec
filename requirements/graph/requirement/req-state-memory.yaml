@@ -1,20 +1,48 @@
 id: req-state-memory
 kind: requirement
-title: Keep the state of each graph when the reader switches graphs
-state: draft
-priority: now
-statement: A switch to another graph of a workspace and back restores the state of the first graph.
+title: "Keep the state of each graph when the reader switches graphs"
+statement: "A switch to another graph of a workspace and back restores the state of the first graph."
 capabilities:
   - cap-view-state
 area:
   - app
 acceptance:
   - id: graph-state
-    text: A switch and a switch back restore the scope, the walk, the filters, the selection, the view and the layout of the graph.
-    status: open
+    text: "A switch and a switch back restore the scope, the walk, the filters, the selection, the view and the layout of the graph."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "restores the scope, the walk, the filters, the selection, the view and the layout after a switch and a switch back"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "restores a walk from a node with its history, and after a reload"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "keeps the state of each graph apart"
   - id: canvas-state
-    text: A switch and a switch back restore the position and the zoom of the canvas.
-    status: open
+    text: "A switch and a switch back restore the position and the zoom of the canvas."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "saves the viewport of the canvas after the fit"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "saves the viewport after the reader zooms the canvas, and restores it after a switch back"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "sets the stored viewport in place of the first fit after a switch back"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "keeps the viewport of each mode apart"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "drops the stored viewport on a new scope, so the canvas fits"
   - id: panel-state
-    text: A switch and a switch back restore the open tree groups and the column widths of the table.
-    status: open
+    text: "A switch and a switch back restore the open tree groups and the column widths of the table."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "restores the open tree groups and the column widths of the table"

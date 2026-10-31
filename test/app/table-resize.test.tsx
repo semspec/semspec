@@ -6,7 +6,8 @@ import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { pickInTree, renderApp } from './harness';
 
-const KEY = 'semspec.table-widths.';
+const OLD_KEY = 'semspec.table-widths.';
+const KEY = 'semspec:';
 
 async function openTable(name = 'product') {
   renderApp(name);
@@ -57,16 +58,29 @@ describe('the column resize of the Table', () => {
     expect(col('title').style.width).toBe('320px');
   });
 
-  it('saves the widths and loads them again', async () => {
+  it('saves the widths in the store and loads them again', async () => {
     await openTable();
     fireEvent.keyDown(handle('Title'), { key: 'ArrowRight' });
-    const key = keyOf()!;
-    expect(JSON.parse(window.localStorage.getItem(key)!)).toEqual({ title: 336 });
+    // The unmount writes the state at once.
     cleanup();
-    window.localStorage.setItem(key, JSON.stringify({ title: 400, id: 10, nothing: 300 }));
+    const key = keyOf()!;
+    expect(JSON.parse(window.localStorage.getItem(key)!).graphs.product.widths).toEqual({ title: 336 });
+    expect([...store.keys()].some((k) => k.startsWith(OLD_KEY))).toBe(false);
+    const saved = JSON.parse(window.localStorage.getItem(key)!);
+    saved.graphs.product.widths = { title: 400, id: 10, nothing: 300 };
+    window.localStorage.setItem(key, JSON.stringify(saved));
     await openTable();
     expect(col('title').style.width).toBe('400px');
     // A width below the minimum and a width of an unknown column are ignored.
     expect(col('id').style.width).toBe('160px');
+  });
+
+  it('reads the widths of the old key once and removes the old key', async () => {
+    window.localStorage.setItem(`${OLD_KEY}Shop product`, JSON.stringify({ title: 420 }));
+    await openTable();
+    expect(col('title').style.width).toBe('420px');
+    expect([...store.keys()].some((k) => k.startsWith(OLD_KEY))).toBe(false);
+    cleanup();
+    expect(JSON.parse(window.localStorage.getItem(keyOf()!)!).graphs.product.widths).toEqual({ title: 420 });
   });
 });

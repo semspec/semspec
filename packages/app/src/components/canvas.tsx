@@ -175,7 +175,8 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
   const store = v.positions.current[mode];
   const spec = Core.profile.layout;
   const groupEdge = spec?.groupEdge;
-  const [chosen, setChosen] = useState<LayoutName | null>(null);
+  const chosen = v.layoutChoice;
+  const setChosen = v.setLayoutChoice;
   const wanted: LayoutName = chosen ?? spec?.default ?? 'layered';
   const layout: LayoutName = wanted === 'grouped' && !groupEdge ? 'layered' : wanted;
   const containers = useMemo(() => findContainers(ids, edges, layout === 'grouped' ? groupEdge : undefined), [ids, edges, layout, groupEdge]);
@@ -321,18 +322,28 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
             ? rect.height / 2 - (rootPos.y + size.h / 2) * z + 24
             : 64 - minY * z;
       flow.setViewport({ x, y, zoom: z }, { duration: animate ? 250 : 0 });
+      v.saveViewport(mode, { x, y, zoom: z });
     },
     [flow, domNode, ids, positions, rects, mode, layout, v.scope, v.walkRoot, phone],
   );
   // Fit on a new scope, a re-layout and a change of mode. A walk step keeps the view. A change of
   // the panel size fits again, until the reader moves or zooms the canvas.
   const moved = useRef(false);
+  // A stored viewport comes back in place of the first fit, after the nodes render.
+  const pendingViewport = useRef(v.viewportOf(mode));
   useEffect(() => {
     moved.current = false;
   }, [v.layoutTick, mode, scopeKey, confirmed, layout]);
   useEffect(() => {
     if (moved.current) return;
-    const t = setTimeout(() => fit(false), 80);
+    const t = setTimeout(() => {
+      const stored = pendingViewport.current;
+      pendingViewport.current = undefined;
+      if (stored) {
+        flow.setViewport(stored, { duration: 0 });
+        moved.current = true;
+      } else fit(false);
+    }, 80);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [v.layoutTick, mode, scopeKey, confirmed, layout, Math.round(vw / 40), Math.round(vh / 40)]);
@@ -395,6 +406,9 @@ function Inner({ v, mode }: { v: Viewer; mode: Mode }) {
       onMoveStart={(event) => {
         // An event means that the reader moved the canvas. A move by the code has none.
         if (event) moved.current = true;
+      }}
+      onMoveEnd={(event, vp) => {
+        if (event) v.saveViewport(mode, { x: vp.x, y: vp.y, zoom: vp.zoom });
       }}
       zoomOnDoubleClick={false}
       nodesConnectable={false}

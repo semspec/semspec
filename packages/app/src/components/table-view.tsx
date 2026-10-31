@@ -2,7 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // The table of the nodes on the canvas: sort, filter by column, resize, page and export.
 // It uses TanStack Table, the pattern of the shadcn Data Table.
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -29,7 +29,6 @@ const PAGE_SIZES = [25, 50, 100, 200];
 // A step of the keyboard resize, in pixels.
 const RESIZE_STEP = 16;
 const MIN_SIZE = 64;
-const STORAGE_PREFIX = 'semspec.table-widths.';
 
 // The widths that the viewer saved for a graph. A width below the minimum or for an unknown column is dropped.
 export function cleanWidths(raw: unknown, minOf: Record<string, number>): ColumnSizingState {
@@ -39,23 +38,6 @@ export function cleanWidths(raw: unknown, minOf: Record<string, number>): Column
     if (id in minOf && typeof w === 'number' && Number.isFinite(w) && w >= minOf[id]) out[id] = w;
   }
   return out;
-}
-
-function readWidths(key: string): unknown {
-  try {
-    const text = window.localStorage.getItem(key);
-    return text ? JSON.parse(text) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeWidths(key: string, widths: ColumnSizingState) {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(widths));
-  } catch {
-    // Storage is not available. The widths last until the page reloads.
-  }
 }
 
 function Coverage({ n }: { n: VNode }) {
@@ -203,17 +185,12 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
     [index, v.filters.fields],
   );
 
-  const storageKey = STORAGE_PREFIX + index.profile.project;
   const minOf = useMemo(() => Object.fromEntries(columns.map((c) => [c.id!, c.minSize ?? MIN_SIZE])), [columns]);
-  const [storedWidths] = useState<unknown>(() => readWidths(storageKey));
-  const [changed, setChanged] = useState<ColumnSizingState | null>(null);
-  const columnSizing = useMemo(() => cleanWidths(changed ?? storedWidths, minOf), [changed, storedWidths, minOf]);
-  useEffect(() => {
-    if (changed) writeWidths(storageKey, columnSizing);
-  }, [changed, columnSizing, storageKey]);
+  // The store keeps the widths. A width below the minimum or for an unknown column is dropped.
+  const columnSizing = useMemo(() => cleanWidths(v.widths, minOf), [v.widths, minOf]);
   const setWidth = (id: string, width: number | null) =>
-    setChanged((prev) => {
-      const next = { ...cleanWidths(prev ?? storedWidths, minOf) };
+    v.setWidths((prev) => {
+      const next = { ...cleanWidths(prev, minOf) };
       if (width === null) delete next[id];
       else next[id] = Math.max(minOf[id], Math.round(width));
       return next;
@@ -223,7 +200,7 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
     data,
     columns,
     state: { sorting, columnFilters, pagination, columnSizing },
-    onColumnSizingChange: (u) => setChanged((prev) => (typeof u === 'function' ? u(cleanWidths(prev ?? storedWidths, minOf)) : u)),
+    onColumnSizingChange: (u) => v.setWidths((prev) => cleanWidths(typeof u === 'function' ? u(cleanWidths(prev, minOf)) : u, minOf)),
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,

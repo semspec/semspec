@@ -1,29 +1,98 @@
 id: req-state-storage
 kind: requirement
-title: Keep the state after a reload
+title: "Keep the state after a reload"
 state: draft
 priority: now
-statement: The app stores the state of a workspace in the browser storage, so a reload of the page restores it.
+statement: "The app stores the state of a workspace in the browser storage, so a reload of the page restores it."
 capabilities:
   - cap-view-state
 area:
   - app
 acceptance:
   - id: reload
-    text: A reload restores the active graph and the state of each graph, as in req-state-memory.
-    status: open
+    text: "A reload restores the active graph and the state of each graph, as in req-state-memory."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "restores the active graph and the state of each graph after an unmount and a mount"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "writes the state to the storage and reads the stored arrays back as sets and maps"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "writes the state to the storage after a short delay while the page stays open"
   - id: key
-    text: The storage key holds the workspace title and a hash of its graph ids, so 2 workspaces never share a state.
-    status: open
+    text: "The storage key holds the workspace title and a hash of its graph ids, so 2 workspaces never share a state."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "holds the workspace title and a hash of the graph ids"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "never shares a state between 2 workspaces"
   - id: stale
-    text: A stored node, filter value or column that the graph no longer has is dropped, and the rest of the state loads.
-    status: open
+    text: "A stored node, filter value or column that the graph no longer has is dropped, and the rest of the state loads."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "drops the ids that the graph lacks and loads the rest"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "drops a column that the table lacks"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "drops a selected edge that the graph lacks and keeps the edge object of the model"
   - id: version
-    text: The stored state has a version. A state of another version is ignored, and the page starts fresh.
-    status: open
+    text: "The stored state has a version. A state of another version is ignored, and the page starts fresh."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "ignores a state of another version and starts fresh"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "writes the version"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "starts fresh on a text that is not JSON"
   - id: blocked
-    text: When the browser blocks the storage, the page works and starts fresh, with no error.
-    status: open
+    text: "When the browser blocks the storage, the page works and starts fresh, with no error."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "works and starts fresh when the storage throws on access"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "works when the storage throws on each read and write"
   - id: file-page
-    text: A page that opens from a file keeps its state in a browser that allows storage for files.
-    status: open
+    text: "A page that opens from a file keeps its state in a browser that allows storage for files."
+    status: partial
+    note: "The test uses a file: address in jsdom and a storage that the test installs, because jsdom gives a file page no storage. Only a real browser proves that it allows storage for files."
+    tests:
+      - type: unit
+        file: test/app/state-file.test.tsx
+        name: "keeps the state of a page that opens from a file, in a browser that allows storage for files"
+      - type: unit
+        file: test/app/state-file.test.tsx
+        name: "writes and reads the hash on a file: address"
+  - id: old-widths
+    text: "The table widths of the old storage key move into the stored state once, and the old key is removed."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/table-resize.test.tsx
+        name: "reads the widths of the old key once and removes the old key"
+  - id: reset
+    text: "The header menu has a Reset the view item. It clears the stored state of the workspace, starts fresh and keeps the theme."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "clears the stored state of the workspace and starts fresh, and keeps the theme"
+      - type: unit
+        file: test/app/state.test.tsx
+        name: "is in the menu of the phone header"
