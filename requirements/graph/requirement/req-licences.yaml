@@ -1,0 +1,49 @@
+id: req-licences
+kind: requirement
+title: Check the licences of the dependencies
+statement: A check fails when a dependency breaks the licence rule of the project.
+capabilities:
+  - cap-packages
+area:
+  - cli
+acceptance:
+  - id: shipped
+    text: The runtime dependencies of the published packages and the code bundled into the page or the CLI have an MIT, Apache 2.0, BSD, ISC or 0BSD licence.
+    status: verified
+    tests:
+      - type: unit
+        file: test/licences.test.ts
+        name: passes on the real tree and counts the bundled packages as shipped
+      - type: unit
+        file: test/licences.test.ts
+        name: fails on a GPL package in the shipped set and names the path
+      - type: unit
+        file: test/licences.test.ts
+        name: fails on a shipped package with no licence field and on an MPL package in the shipped set
+  - id: tools
+    text: Build and test tools may also have a BlueOak-1.0.0, CC0-1.0, MIT-0, CC-BY-4.0 or MPL-2.0 licence.
+    status: verified
+    tests:
+      - type: unit
+        file: test/licences.test.ts
+        name: passes on an MPL package in the tools set, and warns about a tool with no licence
+  - id: forbidden
+    text: A GPL, LGPL, AGPL or EPL licence fails the check everywhere.
+    status: verified
+    tests:
+      - type: unit
+        file: test/licences.test.ts
+        name: fails on a GPL package in the tools set
+      - type: unit
+        file: test/licences.test.ts
+        name: accepts an OR expression with 1 allowed option and rejects an AND with a forbidden one
+      - type: unit
+        file: test/licences.test.ts
+        name: fails on a GPL package in the shipped set and names the path
+  - id: ci
+    text: CI runs the check.
+    status: verified
+    tests:
+      - type: unit
+        file: test/licences.test.ts
+        name: runs in CI through the licences script

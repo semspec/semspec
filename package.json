@@ -32,6 +32,7 @@
     "build": "npm run build:core && npm run build:app && npm run build:cli",
     "typecheck": "tsc --noEmit && npm run typecheck -w @semspec/core",
     "test": "vitest run",
+    "licences": "node scripts/check-licences.mjs",
     "eval:search": "node bin/semspec.js eval-search",
     "requirements": "node bin/semspec.js serve --graph requirements/graph --profile requirements/profile.yaml",
     "requirements:build": "node bin/semspec.js build --graph requirements/graph --profile requirements/profile.yaml --out dist/requirements.html"
