@@ -27,3 +27,19 @@ acceptance:
       - type: unit
         file: test/app/panels.test.tsx
         name: filters the rows with a column filter
+  - id: table-resize
+    text: Every column of the Table is resizable with a handle, the arrow keys or a double click that resets it. The widths have a minimum and persist per graph.
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/table-resize.test.tsx
+        name: gives Title its default width and a handle
+      - type: unit
+        file: test/app/table-resize.test.tsx
+        name: resizes with the arrow keys and holds the minimum
+      - type: unit
+        file: test/app/table-resize.test.tsx
+        name: resets a column with a double click
+      - type: unit
+        file: test/app/table-resize.test.tsx
+        name: saves the widths and loads them again

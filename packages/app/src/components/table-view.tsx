@@ -2,7 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // The table of the nodes on the canvas: sort, filter by column, resize, page and export.
 // It uses TanStack Table, the pattern of the shadcn Data Table.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -12,6 +12,7 @@ import {
   useReactTable,
   type ColumnDef,
   type ColumnFiltersState,
+  type ColumnSizingState,
   type SortingState,
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, ListFilter } from 'lucide-react';
@@ -25,6 +26,37 @@ import type { Viewer } from '@/lib/use-viewer';
 import { cn } from '@/lib/utils';
 
 const PAGE_SIZES = [25, 50, 100, 200];
+// A step of the keyboard resize, in pixels.
+const RESIZE_STEP = 16;
+const MIN_SIZE = 64;
+const STORAGE_PREFIX = 'semspec.table-widths.';
+
+// The widths that the viewer saved for a graph. A width below the minimum or for an unknown column is dropped.
+export function cleanWidths(raw: unknown, minOf: Record<string, number>): ColumnSizingState {
+  const out: ColumnSizingState = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [id, w] of Object.entries(raw as Record<string, unknown>)) {
+    if (id in minOf && typeof w === 'number' && Number.isFinite(w) && w >= minOf[id]) out[id] = w;
+  }
+  return out;
+}
+
+function readWidths(key: string): unknown {
+  try {
+    const text = window.localStorage.getItem(key);
+    return text ? JSON.parse(text) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeWidths(key: string, widths: ColumnSizingState) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(widths));
+  } catch {
+    // Storage is not available. The widths last until the page reloads.
+  }
+}
 
 function Coverage({ n }: { n: VNode }) {
   if (!n.cov || !n.cov.parts) return <span className="text-muted-foreground">–</span>;
@@ -50,6 +82,7 @@ function statusColumn(index: Viewer['index'], fields: Filters['fields']): Column
     id: 'status',
     header: index.profile.status!.label,
     size: 104,
+    minSize: MIN_SIZE,
     accessorFn: (n) => {
       const st = Core.statusOf(index, n.id, fields);
       return st.total ? st.counts[good] / st.total : undefined;
@@ -84,6 +117,7 @@ function fieldColumn(spec: FieldFilterSpec): ColumnDef<VNode> {
     id: `field:${spec.field}`,
     header: spec.label,
     size: 140,
+    minSize: MIN_SIZE,
     accessorFn: (n) => text(n) || undefined,
     cell: ({ row }) => {
       const t = text(row.original);
@@ -117,7 +151,8 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
         id: 'title',
         header: 'Title',
         accessorFn: (n) => n.title,
-        enableResizing: false,
+        size: 320,
+        minSize: 160,
         cell: ({ row }) => (
           <span className={cn('block truncate font-medium', (row.original.lifecycle === 'withdrawn' || row.original.lifecycle === 'superseded') && 'text-muted-foreground line-through')} title={row.original.title + (row.original.sub ? ` – ${row.original.sub}` : '')}>
             {row.original.title}
@@ -127,14 +162,16 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
       {
         id: 'kind',
         header: 'Kind',
-        size: 118,
+        size: 120,
+        minSize: MIN_SIZE,
         accessorFn: (n) => Core.KIND_LABEL[n.kind],
         cell: ({ row }) => <KindBadge kind={row.original.kind} />,
       },
       {
         id: 'id',
         header: 'Id',
-        size: 140,
+        size: 160,
+        minSize: MIN_SIZE,
         accessorFn: (n) => n.id,
         cell: ({ getValue }) => (
           <span className="block truncate font-mono text-[11px] text-muted-foreground" title={String(getValue())}>
@@ -142,14 +179,15 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
           </span>
         ),
       },
-      { id: 'lifecycle', header: 'Lifecycle', size: 84, accessorFn: (n) => (n.lifecycle ? Core.fieldLabel(index.profile.lifecycle.field, n.lifecycle) : ''), cell: ({ getValue }) => <span title={String(getValue())}>{String(getValue()) || '–'}</span> },
-      { id: 'delivery', header: 'Delivery', size: 80, accessorFn: (n) => n.delivery, cell: ({ getValue }) => <span>{String(getValue()) || '–'}</span> },
-      { id: 'level', header: 'Level', size: 64, accessorFn: (n) => (n.level ? Core.fieldLabel(index.profile.fields.level ?? '', n.level) : ''), cell: ({ getValue }) => <span className="font-mono text-[11px] uppercase">{String(getValue()) || '–'}</span> },
-      { id: 'parent', header: 'Parent', size: 140, accessorFn: parentTitle, cell: ({ getValue }) => <span className="block truncate" title={String(getValue())}>{String(getValue()) || '–'}</span> },
+      { id: 'lifecycle', header: 'Lifecycle', size: 96, minSize: MIN_SIZE, accessorFn: (n) => (n.lifecycle ? Core.fieldLabel(index.profile.lifecycle.field, n.lifecycle) : ''), cell: ({ getValue }) => <span title={String(getValue())}>{String(getValue()) || '–'}</span> },
+      { id: 'delivery', header: 'Delivery', size: 96, minSize: MIN_SIZE, accessorFn: (n) => n.delivery, cell: ({ getValue }) => <span>{String(getValue()) || '–'}</span> },
+      { id: 'level', header: 'Level', size: 96, minSize: MIN_SIZE, accessorFn: (n) => (n.level ? Core.fieldLabel(index.profile.fields.level ?? '', n.level) : ''), cell: ({ getValue }) => <span className="font-mono text-[11px] uppercase">{String(getValue()) || '–'}</span> },
+      { id: 'parent', header: 'Parent', size: 140, minSize: MIN_SIZE, accessorFn: parentTitle, cell: ({ getValue }) => <span className="block truncate" title={String(getValue())}>{String(getValue()) || '–'}</span> },
       {
         id: 'coverage',
         header: 'Coverage',
-        size: 124,
+        size: 140,
+        minSize: MIN_SIZE,
         accessorFn: (n) => (n.cov && n.cov.parts ? n.cov.verified / n.cov.parts : -1),
         cell: ({ row }) => <Coverage n={row.original} />,
         // The filter reads the text "2 of 3".
@@ -165,10 +203,27 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
     [index, v.filters.fields],
   );
 
+  const storageKey = STORAGE_PREFIX + index.profile.project;
+  const minOf = useMemo(() => Object.fromEntries(columns.map((c) => [c.id!, c.minSize ?? MIN_SIZE])), [columns]);
+  const [storedWidths] = useState<unknown>(() => readWidths(storageKey));
+  const [changed, setChanged] = useState<ColumnSizingState | null>(null);
+  const columnSizing = useMemo(() => cleanWidths(changed ?? storedWidths, minOf), [changed, storedWidths, minOf]);
+  useEffect(() => {
+    if (changed) writeWidths(storageKey, columnSizing);
+  }, [changed, columnSizing, storageKey]);
+  const setWidth = (id: string, width: number | null) =>
+    setChanged((prev) => {
+      const next = { ...cleanWidths(prev ?? storedWidths, minOf) };
+      if (width === null) delete next[id];
+      else next[id] = Math.max(minOf[id], Math.round(width));
+      return next;
+    });
+
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnFilters, pagination },
+    state: { sorting, columnFilters, pagination, columnSizing },
+    onColumnSizingChange: (u) => setChanged((prev) => (typeof u === 'function' ? u(cleanWidths(prev ?? storedWidths, minOf)) : u)),
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -221,10 +276,10 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
     <div className="flex h-full min-h-0 flex-col" data-testid="table-view">
       {/* The table container is the only scroll container, so the sticky header and the column filters stay at its top. */}
       <div className="flex min-h-0 flex-1 flex-col">
-        <Table containerClassName="min-h-0 flex-1 overflow-auto" className="w-full table-fixed text-[13px]" style={{ minWidth: table.getTotalSize() }}>
+        <Table containerClassName="min-h-0 flex-1 overflow-auto" className="table-fixed text-[13px]" style={{ width: table.getTotalSize(), minWidth: table.getTotalSize() }}>
           <colgroup>
             {table.getVisibleLeafColumns().map((c) => (
-              <col key={c.id} style={c.id === 'title' ? { minWidth: 260 } : { width: c.getSize() }} />
+              <col key={c.id} data-col={c.id} style={{ width: c.getSize() }} />
             ))}
           </colgroup>
           <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur">
@@ -233,7 +288,7 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
                 {hg.headers.map((h) => {
                   const sorted = h.column.getIsSorted();
                   return (
-                    <TableHead key={h.id} className="relative h-8 px-2" aria-sort={sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none'}>
+                    <TableHead key={h.id} className="group/head relative h-8 px-2" aria-sort={sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none'}>
                       <button type="button" className="inline-flex items-center gap-1 text-xs font-semibold text-foreground hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none" onClick={h.column.getToggleSortingHandler()}>
                         {flexRender(h.column.columnDef.header, h.getContext())}
                         {sorted === 'asc' ? <ArrowUp className="size-3" /> : sorted === 'desc' ? <ArrowDown className="size-3" /> : <ArrowUpDown className="size-3 opacity-40" />}
@@ -241,11 +296,21 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
                       {h.column.getCanResize() && (
                         <div
                           role="separator"
+                          tabIndex={0}
                           aria-orientation="vertical"
                           aria-label={`Resize the ${String(h.column.columnDef.header)} column`}
+                          aria-valuenow={h.column.getSize()}
+                          aria-valuemin={minOf[h.column.id]}
                           onMouseDown={h.getResizeHandler()}
                           onTouchStart={h.getResizeHandler()}
-                          className={cn('absolute top-1 right-0 h-6 w-1.5 cursor-col-resize touch-none rounded bg-border opacity-0 select-none hover:opacity-100', h.column.getIsResizing() && 'bg-primary opacity-100')}
+                          onDoubleClick={() => setWidth(h.column.id, null)}
+                          onKeyDown={(e) => {
+                            const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+                            if (!dir) return;
+                            e.preventDefault();
+                            setWidth(h.column.id, h.column.getSize() + dir * RESIZE_STEP);
+                          }}
+                          className={cn('absolute top-1 right-0 h-6 w-1.5 cursor-col-resize touch-none rounded bg-border opacity-0 select-none group-hover/head:opacity-100 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none', h.column.getIsResizing() && 'bg-primary opacity-100')}
                         />
                       )}
                     </TableHead>
