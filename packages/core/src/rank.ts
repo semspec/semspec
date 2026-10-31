@@ -51,7 +51,7 @@ const MAX_PREFIX_TERMS = 20;
 const K1 = 1.2;
 const B = 0.75;
 const EXACT_ID = 1e6;
-const EXACT_TITLE = 1e5;
+export const EXACT_TITLE = 1e5;
 const DEFAULT_WEIGHT = { id: 2, title: 3, sub: 1, statement: 1, parts: 1, definition: 0.5 };
 
 interface Doc {

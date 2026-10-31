@@ -4,8 +4,8 @@ kind: reference
 title: Command line
 description: The commands and options of the semspec command.
 order: 1
-related: [getting-started, yaml-folder, workspace, export, schemas, mcp, gates]
-documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check, req-context-slice, req-deliverables]
+related: [getting-started, yaml-folder, workspace, export, schemas, mcp, gates, meaning-search]
+documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check, req-context-slice, req-deliverables, req-embed-provider, req-embed-index, req-embed-hybrid]
 ---
 ## Commands
 
@@ -16,8 +16,11 @@ semspec serve --workspace <file> [--port 4173] [--host 127.0.0.1]
 semspec build --workspace <file> --out workspace.html
 semspec mcp --graph <graph> --profile <profile> [--exclude <pattern>]...
 semspec mcp --workspace <file>
-semspec search --graph <graph> --profile <profile> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json] [--exclude <pattern>]...
-semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
+semspec search --graph <graph> --profile <profile> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--mode keyword|hybrid|vector] [--json] [--exclude <pattern>]...
+semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--mode keyword|hybrid|vector] [--json]
+semspec index --graph <graph> --profile <profile> [--exclude <pattern>]...
+semspec index --workspace <file>
+semspec eval-search [--set <file>] [--workspace <file> | --graph <graph> --profile <profile>] [--mode keyword|hybrid|vector]
 semspec slice --graph <graph> --profile <profile> <id> [--depth <n>] [--budget <n>] [--json] [--exclude <pattern>]...
 semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
 semspec deliverables --graph <graph> --profile <profile> [--scope <id>] [--kind <kind>]... [--json]
@@ -37,6 +40,8 @@ semspec version --json
 - `mcp` serves the graph or the workspace to an AI agent over the Model Context Protocol on stdio. See [MCP server](mcp.md).
 - `check` validates the inputs and the gates of the profile, and exits with a code for a hook or a CI step. See below.
 - `search` ranks the nodes for the query and prints the hits. See below.
+- `index` embeds the nodes with the model of `search.embeddings` and writes the index files. See below.
+- `eval-search` prints recall at 5 and MRR of the keyword and the hybrid search. See below.
 - `slice` prints the brief for a task on 1 node. See below.
 - `deliverables` lists the nodes that miss a deliverable of the profile. See below.
 - `schema` writes 1 JSON Schema for each kind of the profile. See [The schemas of the kinds](schemas.md).
@@ -112,6 +117,27 @@ semspec slice --graph requirements/graph --profile requirements/profile.yaml req
 | `--scope <id>` | Keep only nodes in the scope of this node. |
 | `--in <graph>` | With `--workspace`: search 1 graph. The default is all graphs. |
 | `--limit <n>` | The most hits. The default is 50. |
+| `--mode <mode>` | `keyword`, `hybrid` or `vector`. The default is `hybrid` when the graph has an index of vectors, and `keyword` when it has none. See [Meaning search](../guide/meaning-search.md). |
 | `--json` | Print the result as 1 line of JSON, as the MCP tool does, with `omitted` in place of `truncated`. |
 
 Each hit takes 2 lines: the rank, the id, the kind, the title, the parent and the status, then the snippet with the matched words in `**`. A workspace hit has the graph id before the node id. A line at the end gives the count of hits that the limit cuts. A query with no match prints `No node matches "<query>".` and exits with code 0. A wrong option or an unknown kind writes a message to stderr and exits with code 1.
+
+When the model of the meaning search does not answer, the search uses keywords only. The text output then ends with a line `note: <reason>`, and the JSON has a `notes` list.
+
+## Index
+
+`semspec index` embeds the text of each node with the model that `search.embeddings` names, and writes one index file for each graph. It needs the setting in the workspace file or in the profile. Without a setting, it prints a message and exits with code 1. A rerun embeds only the new nodes and the nodes whose text changed, and drops the removed nodes. A change of the model, `dimensions` or a prefix embeds all nodes again. Each line of the output gives the graph id, the counts of embedded, kept and removed nodes, and the path of the index file. See [Meaning search](../guide/meaning-search.md).
+
+## Eval-search
+
+`semspec eval-search` runs a set of questions and prints recall at 5 and the mean reciprocal rank (MRR). With no `--mode`, it prints the `keyword` line and the `hybrid` line. It uses the model of the configuration, so run `semspec index` first. The npm script `npm run eval:search -- <options>` runs it in this repository.
+
+| Option | Meaning |
+| --- | --- |
+| `--set <file>` | A YAML file with `questions`, each with `q` and the `expect` node ids. The default is `requirements/search-eval.yaml`. |
+| `--workspace <file>`, or `--graph <file>` and `--profile <file>` | The graphs to search. The default is the graphs that the set names. |
+| `--mode <mode>` | Run 1 mode only. |
+
+## Opt-ins for the meaning search
+
+`search`, `index`, `eval-search` and `mcp` accept 2 flags with no value. `--allow-command` lets a `command` provider run. `--allow-remote` lets Semspec send node texts to an endpoint that is not a loopback address. The environment variables `SEMSPEC_ALLOW_COMMAND=1` and `SEMSPEC_ALLOW_REMOTE=1` do the same. A file in the repository cannot give them, so a cloned repository cannot run a command or send text to a remote host by itself. Without the opt-in, `search` uses keywords only with a note, and `index` and `eval-search` exit with code 1. See [Meaning search](../guide/meaning-search.md).

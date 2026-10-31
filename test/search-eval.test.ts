@@ -7,7 +7,9 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { buildModel, indexGraphs, searchGraphs, type GraphIndex } from '@semspec/core';
+import { buildModel, embeddingTexts, indexGraphs, rankIndexOf, searchSemantic, updateVectorIndex, type GraphIndex, type SemanticSource } from '@semspec/core';
+import { EVAL_RANK, formatScore, scoreQuestions } from '../packages/cli/src/eval';
+import { fakeEmbed } from './helpers/fake-embed';
 import { loadInputs } from '../packages/cli/src/inputs';
 import { loadWorkspace } from '../packages/cli/src/workspace';
 
@@ -18,7 +20,6 @@ interface EvalSet {
   questions: { q: string; expect: string[] }[];
 }
 
-const RANK = 5;
 const root = fileURLToPath(new URL('..', import.meta.url));
 
 function graphsOf(file: string, set: EvalSet): GraphIndex[] {
@@ -28,22 +29,17 @@ function graphsOf(file: string, set: EvalSet): GraphIndex[] {
   return indexGraphs([{ id: 'graph', label: profile.project, model: buildModel(graph, profile) }]);
 }
 
-// Recall at 5 is the share of the expected ids in the top 5, averaged over the questions.
-// The reciprocal rank is 1 over the rank of the first expected id, or 0 when none is in the top 5.
-function evaluate(graphs: GraphIndex[], set: EvalSet) {
-  const misses: string[] = [];
-  let recall = 0;
-  let rr = 0;
-  for (const { q, expect: wanted } of set.questions) {
-    const ids = searchGraphs(graphs, q, { limit: RANK }).hits.map((h) => h.id);
-    const found = wanted.filter((id) => ids.includes(id));
-    recall += found.length / wanted.length;
-    const first = ids.findIndex((id) => wanted.includes(id));
-    rr += first < 0 ? 0 : 1 / (first + 1);
-    if (!found.length) misses.push(q);
+// The keyword ranking, and the hybrid ranking with a fake provider. The fake has no model: it measures the code path.
+async function evaluate(graphs: GraphIndex[], set: EvalSet, mode: 'keyword' | 'hybrid') {
+  const sources = new Map<string, SemanticSource>();
+  for (const g of graphs) {
+    const { index } = await updateVectorIndex(undefined, embeddingTexts(rankIndexOf(g.index)), { model: 'fake' }, fakeEmbed);
+    sources.set(g.id, { model: 'fake', embed: fakeEmbed, vectors: index });
   }
-  const n = set.questions.length;
-  return { questions: n, recall: recall / n, mrr: rr / n, misses };
+  return scoreQuestions(set.questions, async (q) => {
+    const result = await searchSemantic(graphs, sources, q, { mode, limit: EVAL_RANK });
+    return { ids: result.hits.map((h) => h.id), fellBack: !!result.notes?.length };
+  });
 }
 
 const sets = {
@@ -51,15 +47,20 @@ const sets = {
   workspace: { name: 'workspace fixture', file: resolve(root, 'fixtures/workspace/search-eval.yaml'), minQuestions: 10, floor: { recall: 0.6, mrr: 0.5 } },
 };
 
-function check(s: (typeof sets)[keyof typeof sets]) {
+async function check(s: (typeof sets)[keyof typeof sets]) {
   const set = parse(readFileSync(s.file, 'utf8')) as EvalSet;
   expect(set.questions.length).toBeGreaterThanOrEqual(s.minQuestions);
   const graphs = graphsOf(s.file, set);
   for (const { expect: wanted } of set.questions) for (const id of wanted) expect(graphs.some((g) => g.index.byId.has(id)), `unknown id ${id}`).toBe(true);
-  const r = evaluate(graphs, set);
-  console.log(`${s.name}: ${r.questions} questions, recall@${RANK} ${r.recall.toFixed(3)}, MRR ${r.mrr.toFixed(3)}${r.misses.length ? `, no hit: ${r.misses.join(' | ')}` : ''}`);
-  expect(r.recall).toBeGreaterThanOrEqual(s.floor.recall);
-  expect(r.mrr).toBeGreaterThanOrEqual(s.floor.mrr);
+  const keyword = await evaluate(graphs, set, 'keyword');
+  const hybrid = await evaluate(graphs, set, 'hybrid');
+  console.log(`${s.name}\n  ${formatScore('keyword', keyword)}${keyword.misses.length ? `, no hit: ${keyword.misses.join(' | ')}` : ''}\n  ${formatScore('hybrid (fake provider, code path only)', hybrid)}`);
+  expect(keyword.recall).toBeGreaterThanOrEqual(s.floor.recall);
+  expect(keyword.mrr).toBeGreaterThanOrEqual(s.floor.mrr);
+  // The hybrid ranking runs with no fall back. Its floor is the keyword floor less a margin, because the fake vectors carry no meaning.
+  expect(hybrid.fallbacks).toBe(0);
+  expect(hybrid.recall).toBeGreaterThanOrEqual(s.floor.recall - 0.1);
+  expect(hybrid.mrr).toBeGreaterThanOrEqual(s.floor.mrr - 0.1);
 }
 
 describe('search evaluation', () => {

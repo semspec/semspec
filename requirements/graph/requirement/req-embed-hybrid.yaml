@@ -1,8 +1,6 @@
 id: req-embed-hybrid
 kind: requirement
 title: Rank with keywords and vectors together
-state: draft
-priority: later
 statement: "Hybrid ranking merges the keyword ranking and the vector ranking by rank fusion."
 capabilities:
   - cap-embeddings
@@ -11,10 +9,46 @@ area:
 acceptance:
   - id: fusion
     text: "The hybrid ranking merges the 2 rankings with reciprocal rank fusion."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'merge by reciprocal rank fusion with k = 60'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'finds a node by meaning that no keyword matches, and keeps an exact id first'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'merges both rankings over all graphs: the first keyword hit stays near the top and the vector hits add nodes'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'applies the filters and the limit to the merged list'
   - id: fallback
-    text: "When the index is missing, the search returns the keyword ranking."
-    status: open
+    text: "When the index is missing, or the model does not answer, the search returns the keyword ranking. A model failure adds a note to the result."
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'is the keyword search with mode keyword, and with no index and no mode, with no note'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'falls back to keywords with a note when the model fails'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'falls back when the index was built with another model or the query vector has another size'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'skips a node whose text changed since the index build and says so'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'search with --mode uses the index and the fake server, and falls back when the server is gone'
   - id: eval-compare
     text: "The evaluation set reports the recall of the keyword ranking and of the hybrid ranking side by side."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/search-eval.test.ts
+        name: 'meets the floor on the requirements of Semspec'
+      - type: unit
+        file: test/search-eval.test.ts
+        name: 'meets the floor on the workspace fixture'

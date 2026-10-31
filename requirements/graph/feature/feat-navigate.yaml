@@ -1,8 +1,6 @@
 id: feat-navigate
 kind: feature
 title: Navigate
-state: draft
-priority: later
 statement: An agent searches and walks the graph with tools over MCP.
 products:
   - prd-semspec

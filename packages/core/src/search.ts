@@ -4,7 +4,8 @@
 // the context of each hit (kind, parent, status) and a snippet with the matched words marked.
 import { DEFAULT_LIMIT, QueryError, graphById, type GraphIndex } from './agent.js';
 import { computeScope, statusOf } from './explore.js';
-import { rankIndexOf, rankQuery, stem } from './rank.js';
+import { VECTOR_CANDIDATES, fuseRankings, nodeHashes, rankVectors, type VectorIndex } from './embed.js';
+import { EXACT_TITLE, rankIndexOf, rankQuery, stem, type RankedNode } from './rank.js';
 import type { VNode } from './types.js';
 
 export interface SearchHit {
@@ -30,6 +31,15 @@ export interface SearchOptions {
   // The id of a node. Only the nodes in the scope of this node can be hits. See computeScope.
   scope?: string;
   limit?: number;
+  // The vectors of the graphs and the query vector of each graph. With it, the ranking merges the keyword ranking
+  // and the vector ranking (mode `hybrid`) or uses the vector ranking alone (mode `vector`). A graph that is not
+  // in the map has no vector ranking. Use searchSemantic to build it.
+  semantic?: SemanticInput;
+}
+
+export interface SemanticInput {
+  mode: 'hybrid' | 'vector';
+  graphs: Map<string, { vectors: VectorIndex; query: number[] }>;
 }
 
 export interface SearchResult {
@@ -39,6 +49,8 @@ export interface SearchResult {
   hits: SearchHit[];
   // The number of matching nodes that the limit cuts.
   omitted: number;
+  // Short remarks about the ranking, for example that the model did not answer and the ranking used keywords only.
+  notes?: string[];
 }
 
 const SNIPPET_LENGTH = 140;
@@ -81,12 +93,18 @@ export function searchGraphs(graphs: GraphIndex[], query: string, options: Searc
     if (!scopes.size) throw new QueryError(`Unknown node id "${options.scope}" for the scope.`);
   }
   const found: { g: GraphIndex; node: VNode; score: number; terms: Set<string>; text: string[] }[] = [];
-  for (const g of searched) {
+  const key = (g: GraphIndex, id: string) => `${g.id}\0${id}`;
+  const ranked = searched.flatMap((g) => {
     const allow = scopes?.get(g.id);
-    if (scopes && !allow) continue;
+    if (scopes && !allow) return [];
     const ix = rankIndexOf(g.index);
-    const { hits, terms } = rankQuery(ix, query, allow);
-    for (const hit of hits) {
+    const ranking = rankQuery(ix, query, allow);
+    return [{ g, ix, allow, terms: ranking.terms, hits: ranking.hits }];
+  });
+  // With vectors, the rankings of all graphs merge into 1 list. The merged score replaces the keyword score.
+  const merged = options.semantic ? mergeRankings(ranked, options.semantic, key) : undefined;
+  for (const { g, ix, terms, hits } of ranked) {
+    for (const hit of merged ? merged.get(g.id) ?? [] : hits) {
       const node = g.index.byId.get(hit.id)!;
       if (options.kinds?.length && !options.kinds.includes(node.kind)) continue;
       if (options.lifecycles?.length && !options.lifecycles.includes(node.lifecycle)) continue;
@@ -103,13 +121,39 @@ export function searchGraphs(graphs: GraphIndex[], query: string, options: Searc
       id: node.id,
       kind: node.kind,
       title: node.title,
-      score: Math.round(score * 1000) / 1000,
+      score: Math.round(score * (options.semantic ? 1e5 : 1e3)) / (options.semantic ? 1e5 : 1e3),
       parent: parent ? { id: parent.id, title: parent.title } : null,
       status: g.index.profile.status ? statusOf(g.index, node.id).value : null,
       snippet: snippetOf(pick, terms),
     };
   });
   return { query, total: found.length, hits, omitted: found.length - hits.length };
+}
+
+// Merges the keyword ranking and the vector ranking of all searched graphs. Each ranking is 1 list over all graphs, so the
+// score of a node does not depend on the number of graphs. An exact id or title match stays first. A graph with no
+// vectors keeps its keyword hits in a hybrid search. The result is the merged hits by graph id.
+function mergeRankings(
+  ranked: { g: GraphIndex; ix: ReturnType<typeof rankIndexOf>; allow?: Set<string>; hits: RankedNode[] }[],
+  semantic: SemanticInput,
+  key: (g: GraphIndex, id: string) => string,
+): Map<string, RankedNode[]> {
+  const keyword: RankedNode[] = ranked.flatMap(({ g, hits }) => hits.map((h) => ({ id: key(g, h.id), score: h.score }))).sort((a, b) => b.score - a.score);
+  const vector: RankedNode[] = ranked
+    .flatMap(({ g, ix, allow }) => {
+      const own = semantic.graphs.get(g.id);
+      return own ? rankVectors(own.vectors, own.query, nodeHashes(ix), allow).map((h) => ({ id: key(g, h.id), score: h.score })) : [];
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, VECTOR_CANDIDATES);
+  const exact = new Set(keyword.filter((k) => k.score >= EXACT_TITLE).map((k) => k.id));
+  const lists = semantic.mode === 'vector' ? [vector] : [keyword, vector];
+  const out = new Map<string, RankedNode[]>(ranked.map(({ g }) => [g.id, []]));
+  for (const h of fuseRankings(lists)) {
+    const [graph, id] = h.id.split('\0');
+    out.get(graph)!.push({ id, score: h.score + (exact.has(h.id) ? 1 : 0) });
+  }
+  return out;
 }
 
 const tokensIn = (text: string): string[] => [...text.matchAll(WORD)].map((m) => stem(m[0].toLowerCase()));

@@ -5,7 +5,7 @@ title: MCP server
 description: The command semspec mcp, its tools and its resources.
 order: 9
 related: [cli, workspace, provenance, vocabularies]
-documents: [req-mcp-serve, req-mcp-read-tools, req-mcp-check-tools, req-mcp-resources, req-navigate-walk, req-navigate-search, req-search-keyword, req-search-synonyms, req-search-context, req-context-slice]
+documents: [req-mcp-serve, req-mcp-read-tools, req-mcp-check-tools, req-mcp-resources, req-navigate-walk, req-navigate-search, req-search-keyword, req-search-synonyms, req-search-context, req-context-slice, req-embed-hybrid]
 ---
 ## Command
 
@@ -79,6 +79,7 @@ Finds nodes by words.
 | `statuses` | Optional. A list of status values. The value is the own status or the roll-up. |
 | `scope` | Optional. A node id. A hit is the node, a node below it in the scope, or a linked node or check of those. |
 | `limit` | As above. It caps the hits. |
+| `mode` | Optional. `keyword`, `hybrid` or `vector`. The default is `hybrid` when the graph has an index of vectors, and `keyword` when it has none. |
 
 The ranking is BM25 over the id, the title, the statement, the text of the parts, and the labels and definitions of the coded fields of each node. A word is lower case, and a plural ending is cut. A code such as `PSD2` stays whole. A query word with no match also matches the words that start with it. See [The profile](profile.md) for the keys `search.fields` and `search.boost`.
 
@@ -86,6 +87,8 @@ The query widens with synonyms. A synonym counts less than a word of the query. 
 
 - The alt labels of a vocabulary concept. A query word that matches the label, the code or an alt label of a concept also searches the other words of the concept. See [Vocabularies](vocabularies.md).
 - The fields that `search.synonymFields` names. A query word that matches the title of a node also searches the words of these fields of the node, and the other way round.
+
+With a configured embedding model and an index, `hybrid` also ranks the nodes by cosine to the query vector and merges both rankings with reciprocal rank fusion (k = 60). `vector` returns the ranking by cosine only, at most 50 nodes. See [Meaning search](../guide/meaning-search.md). A `command` provider and a remote endpoint run only with the opt-in `--allow-command` or `--allow-remote` on `semspec mcp`, or with the variables `SEMSPEC_ALLOW_COMMAND=1` and `SEMSPEC_ALLOW_REMOTE=1`. Without it, the tool uses keywords only and says so in `notes`. When the model does not answer, or the index does not fit the setting, the tool uses keywords only and the answer has `notes`, a list of short reasons. The answer of a search with no setting has no `notes`.
 
 A node whose id equals the query, or a word of the query, comes first. A node whose title equals the query comes next. Nodes of the role check are not searched.
 

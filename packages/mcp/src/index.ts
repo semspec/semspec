@@ -46,7 +46,7 @@ export function createMcpServer(options: McpOptions): Server {
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) }));
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
-      const result = callTool(options.loader, request.params.name, request.params.arguments ?? {});
+      const result = await callTool(options.loader, request.params.name, request.params.arguments ?? {});
       return { content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) }] };
     } catch (e) {
       return { isError: true, content: [{ type: 'text', text: (e as Error).message }] };

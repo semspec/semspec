@@ -1,8 +1,6 @@
 id: req-embed-index
 kind: requirement
 title: Keep an index next to the graph
-state: draft
-priority: later
 statement: "An index of vectors sits next to the graph. A hash of each node is the key."
 capabilities:
   - cap-embeddings
@@ -11,13 +9,38 @@ area:
 acceptance:
   - id: hash-key
     text: "Each index entry has the hash of the node text as its key."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'writes the file next to the graph, with the model, the size and the hash and vector of each node'
   - id: incremental
-    text: "A rebuild embeds only the nodes whose hash changed or is new."
-    status: open
+    text: "A rebuild embeds only the nodes whose hash changed or is new. A change of the model, the size or a prefix embeds all nodes again."
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'embeds only new and changed nodes and drops removed nodes'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'embeds all nodes again when the model, the size or the prefix changes'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'writes the file next to the graph, with the model, the size and the hash and vector of each node'
   - id: stale
     text: "A rebuild removes the entries of nodes that no longer exist."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'embeds only new and changed nodes and drops removed nodes'
   - id: vector-size
     text: "The index stores vectors of a reduced size, set in the settings."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'are cut to the size and scaled to length 1'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'cuts the vectors to the size, scales them and rounds them to 4 decimals'

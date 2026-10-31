@@ -3,7 +3,7 @@
 // The tools of the MCP server. Each tool maps its input to 1 function of the core.
 import Ajv from 'ajv/dist/2020.js';
 import { parse } from 'yaml';
-import { DEFAULT_LIMIT, QueryError, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, searchGraphs, slice, sliceMarkdown, DEFAULT_SLICE_BUDGET, MAX_SLICE_DEPTH, trace, validateNode, walk, MAX_WALK_DEPTH, type GraphIndex, type Graph, type Model, type Profile } from '@semspec/core';
+import { DEFAULT_LIMIT, QueryError, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, searchSemantic, SEARCH_MODES, slice, sliceMarkdown, DEFAULT_SLICE_BUDGET, MAX_SLICE_DEPTH, trace, validateNode, walk, MAX_WALK_DEPTH, type GraphIndex, type Graph, type SearchMode, type SearchResult, type SemanticSource, type Model, type Profile } from '@semspec/core';
 
 // A graph as the loader returns it. `graph` is the raw graph, and `profile` is the profile with its vocabulary files read.
 export interface LoadedGraph {
@@ -12,6 +12,8 @@ export interface LoadedGraph {
   graph: Graph;
   profile: Profile;
   model: Model;
+  // The model and the index of vectors for the meaning search. Missing when the graph has no embedding setting.
+  embedding?: SemanticSource;
 }
 
 export interface Loaded {
@@ -29,6 +31,7 @@ interface Tool {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  // A tool that calls a model returns a promise. All others return the answer.
   run(loaded: Loaded, graphs: GraphIndex[], args: Record<string, unknown>): unknown;
 }
 
@@ -94,7 +97,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'search',
     description:
-      'Find nodes by words. The tool ranks the nodes with BM25 over the id, title, statement, parts and coded labels, and widens the query with the synonyms of the profile. It searches all graphs unless "graph" is set. Each hit has the kind, the parent, the status and a snippet with the matched words in ** marks.',
+      'Find nodes by words. The tool ranks the nodes with BM25 over the id, title, statement, parts and coded labels, and widens the query with the synonyms of the profile. When the user configured an embedding model and built an index, the tool also ranks by meaning and merges both rankings (mode "hybrid"). It searches all graphs unless "graph" is set. Each hit has the kind, the parent, the status and a snippet with the matched words in ** marks. "notes" says when the model did not answer and the ranking used keywords only.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -105,13 +108,19 @@ export const TOOLS: Tool[] = [
         statuses: { type: 'array', items: { type: 'string' }, description: 'Return only nodes with these status values.' },
         scope: { type: 'string', description: 'The id of a node. Return only nodes in the scope of this node.' },
         limit: { type: 'integer', minimum: 1, maximum: MAX_LIMIT, description: `The most hits. The default is ${DEFAULT_LIMIT}. The answer has "truncated" when it cuts the hits.` },
+        mode: { type: 'string', enum: SEARCH_MODES, description: 'keyword: words only. vector: meaning only. hybrid: both. The default is hybrid when an index exists, and keyword when none exists.' },
       },
       required: ['query'],
       additionalProperties: false,
     },
     run: (loaded, graphs, args) => {
       const query = text(args, 'query', true)!;
-      const found = searchGraphs(graphs, query, {
+      const mode = text(args, 'mode', false) as SearchMode | undefined;
+      if (mode !== undefined && !SEARCH_MODES.includes(mode)) throw new QueryError(`The input "mode" must be one of: ${SEARCH_MODES.join(', ')}.`);
+      const sources = new Map(loaded.graphs.flatMap((g) => (g.embedding ? [[g.id, g.embedding] as const] : [])));
+      const shape = (found: SearchResult) => ({ query, total: found.total, hits: found.hits, ...(found.omitted ? { truncated: { hits: found.omitted } } : {}), ...(found.notes ? { notes: found.notes } : {}) });
+      const found = searchSemantic(graphs, sources, query, {
+        mode,
         graph: text(args, 'graph', false),
         kinds: list(args, 'kinds'),
         lifecycles: list(args, 'lifecycles'),
@@ -119,7 +128,7 @@ export const TOOLS: Tool[] = [
         scope: text(args, 'scope', false),
         limit: whole(args, 'limit', DEFAULT_LIMIT, MAX_LIMIT),
       });
-      return { query, total: found.total, hits: found.hits, ...(found.omitted ? { truncated: { hits: found.omitted } } : {}) };
+      return found instanceof Promise ? found.then(shape) : shape(found);
     },
   },
   {

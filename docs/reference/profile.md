@@ -5,7 +5,7 @@ title: The profile
 description: The keys of a profile.
 order: 2
 related: [markdown-folder, kinds-and-roles, edges, vocabularies, provenance, export, layouts, cross-links]
-documents: [feat-profile, req-profile-only, req-validate-profile, req-deliverables]
+documents: [feat-profile, req-profile-only, req-validate-profile, req-deliverables, req-embed-provider]
 ---
 The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../schema/profile.schema.json) and the 2 examples in [`fixtures/`](../../fixtures/).
 
@@ -27,7 +27,7 @@ The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../s
 | `status` | A status field with 3 values, 1 for each tone: good, warn and bad. A node with no status of its own gets the roll-up of the nodes below it: all good is good, all bad is bad, and a mix is warn. A node with a muted lifecycle does not count. A toggle colours the canvas by status, and a filter selects the status values. |
 | `fieldFilters` | Filters on a list field or a text field: the field, a label, labels for values, a separator that groups the values in the picker, and an optional `from`. A node without the field takes the values of the nodes above or below it. The table has a column for each field. |
 | `vocabularies`, `fieldVocabularies` | The codes that a field can take, and what each code means. See [Vocabularies](vocabularies.md). |
-| `search` | The words that the search reads. `synonymFields` names node fields with words that mean the same as the title, for example a list of words to avoid. `fields` names more node fields to index. `boost` maps a field name to a weight. The built-in names are `id`, `title`, `sub`, `statement` and `parts`, with the weights 2, 3, 1, 1 and 1. A coded field is indexed under its own name with the weight 1. See [MCP server](mcp.md). |
+| `search` | The words that the search reads. `synonymFields` names node fields with words that mean the same as the title, for example a list of words to avoid. `fields` names more node fields to index. `boost` maps a field name to a weight. The built-in names are `id`, `title`, `sub`, `statement` and `parts`, with the weights 2, 3, 1, 1 and 1. A coded field is indexed under its own name with the weight 1. `embeddings` names the optional model for meaning search: `provider` (`ollama`, `openai-compatible` or `command`), `model`, and the optional `endpoint`, `dimensions`, `batch`, `apiKeyEnv`, `command`, `documentPrefix`, `queryPrefix` and `index`. The workspace file can hold the same key, and then it wins. Semspec ships no model and has no default model. See [Meaning search](../guide/meaning-search.md) and [MCP server](mcp.md). |
 | `gates` | The gap kinds that fail `semspec check`: `gates.fail` lists any of `bad-status`, `no-check`, `no-source`, `unplaced`, `unresolved-link`, `broken-cross-link` and `missing-deliverable`. The default is none. See [Gates](../guide/gates.md). |
 | `deliverables` | What a task on a node of a kind must deliver, by kind id. See [Deliverables](#deliverables). |
 | `provenance` | Where a fact comes from: the fields of the marker, the source, the date, the agent and the note, and the markers that need a source. See [Provenance](provenance.md). |

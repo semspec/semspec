@@ -1,8 +1,6 @@
 id: req-embed-license
 kind: requirement
 title: Leave the model and its licence to the user
-state: draft
-priority: later
 statement: "The user chooses the model and accepts its licence. Semspec ships no model and has no model dependency."
 capabilities:
   - cap-embeddings
@@ -11,13 +9,32 @@ area:
 acceptance:
   - id: no-model-shipped
     text: "The package files and the build output contain no model file."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'puts no model file in the files of the package and in the build output'
   - id: no-model-dependency
-    text: "No package lists a model as a dependency."
-    status: open
+    text: "No package lists a model or a model runtime as a dependency, and the package lock holds none."
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'has no model and no model runtime in the root dependencies and in the package dependencies'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'has no model and no model runtime anywhere in the package lock'
   - id: no-download
-    text: "Semspec downloads a model only when the user configures it. Semspec never redistributes it."
-    status: open
+    text: "Semspec never downloads or redistributes a model. The provider of the user does."
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'never downloads a model: no source names a model hub or starts a model download'
   - id: tested-models
-    text: "The documentation lists the tested models with their licences."
-    status: open
+    text: "The documentation lists example models with their licences and says that the user accepts the licence of the model."
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'lists the example models with their licences in the guide'

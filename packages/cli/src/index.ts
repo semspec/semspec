@@ -7,8 +7,11 @@
 //   semspec build --workspace <file> --out <file.html>
 //   semspec mcp --graph <file> --profile <file> [--exclude <pattern>]...
 //   semspec mcp --workspace <file>
-//   semspec search --graph <file> --profile <file> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
-//   semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
+//   semspec search --graph <file> --profile <file> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--mode keyword|hybrid|vector] [--json]
+//   semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--mode keyword|hybrid|vector] [--json]
+//   semspec index --graph <file> --profile <file> [--exclude <pattern>]...
+//   semspec index --workspace <file>
+//   semspec eval-search [--set <file>] [--workspace <file> | --graph <file> --profile <file>] [--mode keyword|hybrid|vector]
 //   semspec slice --graph <file> --profile <file> <id> [--depth <n>] [--budget <n>] [--json]
 //   semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
 //   semspec deliverables --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--json]
@@ -29,6 +32,9 @@ import { pathToFileURL } from 'node:url';
 import { EXPORT_FORMATS, sliceMarkdown, buildModel, exportModel, exportWorkspace, isExportFormat, kindSchemas, type ExportOptions } from '@semspec/core';
 import { serveStdio } from '@semspec/mcp';
 import { UsageError, checkInputs, exitCode, formatFindings, formatJson, parseCheckArgs, sortFindings } from './check';
+import { setPermissions } from './embeddings';
+import { evalSearch, parseEvalArgs } from './eval';
+import { indexInputs, parseIndexArgs } from './indexcmd';
 import { deliverablesInputs, formatDeliverables, parseDeliverablesArgs } from './deliverables';
 import { loadInputs, loadProfile } from './inputs';
 import { mcpLoader } from './mcp';
@@ -49,8 +55,11 @@ Usage:
   semspec build --workspace <file> --out <file.html>
   semspec mcp --graph <file> --profile <file> [--exclude <pattern>]...
   semspec mcp --workspace <file>
-  semspec search --graph <file> --profile <file> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
-  semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--json]
+  semspec search --graph <file> --profile <file> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--mode keyword|hybrid|vector] [--json]
+  semspec search --workspace <file> "<query>" [--in <graph>] [--kind <kind>]... [--scope <id>] [--limit <n>] [--mode keyword|hybrid|vector] [--json]
+  semspec index --graph <file> --profile <file> [--exclude <pattern>]...
+  semspec index --workspace <file>
+  semspec eval-search [--set <file>] [--workspace <file> | --graph <file> --profile <file>] [--mode keyword|hybrid|vector]
   semspec slice --graph <file> --profile <file> <id> [--depth <n>] [--budget <n>] [--json]
   semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
   semspec deliverables --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--json]
@@ -70,6 +79,9 @@ A pattern matches a path relative to the graph folder. It supports *, ** and ?.
 The mcp command serves the graph or the workspace to an AI agent over the Model Context Protocol on stdio. See docs/reference/mcp.md.
 The check command exits with 0 for a clean graph, 1 for an error and 2 for a wrong use. See docs/reference/cli.md.
 The search command ranks the nodes for a query. See docs/reference/cli.md.
+--allow-command and --allow-remote opt in to a command provider and to a remote endpoint of search.embeddings. See docs/guide/meaning-search.md.
+The index command embeds the nodes with the model of search.embeddings and writes the index files. See docs/guide/meaning-search.md.
+The eval-search command prints recall at 5 and MRR of the keyword and the hybrid search. See docs/guide/meaning-search.md.
 The slice command prints the brief for a task on 1 node. See docs/reference/cli.md.
 The deliverables command lists the nodes that miss a deliverable of the profile. See docs/reference/cli.md.
 The schema command writes 1 JSON Schema for each kind of the profile. See docs/reference/schemas.md.
@@ -164,7 +176,9 @@ export function parseArgs(argv: string[]): { command?: string; flags: Record<str
   return { command, flags, lists };
 }
 
-export async function run(argv: string[]): Promise<number> {
+export async function run(rawArgv: string[]): Promise<number> {
+  const argv = rawArgv.filter((a) => a !== '--allow-command' && a !== '--allow-remote');
+  setPermissions({ command: rawArgv.includes('--allow-command'), remote: rawArgv.includes('--allow-remote') });
   const { command, flags, lists } = parseArgs(argv);
   const exclude = lists.exclude ?? [];
   if (command === '--version' || command === '-v') {
@@ -193,9 +207,20 @@ export async function run(argv: string[]): Promise<number> {
   if (command === 'search') {
     try {
       const args = parseSearchArgs(argv.slice(1));
-      const { result, warnings } = searchInputs(args);
+      const { result, warnings } = await searchInputs(args);
       warnings.forEach((w) => console.error(`warning: ${w}`));
       console.log(args.json ? JSON.stringify(result) : formatHits(result, args.flags.workspace !== undefined && args.flags.in === undefined));
+      return 0;
+    } catch (e) {
+      console.error((e as Error).message);
+      return 1;
+    }
+  }
+  if (command === 'index' || command === 'eval-search') {
+    try {
+      const { lines, warnings } = command === 'index' ? await indexInputs(parseIndexArgs(argv.slice(1))) : await evalSearch(parseEvalArgs(argv.slice(1)));
+      warnings.forEach((w) => console.error(`warning: ${w}`));
+      console.log(lines.join('\n'));
       return 0;
     } catch (e) {
       console.error((e as Error).message);

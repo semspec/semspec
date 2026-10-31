@@ -1,8 +1,6 @@
 id: cap-embeddings
 kind: capability
 title: Optional embeddings
-state: draft
-priority: later
 statement: A user turns on vector search next to keyword search, with a model that the user chooses.
 features:
   - feat-navigate

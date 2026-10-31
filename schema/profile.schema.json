@@ -243,7 +243,75 @@
       "properties": {
         "synonymFields": { "type": "array", "items": { "type": "string" }, "description": "Node fields with words that mean the same as the title, for example a list of words to avoid. A query that matches the title also searches these words, and the other way round." },
         "fields": { "type": "array", "items": { "type": "string" }, "description": "More node fields to index. A field path can have dots." },
-        "boost": { "type": "object", "description": "The weight of a field in the ranking, by field name. The built-in names are id, title, sub, statement and parts. The defaults are 2, 3, 1, 1 and 1.", "additionalProperties": { "type": "number", "exclusiveMinimum": 0 } }
+        "boost": { "type": "object", "description": "The weight of a field in the ranking, by field name. The built-in names are id, title, sub, statement and parts. The defaults are 2, 3, 1, 1 and 1.", "additionalProperties": { "type": "number", "exclusiveMinimum": 0 } },
+        "embeddings": {
+          "type": "object",
+          "description": "The optional model for meaning search. The user names the provider and the model and accepts the licence of the model. Semspec ships no model and has no default model. A workspace file can set it too, and then it wins.",
+          "required": [
+            "provider",
+            "model"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "provider": {
+              "enum": [
+                "ollama",
+                "openai-compatible",
+                "command"
+              ],
+              "description": "ollama: a local Ollama server. openai-compatible: a server with POST /v1/embeddings. command: a program that reads JSON on stdin and writes JSON on stdout."
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The name of the model. The provider passes it on."
+            },
+            "endpoint": {
+              "type": "string",
+              "pattern": "^https?://[^\\s/]+",
+              "description": "The base URL of the server. The default for ollama is http://127.0.0.1:11434. It is required for openai-compatible."
+            },
+            "dimensions": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65536,
+              "description": "The size of the stored vectors. A longer vector is cut to this size and scaled to length 1."
+            },
+            "batch": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1024,
+              "description": "The most texts in 1 request. The default is 32."
+            },
+            "apiKeyEnv": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+              "description": "The name of the environment variable that holds the API key. Only for openai-compatible. The key never sits in a file."
+            },
+            "command": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "The program and its arguments, for the provider command. No shell reads them."
+            },
+            "documentPrefix": {
+              "type": "string",
+              "description": "A text that goes before each node text. Some models need it."
+            },
+            "queryPrefix": {
+              "type": "string",
+              "description": "A text that goes before the query. Some models need it."
+            },
+            "index": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The path of the index file. The default is the graph path with .semspec-index.json added."
+            }
+          }
+        }
       }
     },
     "gates": {

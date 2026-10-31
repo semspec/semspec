@@ -26,3 +26,5 @@ export * from './gates.js';
 export * from './rank.js';
 export * from './search.js';
 export * from './slice.js';
+export * from './embed.js';
+export * from './semantic.js';

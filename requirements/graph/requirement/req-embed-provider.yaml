@@ -1,8 +1,6 @@
 id: req-embed-provider
 kind: requirement
 title: Name the embedding provider and model in the configuration
-state: draft
-priority: later
 statement: "The workspace or the profile names the embedding provider and the model. Semspec ships no model and has no default model."
 capabilities:
   - cap-embeddings
@@ -11,13 +9,81 @@ area:
 acceptance:
   - id: interface
     text: "An embedding provider is a function from a list of texts to a list of vectors."
-    status: open
-  - id: in-process
-    text: "A provider setting can name a local in-process runtime and a model id. The runtime loads that model on the machine of the user."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'ollama posts to /api/embed'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'openai-compatible posts to /v1/embeddings, orders by index and sends the key from the environment'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'command writes the texts on stdin and reads the vectors from stdout'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'reject a wrong number of vectors'
+  - id: command
+    text: "A provider setting can name a local command that reads the texts as JSON on stdin and writes the vectors as JSON on stdout. The command can run any runtime on the machine of the user."
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'command writes the texts on stdin and reads the vectors from stdout'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'stop a command that does not answer'
   - id: endpoint
-    text: "A provider setting can name a local server endpoint and a model. Semspec calls that endpoint."
-    status: open
+    text: "A provider setting can name a local server endpoint and a model. Semspec calls that endpoint. An API key comes only from an environment variable and never appears in a message."
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'ollama posts to /api/embed'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'openai-compatible posts to /v1/embeddings, orders by index and sends the key from the environment'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'never put the API key in an error'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'accept the 3 providers'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'have no default model and name each problem'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'are checked in a profile and in a workspace file'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'let the workspace win over the profile, and give no setting when none is named'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'take the setting of a profile when the workspace has none, with paths from the profile folder'
+  - id: opt-in
+    text: "A command provider runs only with an opt-in outside the repository: the option --allow-command or SEMSPEC_ALLOW_COMMAND=1. An endpoint that is not a loopback address needs --allow-remote or SEMSPEC_ALLOW_REMOTE=1. Without it, nothing runs, search falls back to keywords with a note and index exits with an error."
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'refuse a command and run nothing without the opt-in, and run it with the option or the variable'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'refuse a remote endpoint without the opt-in, and accept loopback addresses'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'make search fall back with a note, and index exit with an error, until the user opts in'
   - id: no-model
     text: "Without a configured model, search runs on keywords only and nothing fails."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'give no target and no source for a workspace without a setting'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'keeps the search of a workspace without a setting synchronous and unchanged'
+      - type: unit
+        file: test/embeddings.test.ts
+        name: 'is the keyword search with mode keyword, and with no index and no mode, with no note'

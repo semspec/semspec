@@ -259,6 +259,8 @@ export interface SearchSpec {
   synonymFields?: string[];
   fields?: string[];
   boost?: Record<string, number>;
+  // The optional model for meaning search. See `EmbeddingConfig`. A workspace file can set it too, and then it wins.
+  embeddings?: import('./embed.js').EmbeddingConfig;
 }
 
 export interface Profile {

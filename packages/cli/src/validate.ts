@@ -4,7 +4,7 @@
 // the names that the profile gives.
 import { readFileSync } from 'node:fs';
 import Ajv from 'ajv/dist/2020.js';
-import { profileDeliverableProblems, profileIriProblems, parentFields, profileProvenanceProblems, profileVocabularyProblems, refsOf, validateGraph, type Profile } from '@semspec/core';
+import { embeddingConfigProblems, profileDeliverableProblems, profileIriProblems, parentFields, profileProvenanceProblems, profileVocabularyProblems, refsOf, validateGraph, type Profile } from '@semspec/core';
 
 export { validateGraph };
 
@@ -35,6 +35,7 @@ function crossCheckProfile(p: Profile): string[] {
   errors.push(...profileProvenanceProblems(p));
   errors.push(...profileIriProblems(p));
   errors.push(...profileDeliverableProblems(p));
+  if (p.search?.embeddings !== undefined) errors.push(...embeddingConfigProblems(p.search.embeddings, 'profile search.embeddings'));
   need('source defaultKind', p.source.defaultKind);
   const body = p.source.markdown?.body;
   if (body !== undefined && (body === p.source.id || body === p.source.kind)) errors.push(`profile source markdown body "${body}" is also the id key or the kind key. Use a different field.`);
