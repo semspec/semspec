@@ -71,3 +71,10 @@ acceptance:
       - type: unit
         file: test/release-flow.test.ts
         name: "has the permissions contents write and pull-requests write only"
+  - id: cli-compatible
+    text: "The pinned Changesets action accepts the installed version of the Changesets CLI, so a push to master never fails before the version pull request."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: installs the major version of the changesets CLI that the pinned action accepts

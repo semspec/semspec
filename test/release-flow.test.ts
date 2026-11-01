@@ -64,6 +64,12 @@ describe('the changeset config', () => {
   it('has exact versions for the changesets package', () => {
     expect(json('package.json').devDependencies['@changesets/cli']).toMatch(/^\d+\.\d+\.\d+$/);
   });
+
+  // The changesets action v2 refuses a changesets CLI of a major version other than 3.
+  it('installs the major version of the changesets CLI that the pinned action accepts', () => {
+    expect(text('.github/workflows/version.yml')).toMatch(/changesets\/action@[0-9a-f]{40} # v2\./);
+    expect(json('package.json').devDependencies['@changesets/cli']).toMatch(/^3\./);
+  });
 });
 
 describe('the changeset files', () => {
