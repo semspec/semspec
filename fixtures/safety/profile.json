@@ -53,6 +53,11 @@
     "sectionTitle": "Evidence",
     "noneText": "No evidence."
   },
+  "externalLinks": [
+    { "label": "Document", "template": "https://docs.example.org/documents/{doc}", "checkTypes": ["report", "analysis"] },
+    { "label": "Section", "template": "https://docs.example.org/documents/{doc}#section-{section}", "checkTypes": ["report", "analysis"] },
+    { "label": "Hazard log", "template": "https://hazards.example.org/entries/{key}", "kinds": ["hazard"] }
+  ],
   "status": {
     "label": "Assurance",
     "field": "assurance",

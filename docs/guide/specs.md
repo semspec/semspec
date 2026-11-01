@@ -164,7 +164,7 @@ Each node heading has an anchor `<a id="<node id>"></a>`. A link between nodes o
 
 A link to a node that another file of the same run holds is a relative link to that file, for example `../glossary.md#pay-card`. When no file of the run holds the node, the text shows the title and the id in code. The cross links of the profile work the same way, also into other graphs of a workspace.
 
-A value is plain text. Semspec escapes the characters that Markdown reads, and the pipes of a table. A cell holds 1 line. A long text ends with an ellipsis.
+A link to an outside tool (the profile key `externalLinks`) is a Markdown link after the node title and after the check title in the shapes that show tests. A value is plain text. Semspec escapes the characters that Markdown reads, and the pipes of a table. A cell holds 1 line. A long text ends with an ellipsis.
 
 ## Presets
 

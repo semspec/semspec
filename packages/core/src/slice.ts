@@ -7,10 +7,11 @@
 // least important parts first and names each cut in `cut`.
 import type { DeliverableFinding } from './deliverables.js';
 import { gapLists, graphById, nodeById, plainFields, QueryError, type Brief, type GraphIndex } from './agent.js';
+import { markdownLink, nodeLinks } from './external-links.js';
 import { statusOf } from './explore.js';
 import { getPath, refsOf } from './profile.js';
 import { derivedEdgeName, provenanceFields, provenanceOf } from './provenance.js';
-import type { Concept, Index, Profile, VNode } from './types.js';
+import type { Concept, ExternalLink, Index, Profile, VNode } from './types.js';
 
 export const DEFAULT_SLICE_BUDGET = 6000;
 export const MAX_SLICE_DEPTH = 5;
@@ -36,6 +37,8 @@ export interface SliceCheck {
   id: string;
   title: string;
   type: string;
+  // The links to outside tools. Absent when the check has none.
+  links?: ExternalLink[];
 }
 
 export interface SlicePart {
@@ -100,6 +103,8 @@ export interface Slice {
   // From the root down to the parent of the node. Each item has an id, a kind and a title.
   path: Brief[];
   parts: SlicePart[];
+  // The links of the node to outside tools. Absent when the node has none.
+  links?: ExternalLink[];
   // The checks of the node itself.
   checks: SliceCheck[];
   linked: SliceLinked[];
@@ -233,6 +238,9 @@ function childrenOf(index: Index, id: string, level: number, shape: Shape, partK
   });
 }
 
+// A check as text: the title, the type and the links.
+const checkText = (c: SliceCheck): string => `${c.title}${c.type ? ` (${c.type})` : ''}${(c.links ?? []).map((l) => ` ${markdownLink(l)}`).join('')}`;
+
 function build(graphs: GraphIndex[], g: GraphIndex, n: VNode, depth: number, shape: Shape): Slice {
   const { index } = g;
   const p = index.profile;
@@ -245,7 +253,9 @@ function build(graphs: GraphIndex[], g: GraphIndex, n: VNode, depth: number, sha
           .filter((e) => e.k === checkEdge)
           .flatMap((e) => {
             const c = index.byId.get(e.t);
-            return c ? [{ id: c.id, title: c.title, type: c.sub }] : [];
+            if (!c) return [];
+            const links = nodeLinks(p, c);
+            return [{ id: c.id, title: c.title, type: c.sub, ...(links.length ? { links } : {}) }];
           })
       : [];
 
@@ -299,6 +309,7 @@ function build(graphs: GraphIndex[], g: GraphIndex, n: VNode, depth: number, sha
     fields: plainFields(p, n),
     ...(Object.keys(prov).length ? { provenance: { ...prov, ...(sourceNode ? { sourceTitle: sourceNode.title } : {}) } } : {}),
     path,
+    ...(nodeLinks(p, n).length ? { links: nodeLinks(p, n) } : {}),
     parts,
     checks: checksOf(n.id),
     linked,
@@ -380,6 +391,10 @@ export function sliceMarkdown(s: Slice): string {
     section('Fields');
     for (const [k, v] of fields) line(`- ${k}: ${oneLine(valueText(v))}`);
   }
+  if (s.links?.length) {
+    section('Links');
+    for (const l of s.links) line(`- ${markdownLink(l)}`);
+  }
   if (s.provenance) {
     section('Provenance');
     for (const [k, v] of Object.entries(s.provenance)) line(`- ${k}: ${oneLine(valueText(v))}`);
@@ -392,12 +407,12 @@ export function sliceMarkdown(s: Slice): string {
     section('Parts');
     for (const part of s.parts) {
       line(`- ${code(part.id)}${part.status ? ` [${statusText(part.status)}]` : ''} ${oneLine(part.text || part.title)}`);
-      line(`  - ${part.checks.length ? `Checks: ${part.checks.map((c) => `${c.title}${c.type ? ` (${c.type})` : ''}`).join('; ')}` : 'No check.'}`);
+      line(`  - ${part.checks.length ? `Checks: ${part.checks.map(checkText).join('; ')}` : 'No check.'}`);
     }
   }
   if (s.checks.length) {
     section('Checks');
-    for (const c of s.checks) line(`- ${c.title}${c.type ? ` (${c.type})` : ''}`);
+    for (const c of s.checks) line(`- ${checkText(c)}`);
   }
   if (s.linked.length) {
     section('Linked nodes');

@@ -4,8 +4,8 @@ kind: reference
 title: The profile
 description: The keys of a profile.
 order: 2
-related: [markdown-folder, kinds-and-roles, edges, vocabularies, provenance, export, layouts, cross-links, specs]
-documents: [feat-author, req-profile-only, req-validate-profile, req-deliverables, req-embed-provider, req-spec-presets]
+related: [external-links, markdown-folder, kinds-and-roles, edges, vocabularies, provenance, export, layouts, cross-links, specs]
+documents: [feat-author, req-profile-only, req-validate-profile, req-deliverables, req-embed-provider, req-spec-presets, req-external-links]
 ---
 The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../schema/profile.schema.json) and the 2 examples in [`fixtures/`](../../fixtures/).
 
@@ -24,6 +24,7 @@ The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../s
 | `parts` | Which kinds own parts, in which field, and the fields of a part. |
 | `embedded` | Objects in a node that are nodes of their own: the owner kind, the dotted path of the object, the new kind, the key of the id in the object (needed only for an object) and the edge. The edge is a parent field of the owner. It differs from the field. |
 | `checks` | The check field, the check kind, the check types and their identity. |
+| `externalLinks` | Links from a node or a check to an outside tool. Each entry has `label`, `template` and the optional `kinds`, `checkTypes` and `field`. See [External links](#external-links). |
 | `status` | A status field with 3 values, 1 for each tone: good, warn and bad. A node with no status of its own gets the roll-up of the nodes below it: all good is good, all bad is bad, and a mix is warn. A node with a muted lifecycle does not count. A toggle colours the canvas by status, and a filter selects the status values. |
 | `fieldFilters` | Filters on a list field or a text field: the field, a label, labels for values, a separator that groups the values in the picker, and an optional `from`. A node without the field takes the values of the nodes above or below it. The table has a column for each field. |
 | `vocabularies`, `fieldVocabularies` | The codes that a field can take, and what each code means. See [Vocabularies](vocabularies.md). |
@@ -38,6 +39,34 @@ The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../s
 | `details` | The sections of the details panel: properties, text sections, option lists, source lists, object lists, tagged lists and citations. |
 
 A profile can also read a node from a Markdown page. See [Markdown pages as nodes](../guide/markdown-folder.md).
+
+## External links
+
+The key `externalLinks` lists link specs. A spec turns fields of a node or of a check into a link to an outside tool, for example a story in a story tool or a run in CI.
+
+```yaml
+externalLinks:
+  - label: Story
+    template: "https://stories.example.org/?path=/story/{story}"
+    checkTypes: [story]
+  - label: Tracker
+    template: "https://tracker.example.org/items/{id}"
+    kinds: [requirement]
+```
+
+| Key | Meaning |
+|---|---|
+| `label` | The text of the link. |
+| `template` | An `http` or `https` URL with placeholders. `{story}` reads the field `story`. `{a.b}` reads a dotted path. |
+| `kinds` | The node kinds that get the link. |
+| `checkTypes` | The check types that get the link. A key of `checks.types`. |
+| `field` | The link shows only when this field has a value. |
+
+A spec with neither `kinds` nor `checkTypes` applies to every node and every check. The placeholder with the name of the key `source.id` reads the id of a node.
+
+Semspec URL-encodes each value with `encodeURIComponent`, so `/` becomes `%2F`. The author of the template places each placeholder where an encoded value is valid. A link whose placeholder has no value does not show. After it fills the template, Semspec accepts only an `http` or `https` address.
+
+`semspec check` reports a template with no placeholder and no fixed URL, a template that does not start with `http://` or `https://`, an unknown kind or check type, and a protocol other than `http` or `https`. See [Links to outside tools](../guide/external-links.md).
 
 ## Deliverables
 

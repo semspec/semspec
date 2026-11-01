@@ -172,6 +172,22 @@
         "noneText": { "type": "string" }
       }
     },
+    "externalLinks": {
+      "type": "array",
+      "description": "Links from a node or a check to an outside tool. A link shows only when every placeholder of its template has a value.",
+      "items": {
+        "type": "object",
+        "required": ["label", "template"],
+        "additionalProperties": false,
+        "properties": {
+          "label": { "type": "string", "description": "The text of the link." },
+          "template": { "type": "string", "description": "An http or https URL. A placeholder such as {story.id} reads a field by its dotted path. The value is URL-encoded with encodeURIComponent, so place it in a path segment or a query value." },
+          "kinds": { "type": "array", "items": { "type": "string" }, "description": "The link applies to nodes of these kinds." },
+          "checkTypes": { "type": "array", "items": { "type": "string" }, "description": "The link applies to checks of these types." },
+          "field": { "type": "string", "description": "The link shows only when this field has a value." }
+        }
+      }
+    },
     "status": {
       "type": "object",
       "description": "A status that a node carries in 1 field. A node with no status of its own gets the roll-up of the nodes below it.",

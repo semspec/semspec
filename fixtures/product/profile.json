@@ -91,6 +91,12 @@
     "sectionTitle": "Tests",
     "noneText": "No test."
   },
+  "externalLinks": [
+    { "label": "Tracker", "template": "https://tracker.example.org/items/{id}", "kinds": ["story"] },
+    { "label": "Test report", "template": "https://ci.example.org/report?file={file}&test={name}", "checkTypes": ["unit"] },
+    { "label": "Test run", "template": "https://ci.example.org/runs/{run}", "checkTypes": ["unit"] },
+    { "label": "Test plan", "template": "https://plans.example.org/{plan}", "checkTypes": ["manual"] }
+  ],
   "status": {
     "label": "Result",
     "field": "result",

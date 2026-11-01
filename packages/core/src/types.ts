@@ -174,6 +174,26 @@ export interface CrossLinkSpec {
   label: string;
 }
 
+// A link from a node or a check to an outside tool. The template is a URL with placeholders such as
+// `{story.id}`. A placeholder reads a field of the node or of the check by its dotted path.
+//   kinds: the spec applies to nodes of these kinds.
+//   checkTypes: the spec applies to checks of these types.
+//   With neither key, the spec applies to every node and every check.
+//   field: the link shows only when this field has a value.
+export interface ExternalLinkSpec {
+  label: string;
+  template: string;
+  kinds?: string[];
+  checkTypes?: string[];
+  field?: string;
+}
+
+// A filled link: the label of the spec and an http or https URL.
+export interface ExternalLink {
+  label: string;
+  url: string;
+}
+
 // The type of an edge property. `date` is an ISO date string: YYYY, YYYY-MM or YYYY-MM-DD.
 export type PropertyType = 'string' | 'number' | 'boolean' | 'date';
 
@@ -297,6 +317,8 @@ export interface Profile {
   parts?: PartSpec[];
   embedded?: EmbeddedSpec[];
   checks?: CheckSpec;
+  // The links to outside tools. See `ExternalLinkSpec`.
+  externalLinks?: ExternalLinkSpec[];
   status?: StatusSpec;
   fieldFilters?: FieldFilterSpec[];
   // Vocabularies by scheme id. The command line tool reads the ones that name a file.

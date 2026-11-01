@@ -257,6 +257,8 @@ export function TableView({ v, compact = false }: { v: Viewer; compact?: boolean
       { label: 'Parts', text: (n: VNode) => n.cov?.parts ?? '' },
       { label: 'Parts with a check', text: (n: VNode) => n.cov?.verified ?? '' },
       ...(index.profile.fieldFilters ?? []).map((spec) => ({ label: spec.label, text: (n: VNode) => fieldText(spec, n) })),
+      // The URLs of the links to outside tools, separated by spaces.
+      ...(index.profile.externalLinks?.length ? [{ label: 'Links', text: (n: VNode) => Core.nodeLinks(n).map((l) => l.url).join(' ') }] : []),
       ...(index.profile.status?.values ?? []).map((x) => ({
         label: `${index.profile.status!.label}: ${x.label}`,
         text: (n: VNode) => Core.statusOf(index, n.id, v.filters.fields).counts[x.value] ?? '',

@@ -5,6 +5,7 @@
 //   <!-- semspec:section shape=tree scope=some-id -->  ...  <!-- semspec:end -->
 //   <!-- semspec:node id=some-id -->  ...  <!-- semspec:end -->
 // The output has a stable order, holds no time and uses only relative links, so a second run changes nothing.
+import { markdownLink, nodeLinks } from './external-links.js';
 import { gapLists, plainFields, type GraphIndex } from './agent.js';
 import { applyFilters, computeScope, statusOf } from './explore.js';
 import { getPath, kindLabel, kindsWithRole } from './profile.js';
@@ -357,6 +358,11 @@ function testsOf(c: Ctx, id: string): VNode[] {
   return (index.out.get(id) ?? []).filter((e) => e.k === edge).map((e) => index.byId.get(e.t)!).filter(Boolean);
 }
 
+// The Markdown links of a node or a check, each after a space.
+const linksText = (p: Profile, n: VNode): string => nodeLinks(p, n).map((l) => ` ${markdownLink(l)}`).join('');
+// The title of a check with its links.
+const testText = (p: Profile, t: VNode, max?: number): string => esc(max === undefined ? t.title : cut(t.title, max)) + linksText(p, t);
+
 const testsTitle = (p: Profile): string => p.checks?.sectionTitle ?? 'Checks';
 const noTests = (p: Profile): string => p.checks?.noneText ?? 'None';
 const partLabel = (p: Profile): string => {
@@ -423,7 +429,7 @@ function conditionBlocks(c: Ctx, n: VNode): Block[] {
   const withTests = c.s.show.has('tests');
   const key = (x: VNode) => String(x.d.id || x.id.split('#').slice(1).join('#'));
   const status = (x: VNode) => (x.status ? statusLabelOf(p, x.status) : '');
-  const tests = (x: VNode) => testsOf(c, x.id).map((t) => esc(t.title)).join('; ');
+  const tests = (x: VNode) => testsOf(c, x.id).map((t) => testText(p, t)).join('; ');
   const title: Block = { t: 'p', lines: [`**${esc(p.parts?.find((x) => x.kind === parts[0].kind)?.sectionTitle ?? partLabel(p))}**`] };
   if (c.s.conditions === 'table') {
     const headers = ['Id', esc(partLabel(p)), ...(p.status ? [esc(p.status.label)] : []), ...(withTests ? [esc(testsTitle(p))] : [])];
@@ -449,7 +455,7 @@ function detailBlocks(c: Ctx, n: VNode, skipStatement = false): Block[] {
     ...(show.has('provenance') ? provenanceLines(c, n) : []),
   ];
   const own = show.has('tests') ? testsOf(c, n.id) : [];
-  if (own.length) info.push(`- ${esc(testsTitle(profileOf(c)))}: ${own.map((t) => esc(t.title)).join('; ')}`);
+  if (own.length) info.push(`- ${esc(testsTitle(profileOf(c)))}: ${own.map((t) => testText(profileOf(c), t)).join('; ')}`);
   if (info.length) blocks.push({ t: 'ul', lines: info });
   if (show.has('conditions')) blocks.push(...conditionBlocks(c, n));
   return blocks;
@@ -459,7 +465,7 @@ const headingMark = (c: Ctx, depth: number): string => '#'.repeat(Math.min(6, c.
 
 function heading(c: Ctx, n: VNode, depth: number): string {
   c.anchored.add(n.id);
-  return `${headingMark(c, depth)} ${anchorTag(c, n.id)}${esc(n.title || n.id)}`;
+  return `${headingMark(c, depth)} ${anchorTag(c, n.id)}${esc(n.title || n.id)}${linksText(profileOf(c), n)}`;
 }
 
 function renderTree(c: Ctx, ids: string[]): string[] {
@@ -550,7 +556,7 @@ function renderTrace(c: Ctx, ids: string[]): string[] {
     partsOf(c, id).forEach((part, row) => {
       if (row === 0) c.anchored.add(id);
       const key = String(part.d.id || part.id.split('#').slice(1).join('#'));
-      const tests = testsOf(c, part.id).map((t) => esc(cut(t.title, CELL_MAX))).join('; ');
+      const tests = testsOf(c, part.id).map((t) => testText(p, t, CELL_MAX)).join('; ');
       rows.push(
         columns.map((col, i) => {
           let cell = '';

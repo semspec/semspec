@@ -10,6 +10,7 @@ export * from './schema.js';
 export * from './tagged.js';
 export * from './workspace.js';
 export * from './edges.js';
+export * from './external-links.js';
 export * from './vocabulary.js';
 export * from './provenance.js';
 export * from './iri.js';

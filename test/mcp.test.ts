@@ -174,6 +174,38 @@ describe('semspec mcp --graph', () => {
   });
 });
 
+describe('semspec mcp links to outside tools', () => {
+  it('returns links for a node and for each check from 2 profiles', { timeout: 60000 }, async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'semspec-mcp-'));
+    made.push(dir);
+    const entry = (id: string) => ({ id, label: id, graph: join(repo, 'fixtures', id, 'graph.json'), profile: join(repo, 'fixtures', id, 'profile.json') });
+    writeFileSync(join(dir, 'workspace.json'), JSON.stringify({ title: 'Links', graphs: [entry('product'), entry('safety')] }));
+    // Own server: the workspace is made for this test.
+    const client = await connect(['--workspace', join(dir, 'workspace.json')]);
+    try {
+      const story = await call(client, 'get', { graph: 'product', id: 'story-pay-by-card' });
+      expect(story.json.links).toEqual([{ label: 'Tracker', url: 'https://tracker.example.org/items/story-pay-by-card' }]);
+      const part = await call(client, 'get', { graph: 'product', id: 'story-pay-by-card#declined' });
+      const checks = part.json.edges.out.tested;
+      expect(checks[0].links).toEqual([{ label: 'Test report', url: 'https://ci.example.org/report?file=tests%2Fpay.test.ts&test=showsDeclineMessage' }]);
+      // A node with no link has no key.
+      expect((await call(client, 'get', { graph: 'product', id: 'epic-checkout' })).json.links).toBeUndefined();
+
+      const sliced = await call(client, 'slice', { graph: 'product', id: 'story-pay-by-card', format: 'json' });
+      expect(sliced.json.links).toEqual(story.json.links);
+      expect(sliced.json.parts.find((p: any) => p.id === 'story-pay-by-card#declined').checks[0].links[0].label).toBe('Test report');
+
+      const fuse = await call(client, 'slice', { graph: 'safety', id: 'mit-thermal-fuse', format: 'json' });
+      expect(fuse.json.checks[0].links.map((l: any) => l.label)).toEqual(['Document', 'Section']);
+      expect((await call(client, 'slice', { graph: 'safety', id: 'mit-thermal-fuse' }, true)).text).toContain('[Section](https://docs.example.org/documents/FMEA-3#section-4.2)');
+      const hazard = await call(client, 'get', { graph: 'safety', id: 'hz-overheat' });
+      expect(hazard.json.links).toEqual([{ label: 'Hazard log', url: 'https://hazards.example.org/entries/hz-overheat' }]);
+    } finally {
+      await client.close();
+    }
+  });
+});
+
 describe('semspec mcp with a wrong input', () => {
   const run = (args: string[]) => spawnSync(process.execPath, [bin, 'mcp', ...args], { encoding: 'utf8', timeout: 30000 });
 

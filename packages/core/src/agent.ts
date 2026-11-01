@@ -3,6 +3,7 @@
 // Answers for an agent: the schema of a profile, one node with its context, the path to the root, the
 // tree below a node, the neighbours of a node, the impact of a node, the gaps of a scope, and the check of a new node.
 // Each answer is plain data. A list that exceeds the limit is cut, and `truncated` says by how much.
+import { nodeLinks } from './external-links.js';
 import { deliverableFindings, type DeliverableFinding } from './deliverables.js';
 import { computeScope, statusOf } from './explore.js';
 import { buildModel, buildIndex } from './model.js';
@@ -11,7 +12,7 @@ import { derivedEdgeName, provenanceOf, sourceCheck } from './provenance.js';
 import { kindSchemas } from './schema.js';
 import { validateGraph } from './validate.js';
 import { incomingCrossLinks, type WorkspaceGraph } from './workspace.js';
-import type { CrossLink, Graph, Index, Model, Profile, VEdge, VNode } from './types.js';
+import type { CrossLink, ExternalLink, Graph, Index, Model, Profile, VEdge, VNode } from './types.js';
 
 export const DEFAULT_LIMIT = 50;
 
@@ -121,6 +122,8 @@ export function plainFields(p: Profile, n: VNode): Record<string, unknown> {
   return Object.fromEntries(Object.entries(n.d).filter(([k, v]) => !hidden.has(k) && v !== undefined));
 }
 
+const linksField = (links: ExternalLink[]) => (links.length ? { links } : {});
+
 function edgeItems(g: GraphIndex, edges: VEdge[], dir: 'out' | 'in', limit: number, truncated: Truncated): Record<string, unknown[]> {
   const groups: Record<string, unknown[]> = {};
   for (const e of edges) (groups[e.k] ??= []).push(e);
@@ -128,7 +131,7 @@ function edgeItems(g: GraphIndex, edges: VEdge[], dir: 'out' | 'in', limit: numb
   for (const [name, list] of Object.entries(groups)) {
     out[name] = cap(list as VEdge[], limit, `edges.${dir}.${name}`, truncated).map((e) => {
       const other = g.index.byId.get(dir === 'out' ? e.t : e.s);
-      return { id: other?.id ?? (dir === 'out' ? e.t : e.s), ...(other ? { kind: other.kind, title: other.title } : {}), ...(e.n ? { note: e.n } : {}), ...(e.p ? { props: e.p } : {}) };
+      return { id: other?.id ?? (dir === 'out' ? e.t : e.s), ...(other ? { kind: other.kind, title: other.title } : {}), ...(other && e.k === g.index.profile.checks?.edge ? linksField(nodeLinks(g.index.profile, other)) : {}), ...(e.n ? { note: e.n } : {}), ...(e.p ? { props: e.p } : {}) };
     });
   }
   return out;
@@ -164,6 +167,7 @@ export function nodeDetail(graphs: GraphIndex[], graphId: string | undefined, id
     ...(n.statement ? { statement: n.statement } : {}),
     lifecycle: n.lifecycle,
     ...(p.status && status.total ? { status: { value: status.value, label: statusLabel(status.value), tone: status.tone, own: n.status !== undefined, counts: status.counts } } : {}),
+    ...linksField(nodeLinks(p, n)),
     fields: plainFields(p, n),
     parents,
     childCount: (index.scopeChildren.get(id) ?? []).length,

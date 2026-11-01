@@ -1,8 +1,6 @@
 id: req-external-links
 kind: requirement
 title: Open a node in an outside tool
-state: draft
-priority: now
 statement: "The profile can turn fields of a node or a check into a link to an outside tool, so a reader opens the source, the story, the scenario or the run that a node names."
 capabilities:
   - cap-nodes
@@ -12,22 +10,95 @@ area:
 acceptance:
   - id: template
     text: "The profile names link templates for a kind or for a check type, for example `https://host/?path=/story/{story}`. A template fills its placeholders from fields of the node or the check, with URL encoding."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/external-links.test.ts
+        name: "fills a template from the fields of a node and URL-encodes each value"
+      - type: unit
+        file: test/external-links.test.ts
+        name: "encodes a value with encodeURIComponent"
   - id: missing
     text: "A link whose template needs a field that the node does not have does not show, and the profile check reports a template that names no field."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/external-links.test.ts
+        name: "shows no link when a field of the template is missing"
+      - type: unit
+        file: test/external-links.test.ts
+        name: "reports a template with no placeholder and no fixed URL"
+      - type: unit
+        file: test/external-links.test.ts
+        name: "reports an unknown kind and an unknown check type"
+      - type: unit
+        file: test/external-links.test.ts
+        name: "reports a protocol other than http or https in the fixed part"
   - id: safe
     text: "A link opens only with the protocols http and https, in a new tab, with no access to the page that opened it."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/external-links.test.ts
+        name: "accepts http and https only"
+      - type: unit
+        file: test/external-links.test.ts
+        name: "refuses a filled URL that is not http or https, even when a field builds it"
+      - type: unit
+        file: test/app/external-links.test.tsx
+        name: "shows no link for a protocol other than http and https"
+      - type: unit
+        file: test/app/external-links.test.tsx
+        name: "makes the title of a check a link in the condition list and opens it in a new tab"
   - id: details
     text: "The details panel shows the links of a node and of each of its checks, with the label from the profile."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/external-links.test.tsx
+        name: "shows the Links section of a node with the label of the profile"
+      - type: unit
+        file: test/app/external-links.test.tsx
+        name: "shows link buttons when a check has more than 1 link, on the safety profile"
   - id: click-through
     text: "A check in the details panel and in a condition list is a link when it has an outside link, so a click opens the outside tool."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/external-links.test.tsx
+        name: "makes the title of a check a link in the condition list and opens it in a new tab"
+      - type: unit
+        file: test/app/external-links.test.tsx
+        name: "shows the links of a part with the check list of the part"
+      - type: unit
+        file: test/app/external-links.test.tsx
+        name: "shows the links of a selected check node"
+      - type: unit
+        file: test/app/external-links.test.tsx
+        name: "makes the title of a check a link on the safety profile"
   - id: export
     text: "The exports carry the links: the RDF export as rdfs:seeAlso, the Markdown specs as Markdown links and the CSV as a column."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/external-links.test.ts
+        name: "writes rdfs:seeAlso for each link of a node and a check on 2 fixtures"
+      - type: unit
+        file: test/external-links.test.ts
+        name: "puts a link after the node title in the tree and after the check title in the tests"
+      - type: unit
+        file: test/external-links.test.ts
+        name: "puts the links in the cells of the traceability"
+      - type: unit
+        file: test/app/external-links.test.tsx
+        name: "has a Links column with the URLs separated by spaces"
   - id: mcp
     text: "The MCP tools get and slice return the links of a node and of its checks."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/mcp.test.ts
+        name: "returns links for a node and for each check from 2 profiles"
+      - type: unit
+        file: test/external-links.test.ts
+        name: "puts links in the slice and the node detail of 2 fixtures"

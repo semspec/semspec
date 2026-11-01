@@ -2,6 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // Builds the RDF of a graph: its nodes and edges, its vocabularies (SKOS), its provenance (PROV-O) and
 // its profile as an ontology (OWL). docs/reference/export.md lists the mapping.
+import { nodeLinks } from './external-links.js';
 import { structuralFields } from './export-fields.js';
 import { isIsoDate } from './edges.js';
 import { iriMap, type IriMap } from './iri.js';
@@ -168,6 +169,8 @@ export function graphTriples(input: GraphInput, prefixes: Record<string, string>
     if (hasProvenance) add(RDF_TYPE, iri(`${PROV}Entity`));
     add(`${RDFS}label`, lit(n.title));
     add(`${DCT}identifier`, lit(n.id));
+    // A link to an outside tool, of a node or of a check.
+    for (const link of nodeLinks(P, n)) add(`${RDFS}seeAlso`, iri(link.url));
     for (const [field, value] of Object.entries(n.d)) {
       if (skip.has(field) || value === null || value === undefined) continue;
       const p = I.field(field);

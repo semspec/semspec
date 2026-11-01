@@ -3,9 +3,9 @@
 // The app reads the pure logic through this module. It binds the profile of the page, so a
 // component asks for a label or a role and does not name a kind.
 import * as C from '@semspec/core';
-import type { Chip, FieldFilterSpec, Filters, Groups, Index, Model, NodeStatus, Profile, StatusTone, Summary, VEdge, VNode, Vocabulary, Walk } from '@semspec/core';
+import type { Chip, ExternalLink, FieldFilterSpec, Filters, Groups, Index, Model, NodeStatus, Profile, StatusTone, Summary, VEdge, VNode, Vocabulary, Walk } from '@semspec/core';
 
-export type { Chip, FieldFilterSpec, Filters, Groups, Index, Model, NodeStatus, Profile, StatusTone, Summary, VEdge, VNode, Vocabulary, Walk };
+export type { Chip, ExternalLink, FieldFilterSpec, Filters, Groups, Index, Model, NodeStatus, Profile, StatusTone, Summary, VEdge, VNode, Vocabulary, Walk };
 export type Kind = string;
 
 let profile: Profile;
@@ -73,6 +73,10 @@ export const Core = {
   summaryOf: C.summaryOf,
   statusOf: C.statusOf,
   toCsv: C.toCsv,
+  // Links to outside tools, from the externalLinks of the profile. Each URL is http or https.
+  safeUrl: C.safeHttpUrl,
+  nodeLinks: (n: VNode): ExternalLink[] => C.nodeLinks(profile, n),
+  checkLinks: (check: unknown): ExternalLink[] => C.checkLinks(profile, check),
   getPath: C.getPath,
   taggedLines: C.taggedLines,
   // The properties of an edge as a line. A code shows as its label.

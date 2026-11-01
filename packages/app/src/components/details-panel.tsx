@@ -3,34 +3,49 @@
 // The details of the selected node, and the neighbours panel for the walk.
 // The profile says which sections a node has and which fields they read.
 import type { ReactNode } from 'react';
-import { ArrowRight, ChevronsLeft, EyeOff, Network, Target, Undo2 } from 'lucide-react';
+import { ArrowRight, ChevronsLeft, EyeOff, ExternalLink as ExternalLinkIcon, Network, Target, Undo2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ChipView, KindBadge, KindDot, NodeSummaryView, StatusCounts, StatusDot } from '@/components/kind';
-import { Core, type VEdge } from '@/lib/core';
+import { Core, type ExternalLink, type VEdge } from '@/lib/core';
 import { useWorkspace } from '@/lib/workspace';
 import type { Viewer } from '@/lib/use-viewer';
 import { cn } from '@/lib/utils';
 
 const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-function safeUrl(url: unknown): string | null {
-  try {
-    const u = new URL(String(url));
-    return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : null;
-  } catch {
-    return null;
-  }
-}
-
 function ExtLink({ url }: { url: unknown }) {
-  const href = safeUrl(url);
+  const href = Core.safeUrl(url);
   if (!href) return <code className="font-mono text-[11px] break-all">{String(url)}</code>;
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 break-all">
       {href}
     </a>
+  );
+}
+
+// A link to an outside tool. It opens in a new tab and has no access to this page.
+const OUTSIDE = { target: '_blank', rel: 'noopener noreferrer' } as const;
+
+function LinkButton({ link }: { link: ExternalLink }) {
+  const href = Core.safeUrl(link.url);
+  if (!href) return null;
+  return (
+    <a href={href} {...OUTSIDE} title={href} className={buttonVariants({ variant: 'outline', size: 'xs' })}>
+      {link.label}
+      <ExternalLinkIcon />
+    </a>
+  );
+}
+
+function LinkButtons({ links }: { links: ExternalLink[] }) {
+  return (
+    <span className="flex flex-wrap gap-1" data-testid="outside-links">
+      {links.map((l, i) => (
+        <LinkButton key={i} link={l} />
+      ))}
+    </span>
   );
 }
 
@@ -110,14 +125,25 @@ function CheckList({ list }: { list: Record<string, any>[] }) {
         const name = firstValue(e, detail?.name ?? checks?.types?.[type]?.title);
         const file = detail?.file ? e[detail.file] : undefined;
         const record = detail?.record ? e[detail.record] : undefined;
+        const links = Core.checkLinks(e);
+        // 1 link makes the title a link. More links show as small buttons below the title.
+        const href = links.length === 1 ? Core.safeUrl(links[0].url) : null;
+        const title = name ? <Code title={name}>{name}</Code> : null;
         return (
           <li key={i} className="flex flex-col gap-0.5 rounded-md bg-muted/50 px-2 py-1.5">
             <span className="flex items-start gap-1.5">
               <Badge variant="outline" className="h-4 shrink-0 px-1.5 text-[10px]">
                 {type}
               </Badge>
-              {name && <Code title={name}>{name}</Code>}
+              {href ? (
+                <a href={href} {...OUTSIDE} title={`${links[0].label}: ${href}`} className="text-primary underline underline-offset-2">
+                  {title ?? links[0].label}
+                </a>
+              ) : (
+                title
+              )}
             </span>
+            {links.length > 1 && <LinkButtons links={links} />}
             {file && (
               <span className="font-mono text-[11px] break-all text-muted-foreground" title={String(file)}>
                 {String(file)}
@@ -166,7 +192,7 @@ function ProvenanceSection({ v, record }: { v: Viewer; record: Record<string, un
 
 // Free text of a source: a link when it is a URL, else plain text.
 function SourceText({ text }: { text: string }) {
-  return safeUrl(text) ? <ExtLink url={text} /> : <span>{text}</span>;
+  return Core.safeUrl(text) ? <ExtLink url={text} /> : <span>{text}</span>;
 }
 
 function NodeButton({ v, id, note, props, edge, marker }: { v: Viewer; id: string; note?: string; props?: VEdge['p']; edge?: string; marker?: string }) {
@@ -296,6 +322,7 @@ export function DetailsPanel({ v }: { v: Viewer }) {
   const canScope = Core.HIERARCHY_KINDS.includes(n.kind) || Core.LINKED_KINDS.includes(n.kind);
   const sup = P.supersededBy ? out.find((e) => e.k === P.supersededBy) : undefined;
   const statementTitle = D.statementTitle?.[n.kind] ?? D.statementTitle?.default ?? 'Statement';
+  const nodeLinks = Core.nodeLinks(n);
   const isPart = kindSpec?.role === 'part';
   const isCheck = n.kind === P.checks?.kind;
   const ownParts = (P.parts ?? []).filter((p) => p.owner === n.kind);
@@ -378,6 +405,15 @@ export function DetailsPanel({ v }: { v: Viewer }) {
           </div>
         )}
       </Section>
+
+      {nodeLinks.length > 0 && (
+        <>
+          <Divider />
+          <Section title="Links" count={nodeLinks.length}>
+            <LinkButtons links={nodeLinks} />
+          </Section>
+        </>
+      )}
 
       {n.statement && (
         <>
