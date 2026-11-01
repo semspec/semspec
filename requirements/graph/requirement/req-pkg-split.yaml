@@ -1,7 +1,6 @@
 id: req-pkg-split
 kind: requirement
 title: Split the code into 4 packages
-priority: now
 statement: "The code splits into the packages core, app, mcp and cli."
 capabilities:
   - cap-packages

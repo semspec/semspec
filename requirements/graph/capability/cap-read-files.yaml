@@ -3,4 +3,4 @@ kind: capability
 title: Read graph files
 statement: Semspec reads a graph from 1 file.
 features:
-  - feat-graph-input
+  - feat-author

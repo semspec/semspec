@@ -18,7 +18,7 @@ questions:
   - { q: what type does a node get when none is given, expect: [req-default-kind] }
   - { q: turn my notes in markdown into nodes, expect: [cap-read-markdown, req-read-markdown] }
   - { q: what must a task hand over when it is done, expect: [cap-deliverables, req-deliverables] }
-  - { q: give an AI the context for one task, expect: [cap-slice, req-context-slice, feat-context] }
+  - { q: give an AI the context for one task, expect: [cap-slice, req-context-slice, cap-slice] }
   - { q: check a new node before I save it, expect: [req-mcp-check-tools] }
   - { q: find nodes by words, expect: [cap-search, req-search-keyword] }
   - { q: colour the nodes by whether they are done, expect: [req-graph-view, cap-status] }
@@ -32,14 +32,14 @@ questions:
   - { q: does the tool depend on one particular project, expect: [dec-profile-only, req-profile-only] }
   - { q: in which file format do people write the requirements, expect: [dec-yaml-writing] }
   - { q: how many npm packages does the code have, expect: [cap-packages, req-pkg-split] }
-  - { q: can I use the library without the user interface, expect: [req-pkg-core, feat-distribution] }
+  - { q: can I use the library without the user interface, expect: [req-pkg-core, cap-packages] }
   - { q: add and remove neighbours on the canvas one step at a time, expect: [cap-walk, req-walk-reversible] }
   - { q: how many neighbours are not on the canvas, expect: [req-walk-badge] }
   - { q: restrict how deep I look below a node, expect: [req-scope-limits] }
   - { q: where does a node without a parent go in the tree, expect: [req-tree, req-placement] }
   - { q: switch between layered, force and grouped drawing, expect: [req-layouts] }
   - { q: write a formal specification of a condition, expect: [req-verify-models, cap-formal] }
-  - { q: test results change whether a condition is met, expect: [req-verify-conformance, feat-verify] }
+  - { q: test results change whether a condition is met, expect: [req-verify-conformance, cap-formal] }
   - { q: vector similarity together with keywords, expect: [req-embed-hybrid, cap-embeddings] }
   - { q: which AI model comes with the tool, expect: [req-embed-license, req-embed-provider] }
   - { q: where a fact came from and when it was read, expect: [req-provenance] }

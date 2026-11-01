@@ -71,13 +71,14 @@ fieldFilters:
     label: Priority
   - field: area
     label: Area
-    values: { core: Core library, cli: Command line, app: Browser app, harness: Harness }
+    values: { core: Core library, cli: Command line, app: Browser app, harness: Harness, repository: Repository }
 facets: { groupKind: feature, groupLabel: Feature }
 entry: { kind: feature, childKind: capability, title: Pick a feature to see its capabilities, countLabel: capabilities }
 groups: { hierarchy: Requirement tree }
 details:
   properties:
     - { label: State, field: state }
+    - { label: Order, field: order }
   statementTitle: { condition: Acceptance condition, default: Statement }
   textSections:
     - { title: Rationale, field: rationale }

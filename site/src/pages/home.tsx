@@ -127,7 +127,7 @@ export function Home() {
           <h2 id="features-title" className={h2Class}>
             What Semspec does today
           </h2>
-          <ul role="list" className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ul role="list" className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {cards.map(({ id, title, text }) => {
               const Icon = FEATURE_ICONS[id] ?? Sparkles;
               return (
@@ -180,7 +180,7 @@ export function Home() {
                   <CardHeader>
                     <CardTitle>
                       <h3 className="flex items-center gap-2">
-                        <KindDot kind="feature" />
+                        <KindDot kind={f.kind} />
                         {f.title}
                       </h3>
                     </CardTitle>

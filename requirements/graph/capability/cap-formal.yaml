@@ -5,4 +5,4 @@ state: draft
 priority: later
 statement: Formal models and traces check the conditions.
 features:
-  - feat-verify
+  - feat-harness

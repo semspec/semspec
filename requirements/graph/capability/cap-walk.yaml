@@ -3,4 +3,4 @@ kind: capability
 title: Walk by expansion
 statement: A walk adds or removes the neighbours of a node.
 features:
-  - feat-scope-walk
+  - feat-explore

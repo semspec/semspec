@@ -1,8 +1,6 @@
 id: req-phone-sheets
 kind: requirement
 title: Open the tree and the details in a sheet
-state: draft
-priority: later
 statement: "At phone width the tree and the details panel open in a sheet."
 capabilities:
   - cap-phone-layout

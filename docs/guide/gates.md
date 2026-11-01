@@ -5,7 +5,7 @@ title: Gates
 description: Block a change that breaks the graph with semspec check, an agent hook, a pre-commit hook and a CI step.
 order: 8
 related: [cli, profile, specs]
-documents: [feat-gates, cap-gate, req-gate-check, req-gate-hooks, req-deliverables, req-spec-check]
+documents: [feat-harness, cap-gate, req-gate-check, req-gate-hooks, req-deliverables, req-spec-check]
 ---
 The command `semspec check` reads the graph and the profile with the rules of `build`. It exits with a code that a hook or a CI step can use. The examples on this page are copies for your project. Semspec installs none of them.
 

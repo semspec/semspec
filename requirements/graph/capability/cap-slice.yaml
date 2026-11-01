@@ -3,4 +3,4 @@ kind: capability
 title: Requirement slice
 statement: A command writes the slice of the graph for 1 task.
 features:
-  - feat-context
+  - feat-harness

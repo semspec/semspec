@@ -5,7 +5,7 @@ title: Export
 description: Write a graph or a workspace as RDF, SHACL shapes or a Cypher script.
 order: 7
 related: [profile, provenance, vocabularies, cli]
-documents: [feat-export, cap-export-graph, req-export-rdf-cypher]
+documents: [feat-connect, cap-export-graph, req-export-rdf-cypher]
 ---
 `semspec export` writes a graph for other tools. The model is a labelled property graph, so each format maps it in the closest way.
 

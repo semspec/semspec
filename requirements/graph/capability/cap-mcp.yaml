@@ -3,4 +3,4 @@ kind: capability
 title: MCP server
 statement: An MCP server gives agents search and walk tools.
 features:
-  - feat-navigate
+  - feat-harness

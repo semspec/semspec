@@ -3,4 +3,4 @@ kind: capability
 title: Scope by a node
 statement: A scope holds the nodes that relate to 1 node.
 features:
-  - feat-scope-walk
+  - feat-explore

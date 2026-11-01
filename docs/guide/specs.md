@@ -5,7 +5,7 @@ title: Markdown specs
 description: Write specification documents in Markdown with sections that Semspec fills from the graph, and check them in CI.
 order: 12
 related: [cli, profile, gates]
-documents: [feat-specs, cap-spec-sections, req-spec-markers, req-spec-options, req-spec-presets, req-spec-check, req-spec-default]
+documents: [feat-harness, cap-spec-sections, req-spec-markers, req-spec-options, req-spec-presets, req-spec-check, req-spec-default]
 ---
 The command `semspec spec` writes specification documents in Markdown from the graph. The author owns the document. Semspec owns the marked sections of it.
 

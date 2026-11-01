@@ -5,7 +5,7 @@ title: Workspaces
 description: Keep several graphs about 1 system on 1 page.
 order: 4
 related: [cross-links, profile, yaml-folder]
-documents: [feat-workspace, cap-workspace, req-workspace-file, req-workspace-page, req-embed-provider]
+documents: [feat-connect, cap-workspace, req-workspace-file, req-workspace-page, req-embed-provider]
 ---
 A user can keep several graphs about 1 system, for example a requirements graph and a domain model. A workspace file lists them. The page holds all graphs, with a switch between them.
 

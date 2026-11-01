@@ -5,4 +5,4 @@ state: draft
 priority: now
 statement: The browser app keeps what a reader did in each graph, in memory, in the browser storage and in the address of the page.
 features:
-  - feat-views
+  - feat-explore

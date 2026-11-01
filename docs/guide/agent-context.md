@@ -5,7 +5,7 @@ title: Agent context
 description: Give an agent the brief for a task with slice, and let it use validate and check around each change.
 order: 9
 related: [mcp, cli, gates]
-documents: [feat-context, cap-slice, req-context-slice, req-deliverables]
+documents: [feat-harness, cap-slice, req-context-slice, req-deliverables]
 ---
 An agent that works from a requirement graph needs 3 things: the context of its task, a check of each node it writes, and a check of the graph before it commits. Semspec gives each one as a tool of the MCP server and as a command.
 

@@ -3,4 +3,4 @@ kind: capability
 title: Generated sections in a Markdown template
 statement: "A Markdown template holds author text and marked sections. The spec command fills each marked section from the graph and keeps the author text."
 features:
-  - feat-specs
+  - feat-harness

@@ -3,4 +3,4 @@ kind: capability
 title: Check the inputs
 statement: Semspec checks the profile and the graph before it uses them.
 features:
-  - feat-profile
+  - feat-author

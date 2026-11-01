@@ -149,7 +149,7 @@ describe('slice of the requirements of this repository', () => {
     }
     const text = out.join('\n');
     expect(text).toContain('# `req-mcp-check-tools` Check the graph with MCP tools');
-    expect(text).toContain('`prd-semspec` Semspec > `feat-navigate` Navigate > `cap-mcp` MCP server');
+    expect(text).toContain('`prd-semspec` Semspec > `feat-harness` Harness > `cap-mcp` MCP server');
     expect(text).toContain('`req-mcp-check-tools#validate` [Verified]');
   });
 });

@@ -1,0 +1,17 @@
+id: req-self-strict
+kind: requirement
+title: Fail CI on a self-check finding
+state: draft
+priority: now
+statement: Once the backlog is clear, a finding of the self-check fails CI and the hook.
+capabilities:
+  - cap-self-check
+area:
+  - repository
+acceptance:
+  - id: ci
+    text: "When the backlog of findings is clear, a finding fails the CI workflow."
+    status: open
+  - id: hook
+    text: "When the backlog of findings is clear, a finding fails the pre-push hook."
+    status: open

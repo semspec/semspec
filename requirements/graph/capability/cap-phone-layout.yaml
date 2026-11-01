@@ -1,7 +1,8 @@
 id: cap-phone-layout
 kind: capability
 title: Phone layout
+state: draft
 priority: later
 statement: The browser app works on a screen 375 px wide.
 features:
-  - feat-views
+  - feat-explore

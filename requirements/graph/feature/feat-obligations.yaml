@@ -1,7 +1,0 @@
-id: feat-obligations
-kind: feature
-title: Obligations
-statement: The profile states what a task must deliver.
-tagline: "The profile states what a task must deliver, for example 1 check for each condition. Semspec reports what is missing."
-products:
-  - prd-semspec

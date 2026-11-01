@@ -8,15 +8,28 @@ area:
   - site
 acceptance:
   - id: roadmap
-    text: "The roadmap page lists the features of the requirements graph with their state and the verified count of their conditions."
+    text: "The roadmap page lists the features and the capabilities of the requirements graph that are draft as planned work, and the other features as shipped, each with the verified count of its conditions."
     status: verified
     tests:
       - type: unit
         file: site/test/roadmap.test.ts
-        name: lists every feature with state draft as planned
+        name: lists every feature and every capability with state draft as planned
       - type: unit
         file: site/test/roadmap.test.ts
         name: counts the verified conditions and all conditions below a feature
+  - id: feature-order
+    text: "The profile declares an order field of the features. The roadmap and the feature cards sort the features by it, and a feature with no number comes last."
+    status: verified
+    tests:
+      - type: unit
+        file: site/test/roadmap.test.ts
+        name: splits the features into planned and shipped, sorted by the order field, and leaves out a retired feature
+      - type: unit
+        file: site/test/roadmap.test.ts
+        name: gives every feature a different number in the order field
+      - type: unit
+        file: site/test/home.test.ts
+        name: lists the shipped features by the order field, then the ones with no number, with no planned and no retired feature
   - id: docs
     text: "The docs pages come from the Markdown pages in docs/, and a new page there shows on the site with no change to the site code."
     status: verified
@@ -28,12 +41,12 @@ acceptance:
         file: site/test/docs.test.ts
         name: "lists the routes: the index, the docs graph and 1 for each page"
   - id: home-cards
-    text: "The home page shows 1 card for each shipped feature, by the same rule as the roadmap (not draft and not retired), in the order of the feature nodes, with the tagline of the feature or else its statement."
+    text: "The home page shows 1 card for each shipped feature, by the same rule as the roadmap (not draft and not retired), in the order of the order field of the features, with the tagline of the feature or else its statement."
     status: verified
     tests:
       - type: unit
         file: site/test/home.test.ts
-        name: shows 1 card for each shipped feature of the graph, in the order of the feature files
+        name: shows 1 card for each shipped feature of the graph, in the order of the order field
       - type: unit
         file: site/test/home.test.ts
         name: uses the tagline of a feature and else its statement

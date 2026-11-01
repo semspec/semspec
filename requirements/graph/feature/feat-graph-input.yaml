@@ -1,7 +1,0 @@
-id: feat-graph-input
-kind: feature
-title: Graph input
-statement: Semspec reads a graph from a JSON file, a YAML file or a folder of YAML files and Markdown pages.
-tagline: "Keep 1 YAML file for each node, or the whole graph in 1 JSON or YAML file. Semspec also reads Markdown pages."
-products:
-  - prd-semspec

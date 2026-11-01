@@ -17,10 +17,11 @@ interface Names {
   good: string;
   bad: string;
   tagline: string;
+  order: string;
 }
 
-const SHOP: Names = { feature: 'feature', condition: 'condition', planned: 'draft', good: 'verified', bad: 'open', tagline: 'tagline' };
-const HARBOUR: Names = { feature: 'epic', condition: 'criterion', planned: 'proposed', good: 'pass', bad: 'fail', tagline: 'blurb' };
+const SHOP: Names = { feature: 'feature', condition: 'condition', planned: 'draft', good: 'verified', bad: 'open', tagline: 'tagline', order: 'order' };
+const HARBOUR: Names = { feature: 'epic', condition: 'criterion', planned: 'proposed', good: 'pass', bad: 'fail', tagline: 'blurb', order: 'rank' };
 
 function profileOf(n: Names): ProfileInput {
   const color = { light: '#111111', dark: '#eeeeee' };
@@ -51,9 +52,9 @@ function graphOf(n: Names) {
   const feature = (id: string, extra: Record<string, unknown>) => ({ id, kind: n.feature, title: id.toUpperCase(), statement: `Statement of ${id}.`, ...extra });
   return {
     nodes: [
-      feature('f-zeta', { [n.tagline]: 'Tagline of zeta.' }),
+      feature('f-zeta', { [n.tagline]: 'Tagline of zeta.', [n.order]: 2 }),
       feature('f-plan', { state: n.planned, [n.tagline]: 'Planned.' }),
-      feature('f-alpha', {}),
+      feature('f-alpha', { [n.order]: 1 }),
       feature('f-blank', { [n.tagline]: '   ' }),
       feature('f-old', { state: 'retired', [n.tagline]: 'Retired.' }),
       { id: 'r-1', kind: 'requirement', title: 'R1', statement: 'R1.', [`${n.feature}s`]: ['f-zeta'], acceptance: [{ id: 'a', text: 'A', status: n.good }] },
@@ -63,14 +64,14 @@ function graphOf(n: Names) {
 
 describe.each([['shop', SHOP], ['harbour', HARBOUR]] as const)('feature cards of the %s profile', (_name, n) => {
   const index = buildIndex(buildModel(graphOf(n), profileOf(n)));
-  const cards = buildCards(index, { featureKind: n.feature, conditionKind: n.condition, plannedState: n.planned, taglineField: n.tagline });
+  const cards = buildCards(index, { featureKind: n.feature, conditionKind: n.condition, plannedState: n.planned, taglineField: n.tagline, orderField: n.order });
 
-  it('lists the shipped features in the order of the nodes, with no planned and no retired feature', () => {
-    expect(cards.map((c) => c.id)).toEqual(['f-zeta', 'f-alpha', 'f-blank']);
+  it('lists the shipped features by the order field, then the ones with no number, with no planned and no retired feature', () => {
+    expect(cards.map((c) => c.id)).toEqual(['f-alpha', 'f-zeta', 'f-blank']);
   });
 
   it('uses the tagline of a feature and else its statement', () => {
-    expect(cards.map((c) => c.text)).toEqual(['Tagline of zeta.', 'Statement of f-alpha.', 'Statement of f-blank.']);
+    expect(cards.map((c) => c.text)).toEqual(['Statement of f-alpha.', 'Tagline of zeta.', 'Statement of f-blank.']);
   });
 });
 
@@ -83,10 +84,11 @@ describe('feature cards of the requirements of this repository', () => {
   const files = readdirSync(dir)
     .filter((f) => f.endsWith('.yaml'))
     .sort()
-    .map((f) => parse(readFileSync(dir + f, 'utf8')) as { id: string; state?: string; tagline?: string });
+    .map((f) => parse(readFileSync(dir + f, 'utf8')) as { id: string; state?: string; tagline?: string; order: number })
+    .sort((a, b) => a.order - b.order);
   const shipped = files.filter((f) => f.state !== 'draft' && f.state !== 'retired');
 
-  it('shows 1 card for each shipped feature of the graph, in the order of the feature files', () => {
+  it('shows 1 card for each shipped feature of the graph, in the order of the order field', () => {
     expect(shipped.length).toBeGreaterThan(0);
     expect(cards.map((c) => c.id)).toEqual(shipped.map((f) => f.id));
   });

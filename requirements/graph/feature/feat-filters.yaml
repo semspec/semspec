@@ -1,7 +1,0 @@
-id: feat-filters
-kind: feature
-title: Filters and status
-statement: A user filters nodes by field and by status. A status rolls up from the nodes below.
-tagline: "A status rolls up from the nodes below. Filters select nodes by status and by any field of the profile."
-products:
-  - prd-semspec

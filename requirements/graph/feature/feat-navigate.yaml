@@ -1,7 +1,0 @@
-id: feat-navigate
-kind: feature
-title: Navigate
-statement: An agent searches and walks the graph with tools over MCP.
-tagline: "An agent searches the graph and walks it over MCP. Search can use embeddings."
-products:
-  - prd-semspec

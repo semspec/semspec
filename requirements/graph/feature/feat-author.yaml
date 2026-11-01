@@ -1,0 +1,8 @@
+id: feat-author
+kind: feature
+title: Author
+order: 1
+statement: A user writes a graph and a profile. Semspec reads both, checks them and writes a JSON Schema for each kind.
+tagline: "Write the graph as YAML files, as 1 JSON or YAML file or as Markdown pages. A profile defines the kinds, and Semspec checks the graph against it."
+products:
+  - prd-semspec

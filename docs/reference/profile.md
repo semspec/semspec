@@ -5,7 +5,7 @@ title: The profile
 description: The keys of a profile.
 order: 2
 related: [markdown-folder, kinds-and-roles, edges, vocabularies, provenance, export, layouts, cross-links, specs]
-documents: [feat-profile, req-profile-only, req-validate-profile, req-deliverables, req-embed-provider, req-spec-presets]
+documents: [feat-author, req-profile-only, req-validate-profile, req-deliverables, req-embed-provider, req-spec-presets]
 ---
 The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../schema/profile.schema.json) and the 2 examples in [`fixtures/`](../../fixtures/).
 
