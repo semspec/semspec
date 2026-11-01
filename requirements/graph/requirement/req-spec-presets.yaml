@@ -28,3 +28,10 @@ acceptance:
       - type: unit
         file: test/spec.test.ts
         name: "names the line of an unknown preset"
+  - id: preset-graph
+    text: "A preset that names another graph is checked against the profile of that graph, so a valid preset never stops a workspace from loading."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "checks a preset that names another graph against the profile of that graph"

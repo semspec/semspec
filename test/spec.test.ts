@@ -692,3 +692,87 @@ describe('the documents of this repository', () => {
     expect(r.sections).toBeGreaterThan(1);
   });
 });
+
+describe('the review fixes of the spec command', () => {
+  const rootProfile = { ...miniProfile, spec: { roots: ['area'] } };
+  const withNodes = (nodes: unknown[], profile: unknown = rootProfile) => ({ id: 'graph', label: 'Mini', model: buildModel({ nodes }, profile as never) });
+  const graphOf = (id: string, nodes: unknown[], profile: unknown = rootProfile) => ({ ...withNodes(nodes, profile), id, label: id });
+
+  it('writes the file of a root with a path in its id inside the output directory', async () => {
+    const dir = temp();
+    writeFileSync(join(dir, 'profile.json'), JSON.stringify(rootProfile));
+    writeFileSync(join(dir, 'graph.json'), JSON.stringify({ nodes: [{ id: '../escaped', kind: 'area', title: 'Escape' }] }));
+    const out = join(dir, 'out');
+    const r = await cli(['spec', '--graph', join(dir, 'graph.json'), '--profile', join(dir, 'profile.json'), '--out', out]);
+    expect(r.code).toBe(0);
+    expect(readdirSync(out)).toEqual(['..~2fescaped.md']);
+    expect(readdirSync(dir).sort()).toEqual(['graph.json', 'out', 'profile.json']);
+  });
+  it('gives each root its own file name when an id and a prefixed id of another graph collide', () => {
+    const one = graphOf('one', [{ id: 'foo', kind: 'area', title: 'Foo' }, { id: 'two-foo', kind: 'area', title: 'Two foo' }]);
+    const two = graphOf('two', [{ id: 'foo', kind: 'area', title: 'Foo again' }]);
+    const names = defaultDocuments(indexGraphs([one, two])).map((d) => d.name);
+    expect(names).toHaveLength(3);
+    expect(new Set(names).size).toBe(3);
+    expect(names).toEqual(['foo.md', 'two-foo.md', 'two-foo-2.md']);
+  });
+  it('quotes the scope of a generated marker, so the marker parses again', () => {
+    const graphs = indexGraphs([withNodes([{ id: 'Product One', kind: 'area', title: 'Product' }])]);
+    const doc = defaultDocuments(graphs)[0];
+    expect(doc.text).toContain('scope="Product One"');
+    expect(parseSpecMarkers(doc.text).problems).toEqual([]);
+    const r = fillSpecs(graphs, [{ path: '/work/p.md', text: doc.text }]);
+    expect(r.findings.filter((f) => f.code === 'error')).toEqual([]);
+  });
+  it('gives sections from 2 graphs with the same node id distinct anchors, and each link goes to its own graph', () => {
+    const nodes = [{ id: 'area-core', kind: 'area', title: 'Core' }, { id: 'item-a', kind: 'item', title: 'Alpha', areas: ['area-core'] }];
+    const graphs = indexGraphs([graphOf('one', nodes), graphOf('two', nodes)]);
+    const text = '<!-- semspec:section graph=one shape=table kinds=area,item columns=id,parent -->\n<!-- semspec:end -->\n\n<!-- semspec:section graph=two shape=table kinds=area,item columns=id,parent -->\n<!-- semspec:end -->\n';
+    const r = fillSpecs(graphs, [{ path: '/work/doc.md', text }]);
+    expect(r.findings.filter((f) => f.code === 'error')).toEqual([]);
+    const out = r.files[0].text;
+    const ids = anchors(out);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toEqual(['one--area-core', 'one--item-a', 'two--area-core', 'two--item-a']);
+    expect(out).toContain('[Core](#one--area-core)');
+    expect(out).toContain('[Core](#two--area-core)');
+  });
+  it('matches a field filter value by the label of fieldFilters values without a vocabulary', () => {
+    expect(anchors(body(mini, 'kinds=item tags=Ex'))).toEqual(['item-a']);
+    expect(anchors(body(mini, 'kinds=item tags=ex'))).toEqual(['item-a']);
+    expect(anchors(body(mini, 'kinds=item tags=x'))).toEqual(['item-a']);
+    expect(anchors(body(mini, 'kinds=item prio=High'))).toEqual(['item-a']);
+  });
+  it('matches a status by its exact code or by its label without regard to case', () => {
+    const profile = { ...miniProfile, status: { label: 'Result', field: 'result', values: [{ value: 'PASS', label: 'Passed', tone: 'good' }, { value: 'WARN', label: 'Warned', tone: 'warn' }, { value: 'FAIL', label: 'Failed', tone: 'bad' }] } };
+    const graphs = indexGraphs([withNodes([{ id: 'area-x', kind: 'area', title: 'X' }, { id: 'item-a', kind: 'item', title: 'A', areas: ['area-x'], steps: [{ key: 's1', text: 'S', result: 'PASS' }] }], profile)]);
+    expect(errorsOf(graphs, template('status=PASS'))).toEqual([]);
+    expect(errorsOf(graphs, template('status=passed'))).toEqual([]);
+    expect(errorsOf(graphs, template('status=Passed,fail'))).toEqual([expect.objectContaining({ message: 'The option "status" has the value "fail". The values are: PASS, WARN, FAIL.' })]);
+    expect(anchors(body(graphs, 'kinds=item status=PASS'))).toEqual(['item-a']);
+    expect(anchors(body(graphs, 'kinds=item status=passed'))).toEqual(['item-a']);
+    expect(anchors(body(graphs, 'kinds=item status=FAIL'))).toEqual([]);
+  });
+  it('checks a preset that names another graph against the profile of that graph', () => {
+    const wizard = { id: 'wizard', label: 'Wizard', plural: 'wizards', prefix: 'wiz-', role: 'hierarchy', color: { light: '#666666', dark: '#999999' }, chips: [] };
+    const other = { ...miniProfile, kinds: [...miniProfile.kinds, wizard] };
+    const home = { ...miniProfile, spec: { presets: { far: { graph: 'other', kinds: ['wizard'], shape: 'list' }, bad: { graph: 'other', kinds: ['nope'], shape: 'list' } } } };
+    expect(validateProfile(JSON.parse(JSON.stringify(home)))).toEqual([]);
+    expect(validateProfile(JSON.parse(JSON.stringify({ ...home, spec: { presets: { x: { kinds: ['nope'] } } } })))[0]).toContain('unknown kind "nope"');
+    const graphs = indexGraphs([graphOf('home', miniGraph.nodes, home), graphOf('other', [{ id: 'wiz-1', kind: 'wizard', title: 'Merlin' }], other)]);
+    expect(errorsOf(graphs, template('use=far'))).toEqual([]);
+    expect(fill(graphs, template('use=far')).files[0].text).toContain('**Merlin**');
+    expect(errorsOf(graphs, template('use=bad'))[0].message).toContain('unknown kind "nope"');
+  });
+  it('registers the anchor of a node in a traceability section only when it writes a row', () => {
+    const graph = withNodes([...miniGraph.nodes, { id: 'item-d', kind: 'item', title: 'Delta', areas: ['area-core'] }]);
+    const graphs = indexGraphs([graph]);
+    expect(anchors(body(graphs, 'shape=traceability kinds=item'))).toEqual(['item-a', 'item-b', 'item-c']);
+  });
+  it('names the line of a marker comment that reaches the end of the file without the closing characters', () => {
+    const r = errorsOf(mini, 'a\n\n<!-- semspec:section shape=tree');
+    expect(r).toEqual([expect.objectContaining({ line: 3, message: 'The marker comment is not closed with -->.' })]);
+    expect(errorsOf(mini, '```\n<!-- semspec:section shape=tree\n```\n')).toEqual([]);
+    expect(parseSpecMarkers('x\n<!-- semspec:end').problems).toEqual([{ line: 2, message: 'The marker comment is not closed with -->.' }]);
+  });
+});

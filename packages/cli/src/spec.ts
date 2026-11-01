@@ -2,7 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // The command `semspec spec`: fills the marked sections of Markdown templates from the graph, or writes default documents.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { defaultDocuments, fillSpecs, indexGraphs, type SpecDocument, type SpecFinding } from '@semspec/core';
 import { UsageError } from './check';
 import { mcpLoader } from './mcp';
@@ -76,6 +76,11 @@ export function specInputs(args: SpecArgs): SpecOutcome {
     if (!defaults.length) throw new Error('No document to write. Name the root kinds in spec.roots of the profile, or use --roots, or use --glossary.');
     for (const d of defaults) {
       const file = resolve(out, d.name);
+      const away = relative(resolve(out), file);
+      if (away === '' || away === '..' || away.startsWith(`..${sep}`) || isAbsolute(away)) {
+        findings.push({ code: 'error', file: d.name, line: 1, message: `The file "${d.name}" is outside the output directory "${out}". The command refuses it.` });
+        continue;
+      }
       // An existing file keeps the text of its author. Only its marked sections change.
       documents.push({ path: posix(file), name: `${out.replace(/[\\/]+$/, '')}/${d.name}`, text: existsSync(file) ? readFileSync(file, 'utf8') : d.text });
     }

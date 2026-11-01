@@ -31,3 +31,24 @@ acceptance:
       - type: unit
         file: test/spec.test.ts
         name: "writes a glossary document, and cross links from other documents point to its anchors"
+  - id: out-dir
+    text: "A generated file stays inside the output directory for any node id: the file name is a safe encoding of the id, and a path that leaves the directory is refused."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes the file of a root with a path in its id inside the output directory"
+  - id: unique-files
+    text: "Each root gets its own file name, also when an id and a prefixed id of another graph collide."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "gives each root its own file name when an id and a prefixed id of another graph collide"
+  - id: quoted-scope
+    text: "A generated marker quotes a scope value that has spaces or other special characters, so the marker parses again."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "quotes the scope of a generated marker, so the marker parses again"

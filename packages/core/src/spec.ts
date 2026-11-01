@@ -80,7 +80,10 @@ const cut = (text: string, max: number): string => {
 const esc = (text: string): string => escapeMd(oneLine(text));
 const code = (text: string): string => `\`${oneLine(text).replace(/`/g, "'")}\``;
 const attr = (text: string): string => text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const anchorTag = (id: string): string => `<a id="${attr(id)}"></a>`;
+// The anchor name of a node of a graph. It is the node id, or the node id with the graph id as a prefix when the run
+// anchors the same id for more than 1 graph.
+type AnchorName = (graph: string, id: string) => string;
+const anchorTag = (c: Ctx, id: string): string => `<a id="${attr(c.name(c.s.g.id, id))}"></a>`;
 const fragment = (id: string): string => encodeURIComponent(id).replace(/\(/g, '%28').replace(/\)/g, '%29');
 
 // The text of 1 paragraph or more. A blank line separates paragraphs. A line start that Markdown reads as a block is escaped.
@@ -229,8 +232,14 @@ function resolveSection(graphs: GraphIndex[], doc: SpecDocument, marker: SpecMar
 // The code of a value that the author wrote as a code or as a label of the vocabulary of the field.
 function codeOf(p: Profile, field: string, value: string): string {
   const found = schemeOfField(p, field);
-  if (!found || conceptOf(found.scheme, value)) return value;
-  return found.scheme.concepts.find((c) => c.label.toLowerCase() === value.toLowerCase())?.code ?? value;
+  if (found) {
+    if (conceptOf(found.scheme, value)) return value;
+    const code = found.scheme.concepts.find((c) => c.label.toLowerCase() === value.toLowerCase())?.code;
+    if (code !== undefined) return code;
+  }
+  const values = p.fieldFilters?.find((f) => f.field === field)?.values;
+  if (!values || Object.prototype.hasOwnProperty.call(values, value)) return value;
+  return Object.entries(values).find(([, label]) => label.toLowerCase() === value.toLowerCase())?.[0] ?? value;
 }
 
 // ---------- select ----------
@@ -292,6 +301,7 @@ interface Ctx {
   s: Section;
   // The link to a node in the run, or undefined when no document of the run holds the node.
   href: (graph: string, id: string) => string | undefined;
+  name: AnchorName;
   anchored: Set<string>;
 }
 
@@ -417,12 +427,12 @@ function conditionBlocks(c: Ctx, n: VNode): Block[] {
   const title: Block = { t: 'p', lines: [`**${esc(p.parts?.find((x) => x.kind === parts[0].kind)?.sectionTitle ?? partLabel(p))}**`] };
   if (c.s.conditions === 'table') {
     const headers = ['Id', esc(partLabel(p)), ...(p.status ? [esc(p.status.label)] : []), ...(withTests ? [esc(testsTitle(p))] : [])];
-    const rows = parts.map((x) => [`${anchorTag(x.id)}${code(key(x))}`, esc(cut(x.statement || x.title, CELL_MAX)), ...(p.status ? [esc(status(x))] : []), ...(withTests ? [tests(x) || esc(noTests(p))] : [])]);
+    const rows = parts.map((x) => [`${anchorTag(c, x.id)}${code(key(x))}`, esc(cut(x.statement || x.title, CELL_MAX)), ...(p.status ? [esc(status(x))] : []), ...(withTests ? [tests(x) || esc(noTests(p))] : [])]);
     return [title, { t: 'table', lines: tableLines(headers, rows) }];
   }
   const lines: string[] = [];
   for (const x of parts) {
-    lines.push(`- ${anchorTag(x.id)}${code(key(x))}${status(x) ? ` (${esc(status(x))})` : ''}: ${esc(x.statement || x.title)}`);
+    lines.push(`- ${anchorTag(c, x.id)}${code(key(x))}${status(x) ? ` (${esc(status(x))})` : ''}: ${esc(x.statement || x.title)}`);
     if (withTests) lines.push(`  - ${esc(testsTitle(p))}: ${tests(x) || esc(noTests(p))}`);
   }
   return [title, { t: 'ul', lines }];
@@ -449,7 +459,7 @@ const headingMark = (c: Ctx, depth: number): string => '#'.repeat(Math.min(6, c.
 
 function heading(c: Ctx, n: VNode, depth: number): string {
   c.anchored.add(n.id);
-  return `${headingMark(c, depth)} ${anchorTag(n.id)}${esc(n.title || n.id)}`;
+  return `${headingMark(c, depth)} ${anchorTag(c, n.id)}${esc(n.title || n.id)}`;
 }
 
 function renderTree(c: Ctx, ids: string[]): string[] {
@@ -484,7 +494,7 @@ function renderList(c: Ctx, ids: string[]): string[] {
     const n = index.byId.get(id)!;
     c.anchored.add(id);
     const statement = c.s.show.has('statement') && n.statement ? `: ${paragraphs(n.statement).join(' ')}` : '';
-    lines.push(`- ${anchorTag(id)}**${esc(n.title || id)}**${statement}`);
+    lines.push(`- ${anchorTag(c, id)}**${esc(n.title || id)}**${statement}`);
     // A title of a block is a bullet. The block below it sits 1 level deeper.
     let nest = '';
     for (const b of detailBlocks(c, n, true)) {
@@ -523,7 +533,7 @@ function renderTable(c: Ctx, ids: string[]): string[] {
         const v = getPath(n.d, col);
         cell = filled(v) ? esc(cut(valueLabel(p, col, v), CELL_MAX)) : '';
       }
-      return (i === 0 ? anchorTag(id) : '') + cell;
+      return (i === 0 ? anchorTag(c, id) : '') + cell;
     });
   });
   return rows.length ? [tableLines(columns.map((col) => columnTitle(p, col)), rows).join('\n')] : [];
@@ -537,8 +547,8 @@ function renderTrace(c: Ctx, ids: string[]): string[] {
   const rows: string[][] = [];
   for (const id of ids) {
     const n = index.byId.get(id)!;
-    c.anchored.add(id);
     partsOf(c, id).forEach((part, row) => {
+      if (row === 0) c.anchored.add(id);
       const key = String(part.d.id || part.id.split('#').slice(1).join('#'));
       const tests = testsOf(c, part.id).map((t) => esc(cut(t.title, CELL_MAX))).join('; ');
       rows.push(
@@ -550,7 +560,7 @@ function renderTrace(c: Ctx, ids: string[]): string[] {
           else if (col === 'key') cell = code(key);
           else if (col === 'status') cell = esc(statusLabelOf(p, part.status));
           else if (col === 'tests') cell = tests || esc(noTests(p));
-          return (i === 0 && row === 0 ? anchorTag(id) : '') + cell;
+          return (i === 0 && row === 0 ? anchorTag(c, id) : '') + cell;
         }),
       );
     });
@@ -568,7 +578,7 @@ function renderGlossary(c: Ctx, ids: string[]): string[] {
     for (const concept of concepts) {
       const id = `${c.s.vocabulary}.${concept.code}`;
       c.anchored.add(id);
-      const lines = [`${headingMark(c, 0)} ${anchorTag(id)}${esc(concept.label)}`];
+      const lines = [`${headingMark(c, 0)} ${anchorTag(c, id)}${esc(concept.label)}`];
       if (concept.definition) lines.push('', ...paragraphs(concept.definition));
       const facts = [`- Code: ${code(concept.code)}`];
       if (concept.altLabels?.length) facts.push(`- Also called: ${concept.altLabels.map(esc).join(', ')}`);
@@ -620,8 +630,8 @@ function renderGaps(c: Ctx, ids: string[]): string[] {
 }
 
 // The Markdown blocks of 1 section, and the ids that got an anchor.
-function renderSection(graphs: GraphIndex[], s: Section, href: Ctx['href']): { body: string; anchored: Set<string> } {
-  const c: Ctx = { graphs, s, href, anchored: new Set() };
+function renderSection(graphs: GraphIndex[], s: Section, href: Ctx['href'], name: AnchorName = (_graph, id) => id): { body: string; anchored: Set<string> } {
+  const c: Ctx = { graphs, s, href, name, anchored: new Set() };
   const ids = selectIds(s);
   const blocks =
     s.shape === 'tree' ? renderTree(c, ids) : s.shape === 'list' ? renderList(c, ids) : s.shape === 'table' ? renderTable(c, ids) : s.shape === 'traceability' ? renderTrace(c, ids) : s.shape === 'glossary' ? renderGlossary(c, ids) : renderGaps(c, ids);
@@ -666,11 +676,19 @@ export function fillSpecs(graphs: GraphIndex[], documents: SpecDocument[], _opti
     renderSection(graphs, s, () => undefined).anchored.forEach((id) => set.add(keyOf(s.g.id, id)));
     anchors.set(s.doc.path, set);
   }
+  const graphsOfId = new Map<string, Set<string>>();
+  for (const set of anchors.values()) {
+    for (const key of set) {
+      const [graph, id] = key.split('\u0000');
+      graphsOfId.set(id, (graphsOfId.get(id) ?? new Set<string>()).add(graph));
+    }
+  }
+  const name: AnchorName = (graph, id) => ((graphsOfId.get(id)?.size ?? 0) > 1 ? `${graph}--${id}` : id);
   const hrefFor = (from: string): Ctx['href'] => (graph, id) => {
     const key = keyOf(graph, id);
-    if (anchors.get(from)?.has(key)) return `#${fragment(id)}`;
+    if (anchors.get(from)?.has(key)) return `#${fragment(name(graph, id))}`;
     const other = documents.find((d) => d.path !== from && anchors.get(d.path)?.has(key));
-    return other ? `${relativePath(from, other.path)}#${fragment(id)}` : undefined;
+    return other ? `${relativePath(from, other.path)}#${fragment(name(graph, id))}` : undefined;
   };
   const files: SpecResult['files'] = [];
   for (const doc of documents) {
@@ -679,7 +697,7 @@ export function fillSpecs(graphs: GraphIndex[], documents: SpecDocument[], _opti
     let at = 0;
     for (const s of sections.filter((x) => x.doc === doc)) {
       const { marker } = s;
-      const region = regionOf(renderSection(graphs, s, hrefFor(doc.path)).body, crlf);
+      const region = regionOf(renderSection(graphs, s, hrefFor(doc.path), name).body, crlf);
       const existing = doc.text.slice(marker.start, marker.end);
       // A header with a version, from an older run, counts as the same header.
       const same = existing === region || existing.replace(OLD_HEADER, HEADER) === region;
@@ -706,8 +724,21 @@ export interface DefaultDocumentOptions {
 
 const INTRO = '_Write a short introduction here._';
 
-function marker(type: string, options: string[]): string {
-  return `<!-- semspec:${type}${options.map((o) => ` ${o}`).join('')} -->\n<!-- semspec:end -->`;
+// An option value of a marker. A value with a space or a quote is quoted with the quote that it does not hold.
+function optionText(name: string, value: string): string {
+  const bare = /^[^\s"']+$/.test(value) && !value.includes('-->');
+  if (bare) return `${name}=${value}`;
+  if (value.includes('-->') || (value.includes('"') && value.includes("'"))) throw new Error(`The value "${value}" of the option ${name} cannot be written in a marker.`);
+  return value.includes('"') ? `${name}='${value}'` : `${name}="${value}"`;
+}
+
+// The file name part of an id. A character other than a letter, a digit, a dot, a hyphen or an underscore becomes ~ and its hex bytes.
+function fileSafe(id: string): string {
+  return id.replace(/[^A-Za-z0-9._-]/gu, (ch) => (/[!'()*]/.test(ch) ? `~${ch.charCodeAt(0).toString(16)}` : encodeURIComponent(ch).replace(/%/g, '~').toLowerCase()));
+}
+
+function marker(type: string, options: [string, string][]): string {
+  return `<!-- semspec:${type}${options.map(([k, v]) => ` ${optionText(k, v)}`).join('')} -->\n<!-- semspec:end -->`;
 }
 
 // The templates of the default documents: 1 for each root node of the kinds, and 1 glossary document. A document is a
@@ -716,8 +747,10 @@ export function defaultDocuments(graphs: GraphIndex[], options: DefaultDocumentO
   const out: { name: string; text: string }[] = [];
   const taken = new Set<string>();
   const unique = (graph: string, base: string): string => {
+    base = fileSafe(base);
     let name = `${base}.md`;
-    if (taken.has(name.toLowerCase())) name = `${graph}-${base}.md`;
+    if (taken.has(name.toLowerCase())) name = `${fileSafe(graph)}-${base}.md`;
+    for (let i = 2; taken.has(name.toLowerCase()); i++) name = `${fileSafe(graph)}-${base}-${i}.md`;
     taken.add(name.toLowerCase());
     return name;
   };
@@ -725,13 +758,13 @@ export function defaultDocuments(graphs: GraphIndex[], options: DefaultDocumentO
   for (const g of graphs) {
     const roots = options.roots ?? g.index.profile.spec?.roots ?? [];
     for (const n of g.index.model.nodes.filter((x) => roots.includes(x.kind))) {
-      const where = only ? [`graph=${g.id}`] : [];
+      const where: [string, string][] = only ? [['graph', g.id]] : [];
       const text = [
         `# ${esc(n.title || n.id)}`,
         INTRO,
-        marker('section', [...where, 'shape=tree', `scope=${n.id}`, 'self=no', 'level=2']),
+        marker('section', [...where, ['shape', 'tree'], ['scope', n.id], ['self', 'no'], ['level', '2']]),
         '## Traceability',
-        marker('section', [...where, 'shape=traceability', `scope=${n.id}`]),
+        marker('section', [...where, ['shape', 'traceability'], ['scope', n.id]]),
       ].join('\n\n');
       out.push({ name: unique(g.id, n.id), text: `${text}\n` });
     }
@@ -739,7 +772,7 @@ export function defaultDocuments(graphs: GraphIndex[], options: DefaultDocumentO
   if (options.glossary !== undefined) {
     const g = graphs.find((x) => x.id === options.glossary);
     if (!g) throw new Error(`Unknown graph "${options.glossary}". The graphs are: ${graphs.map((x) => x.id).join(', ')}.`);
-    const text = [`# Glossary of ${esc(g.label || g.id)}`, INTRO, marker('section', [...(only ? [`graph=${g.id}`] : []), 'shape=glossary', 'level=2'])].join('\n\n');
+    const text = [`# Glossary of ${esc(g.label || g.id)}`, INTRO, marker('section', [...(only ? ([['graph', g.id]] as [string, string][]) : []), ['shape', 'glossary'], ['level', '2']])].join('\n\n');
     out.push({ name: unique(g.id, only ? `glossary-${g.id}` : 'glossary'), text: `${text}\n` });
   }
   return out;

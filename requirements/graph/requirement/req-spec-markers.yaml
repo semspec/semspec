@@ -74,3 +74,24 @@ acceptance:
       - type: unit
         file: test/spec.test.ts
         name: "inserts 1 node with a node marker"
+  - id: unclosed
+    text: "A marker comment that reaches the end of the file without `-->` is a problem with its line, and `--check` fails."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "names the line of a marker comment that reaches the end of the file without the closing characters"
+  - id: graph-anchors
+    text: "Sections from 2 graphs with the same node id get distinct anchors, and each link goes to the node of its own graph."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "gives sections from 2 graphs with the same node id distinct anchors, and each link goes to its own graph"
+  - id: row-anchors
+    text: "A traceability section registers the anchor of a node only when it writes a row for it, so no link points to a missing row."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "registers the anchor of a node in a traceability section only when it writes a row"

@@ -38,6 +38,9 @@ Without a template, the spec command writes 1 document for each root node that t
 - <a id="req-spec-default#per-root"></a>`per-root` (Verified): The command with --out writes 1 Markdown file for each root node of the kinds that the profile or an option names, with a tree section and a traceability section.
 - <a id="req-spec-default#same-engine"></a>`same-engine` (Verified): A default document is a template with generated sections, so a second run with --check passes.
 - <a id="req-spec-default#glossary-doc"></a>`glossary-doc` (Verified): In a workspace, the command can write 1 glossary document for a graph, and cross links from other documents point to its anchors.
+- <a id="req-spec-default#out-dir"></a>`out-dir` (Verified): A generated file stays inside the output directory for any node id: the file name is a safe encoding of the id, and a path that leaves the directory is refused.
+- <a id="req-spec-default#unique-files"></a>`unique-files` (Verified): Each root gets its own file name, also when an id and a prefixed id of another graph collide.
+- <a id="req-spec-default#quoted-scope"></a>`quoted-scope` (Verified): A generated marker quotes a scope value that has spaces or other special characters, so the marker parses again.
 
 #### <a id="req-spec-markers"></a>Fill the marked sections of a template in place
 
@@ -52,6 +55,9 @@ The spec command rewrites only the content between a start marker and an end mar
 - <a id="req-spec-markers#header"></a>`header` (Verified): Each filled section holds a short line that names the generator and says not to edit the section.
 - <a id="req-spec-markers#errors"></a>`errors` (Verified): An unknown option, an unknown node id, a marker that is not closed or a nested marker is an error that names the file and the line.
 - <a id="req-spec-markers#node-marker"></a>`node-marker` (Verified): The marker \`&lt;!-- semspec:node id=... --&gt;\` with its end marker inserts 1 node in the text of the author.
+- <a id="req-spec-markers#unclosed"></a>`unclosed` (Verified): A marker comment that reaches the end of the file without \`--&gt;\` is a problem with its line, and \`--check\` fails.
+- <a id="req-spec-markers#graph-anchors"></a>`graph-anchors` (Verified): Sections from 2 graphs with the same node id get distinct anchors, and each link goes to the node of its own graph.
+- <a id="req-spec-markers#row-anchors"></a>`row-anchors` (Verified): A traceability section registers the anchor of a node only when it writes a row for it, so no link points to a missing row.
 
 #### <a id="req-spec-options"></a>Select and shape the content of a section
 
@@ -69,6 +75,8 @@ The options of a section marker select the nodes and set the shape, the detail a
 - <a id="req-spec-options#cross-links"></a>`cross-links` (Verified): A link to a node of another graph or another document is a relative Markdown link when that node has a generated document, else plain text with the id.
 - <a id="req-spec-options#columns"></a>`columns` (Verified): For shape table and shape traceability, the option columns names the columns and their order. A cell shows a short value in 1 line, and a long text is cut with an ellipsis.
 - <a id="req-spec-options#conditions-form"></a>`conditions-form` (Verified): The option conditions takes list or table and sets how the acceptance conditions of each node show, apart from the shape of the section.
+- <a id="req-spec-options#filter-labels"></a>`filter-labels` (Verified): A field filter value matches by code or by the label that the profile gives it, in \`fieldFilters\` values or in a vocabulary.
+- <a id="req-spec-options#status-case"></a>`status-case` (Verified): A status value matches its exact code or its label without regard to case, and an error never names the value it refused as the allowed value.
 
 #### <a id="req-spec-presets"></a>Name section presets in the profile
 
@@ -79,6 +87,7 @@ The profile defines named section presets, and a marker uses a preset by name an
 - <a id="req-spec-presets#profile-key"></a>`profile-key` (Verified): The profile schema has a key for named section presets with the options of a marker.
 - <a id="req-spec-presets#use"></a>`use` (Verified): A marker with \`use=&lt;name&gt;\` takes the options of the preset, and its own options win over them.
 - <a id="req-spec-presets#unknown"></a>`unknown` (Verified): A marker that uses an unknown preset is an error that names the file and the line.
+- <a id="req-spec-presets#preset-graph"></a>`preset-graph` (Verified): A preset that names another graph is checked against the profile of that graph, so a valid preset never stops a workspace from loading.
 <!-- semspec:end -->
 
 ## Traceability
@@ -95,6 +104,9 @@ The profile defines named section presets, and a marker uses a preset by name an
 | <a id="req-spec-default"></a>Write default documents with no template | `per-root` | Verified | Writes 1 file for each root node of the kinds of the profile with a tree and a traceability section; Names the documents in a stable way with the graph as a prefix on a clash |
 | Write default documents with no template | `same-engine` | Verified | Is a template with generated sections so a second run and check pass and the author text stays |
 | Write default documents with no template | `glossary-doc` | Verified | Writes a glossary document and cross links from other documents point to its anchors |
+| Write default documents with no template | `out-dir` | Verified | Writes the file of a root with a path in its id inside the output directory |
+| Write default documents with no template | `unique-files` | Verified | Gives each root its own file name when an id and a prefixed id of another graph collide |
+| Write default documents with no template | `quoted-scope` | Verified | Quotes the scope of a generated marker so the marker parses again |
 | <a id="req-spec-markers"></a>Fill the marked sections of a template in place | `markers` | Verified | Reads a section marker and a node marker with quoted values and lists; Ignores a marker inside a fenced code block |
 | Fill the marked sections of a template in place | `in-place` | Verified | Replaces the text between the markers and keeps the author text byte for byte; Keeps the line breaks of a template with crlf |
 | Fill the marked sections of a template in place | `idempotent` | Verified | Changes no byte on a second run |
@@ -102,6 +114,9 @@ The profile defines named section presets, and a marker uses a preset by name an
 | Fill the marked sections of a template in place | `header` | Verified | Starts each filled section with the generator line with no version |
 | Fill the marked sections of a template in place | `errors` | Verified | Names the line of an unknown option; Names the line of an unknown node id; Names the line of a marker that is not closed; Names the line of a nested marker and of an end marker without a start; Writes nothing and prints the file and the line of an error |
 | Fill the marked sections of a template in place | `node-marker` | Verified | Inserts 1 node with a node marker |
+| Fill the marked sections of a template in place | `unclosed` | Verified | Names the line of a marker comment that reaches the end of the file without the closing characters |
+| Fill the marked sections of a template in place | `graph-anchors` | Verified | Gives sections from 2 graphs with the same node id distinct anchors and each link goes to its own graph |
+| Fill the marked sections of a template in place | `row-anchors` | Verified | Registers the anchor of a node in a traceability section only when it writes a row |
 | <a id="req-spec-options"></a>Select and shape the content of a section | `select` | Verified | Selects by kinds lifecycle status roll up priority and a field filter; Selects by scope with depth and by ids; Selects the nodes of the named graph of a workspace; Rejects a value that the profile does not know |
 | Select and shape the content of a section | `shapes` | Verified | Writes a tree with the headings in tree order; Writes a list; Writes a table; Writes a traceability table with the words of the profile; Writes a glossary with the definitions the synonyms and the coded labels; Writes the gaps the status that is not good the missing checks and the missing deliverables; Writes the missing deliverables |
 | Select and shape the content of a section | `detail` | Verified | Shows the parts that show names; Limits a tree with depth and sorts the nodes with sort |
@@ -112,9 +127,12 @@ The profile defines named section presets, and a marker uses a preset by name an
 | Select and shape the content of a section | `cross-links` | Verified | Links to the generated document of another graph and writes plain text otherwise |
 | Select and shape the content of a section | `columns` | Verified | Sets the columns of a table and of a traceability table; Cuts a long cell with an ellipsis in 1 line and escapes pipes and Markdown; Escapes Markdown characters and table pipes in values |
 | Select and shape the content of a section | `conditions-form` | Verified | Shows the acceptance conditions as a list or as a table |
+| Select and shape the content of a section | `filter-labels` | Verified | Matches a field filter value by the label of field filters values without a vocabulary |
+| Select and shape the content of a section | `status-case` | Verified | Matches a status by its exact code or by its label without regard to case |
 | <a id="req-spec-presets"></a>Name section presets in the profile | `profile-key` | Verified | Accepts the spec key in a profile and rejects an unknown option in a preset |
 | Name section presets in the profile | `use` | Verified | Uses the options of a preset and the options of the marker win |
 | Name section presets in the profile | `unknown` | Verified | Names the line of an unknown preset |
+| Name section presets in the profile | `preset-graph` | Verified | Checks a preset that names another graph against the profile of that graph |
 <!-- semspec:end -->
 
 ## Gaps

@@ -103,8 +103,8 @@ export function optionValueProblems(options: RawOptions, profile?: Profile): str
       const known = profile.kinds.map((k) => k.id);
       for (const k of splitList(value)) if (!known.includes(k)) out.push(`The option "kinds" names the unknown kind "${k}". The kinds are: ${known.join(', ')}.`);
     } else if (name === 'status' && profile?.status) {
-      const known = profile.status.values.flatMap((v) => [v.value, v.label.toLowerCase()]);
-      for (const s of splitList(value)) if (s !== '' && !known.includes(s.toLowerCase())) out.push(`The option "status" has the value "${s}". The values are: ${profile.status.values.map((v) => v.value).join(', ')}.`);
+      const known = profile.status.values;
+      for (const s of splitList(value)) if (s !== '' && !known.some((v) => v.value === s || v.label.toLowerCase() === s.toLowerCase())) out.push(`The option "status" has the value "${s}". The values are: ${profile.status.values.map((v) => v.value).join(', ')}.`);
     } else if (name === 'status' && profile && !profile.status) out.push('The option "status" needs a status in the profile.');
   }
   return out;
@@ -121,14 +121,20 @@ export function profileSpecProblems(p: Profile): string[] {
   for (const [name, preset] of Object.entries(spec.presets ?? {})) {
     const where = `profile spec preset "${name}"`;
     const raw: RawOptions = {};
+    // A preset with a graph is checked against the profile of that graph when a section uses it.
+    const elsewhere = preset.graph !== undefined;
     for (const [option, value] of Object.entries(preset)) {
-      if (!allowed.includes(option)) {
+      if (!allowed.includes(option) && !elsewhere) {
         out.push(`${where} has the unknown option "${option}". The options are: ${allowed.join(', ')}.`);
         continue;
       }
       const text = presetText(value);
       if (text === undefined) out.push(`${where} has the option "${option}" with a value that is not text, a number, a boolean or a list.`);
       else raw[option] = text;
+    }
+    if (elsewhere) {
+      delete raw.kinds;
+      delete raw.status;
     }
     out.push(...optionValueProblems(raw, p).map((m) => `${where}: ${m}`));
   }

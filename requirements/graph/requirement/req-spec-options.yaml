@@ -113,3 +113,17 @@ acceptance:
       - type: unit
         file: test/spec.test.ts
         name: "shows the acceptance conditions as a list or as a table"
+  - id: filter-labels
+    text: "A field filter value matches by code or by the label that the profile gives it, in `fieldFilters` values or in a vocabulary."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "matches a field filter value by the label of fieldFilters values without a vocabulary"
+  - id: status-case
+    text: "A status value matches its exact code or its label without regard to case, and an error never names the value it refused as the allowed value."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "matches a status by its exact code or by its label without regard to case"

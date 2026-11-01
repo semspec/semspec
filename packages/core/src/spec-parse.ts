@@ -107,6 +107,15 @@ export function parseSpecMarkers(text: string): { markers: SpecMarker[]; problem
       open = { type: word, line, options: read.options, start: m.index + m[0].length };
     } else problems.push({ line, message: `The marker "semspec:${word}" is unknown. The markers are: section, node, end.` });
   }
+  // A start of a marker comment with no `-->` after it matches no marker.
+  const starts = new Set<number>();
+  MARKER.lastIndex = 0;
+  while ((m = MARKER.exec(text))) starts.add(m.index);
+  const START = /<!--\s*semspec:/g;
+  while ((m = START.exec(text))) {
+    if (!starts.has(m.index) && !inFence(m.index)) problems.push({ line: lineAt(text, m.index), message: 'The marker comment is not closed with -->.' });
+  }
+  problems.sort((a, b) => a.line - b.line);
   if (open) problems.push({ line: open.line, message: 'The marker is not closed. Add the end marker.' });
   return { markers: problems.length ? [] : markers, problems };
 }

@@ -60,7 +60,7 @@ The marker `semspec:node` inserts 1 node into the text of the author. It takes `
 <!-- semspec:end -->
 ```
 
-An unknown option, an unknown node id, an unknown preset, a marker that is not closed, an end marker with no start and a marker inside a marker are errors.
+An unknown option, an unknown node id, an unknown preset, a marker that is not closed, an end marker with no start, a marker inside a marker and a marker comment with no closing `-->` are errors. An error names the line.
 
 ## Select the nodes
 
@@ -72,11 +72,11 @@ These options choose the nodes. They use the rules of the filters of the explore
 | `scope` | The node and everything below it. With `depth`, only that many levels. `self=no` leaves the node out. |
 | `kinds` | Node kinds. Without it, a section lists the nodes of the hierarchy kinds. A glossary also lists the linked kinds. The gaps shape lists all kinds. |
 | `lifecycle` | Lifecycle values. |
-| `status` | Status values of the profile, or their labels. A node with no status of its own has the roll-up of the nodes below it. |
+| `status` | Status values of the profile, or their labels. A code must match exactly. A label matches in any case. A node with no status of its own has the roll-up of the nodes below it. |
 | `priority` | Values of the level field of the profile (`fields.level`), when the profile has no field filter named `priority`. |
 | `delivery`, `marker` | Delivery values, and provenance markers. |
 | `ids` | Node ids. |
-| a field filter | Any field of `fieldFilters` in the profile is an option with that name, for example `area=cli`. A value is a code or the label of the code. |
+| a field filter | Any field of `fieldFilters` in the profile is an option with that name, for example `area=cli`. A value is a code or the label of the code, in `fieldFilters` values or in a vocabulary. |
 
 ## Shapes
 
@@ -160,7 +160,7 @@ Also called: First, Alpha one
 
 A coded value shows the label of its vocabulary. A kind shows its label from the profile. An edge shows the label for its direction. A field filter shows the label of the field.
 
-Each node heading has an anchor `<a id="<node id>"></a>`. A link between nodes of 1 document is `#<node id>`. The anchor works in every Markdown renderer.
+Each node heading has an anchor `<a id="<node id>"></a>`. A link between nodes of 1 document is `#<node id>`. The anchor works in every Markdown renderer. When the run anchors the same node id for 2 graphs, the anchors are `<graph id>--<node id>`. A traceability section anchors a node only when it writes a row for it.
 
 A link to a node that another file of the same run holds is a relative link to that file, for example `../glossary.md#pay-card`. When no file of the run holds the node, the text shows the title and the id in code. The cross links of the profile work the same way, also into other graphs of a workspace.
 
@@ -181,7 +181,7 @@ spec:
 <!-- semspec:end -->
 ```
 
-A set can name any option of a section, except `use`. A list value is a YAML list or a text with commas. The profile check fails on an unknown option in a set.
+A set can name any option of a section, except `use`. A list value is a YAML list or a text with commas. The profile check fails on an unknown option in a set. A set with the option `graph` is checked when a section uses it, against the profile of that graph.
 
 ## Default documents
 
@@ -192,7 +192,7 @@ semspec spec --workspace workspace.yaml --out docs/spec
 semspec spec --graph graph --profile profile.yaml --out docs/spec --roots product --glossary graph
 ```
 
-The root kinds come from `spec.roots` in the profile, or from `--roots`. A document has the title of the node, a line for the introduction, a tree section and a traceability section. The file name is the node id. `--glossary <graph id>` also writes a glossary document for 1 graph. Its file is `glossary.md`, or `glossary-<graph id>.md` in a workspace.
+The root kinds come from `spec.roots` in the profile, or from `--roots`. A document has the title of the node, a line for the introduction, a tree section and a traceability section. The file name is the node id. A character other than a letter, a digit, a dot, a hyphen or an underscore becomes `~` and its hex code, so a file always stays inside the output directory and the command refuses any other path. When 2 roots get the same name, the later one gets the graph id as a prefix, and a number if that name is also used. A marker quotes a value that has a space. `--glossary <graph id>` also writes a glossary document for 1 graph. Its file is `glossary.md`, or `glossary-<graph id>.md` in a workspace.
 
 A default document is a template like any other. When the file exists, the command keeps all its text and fills only the marked sections. Write your introduction in the file, and change the options of the markers. Links from the other documents point to the anchors of the glossary.
 
