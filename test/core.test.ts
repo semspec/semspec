@@ -209,6 +209,19 @@ describe('summary', () => {
       if (/ of \d+ with | tests?$|evidence$|^no /.test(t)) words.forEach((w) => expect(t).not.toContain(w));
     }
   });
+  const withoutChecks = (f: { graph: Graph; profile: Profile }) => {
+    const { checks: _drop, ...profile } = f.profile as Profile & { checks?: unknown };
+    return buildIndex(buildModel(f.graph, profile as Profile));
+  };
+  const noCheckChips = (f: { graph: Graph; profile: Profile }) => {
+    const index = withoutChecks(f);
+    const texts = index.model.nodes.flatMap((n) => summaryOf(index, n).chips.map((c) => c.text));
+    expect(texts.length).toBeGreaterThan(0);
+    texts.forEach((t) => expect(t).not.toContain('__no_check'));
+    texts.forEach((t) => expect(t).not.toMatch(/ of \d+ with |^no /));
+  };
+  it('shows no coverage chip when the profile has no checks (product)', () => noCheckChips(product));
+  it('shows no coverage chip when the profile has no checks (safety)', () => noCheckChips(safety));
   it('shows the chips that the profile names for each kind', () => {
     const s = summaryOf(pIndex, pIndex.byId.get('story-pay-by-card')!);
     expect(s.chips.map((c) => c.text)).toEqual(['HIGH', 'Planned', 'r1', '1 of 2 with tests']);
@@ -719,14 +732,23 @@ describe('the Lifecycle facet', () => {
   const countsOnlyLifecycleKinds = (index: typeof pIndex) => {
     const all = index.model.nodes.map((n) => n.id);
     const own = ownOf(index);
-    {
-      const counts = facetCounts(index, all, none, 'lifecycles');
-      const total = Array.from(counts.values()).reduce((a, b) => a + b, 0);
-      expect(total).toBe(all.filter((id) => !own(id)).length);
-      expect(own(all.find(own)!)).toBe(true);
-      // The profile has a fallback lifecycle, so no node of a lifecycle kind counts as None here.
-      expect(counts.get('') ?? 0).toBe(all.filter((id) => !own(id) && index.byId.get(id)!.lifecycle === '').length);
-    }
+    const counts = facetCounts(index, all, none, 'lifecycles');
+    expect(own(all.find(own)!)).toBe(true);
+    // Parts and checks never count as None.
+    expect(counts.get('') ?? 0).toBe(all.filter((id) => !own(id) && index.byId.get(id)!.lifecycle === '').length);
+    // The count of a value is the number of nodes that the filter returns for it.
+    counts.forEach((count, value) => expect(count).toBe(applyFilters(index, all, { ...none, lifecycles: [value] }).length - (value === '' ? applyFilters(index, all, { ...none, lifecycles: [value] }).filter(own).length : 0)));
+  };
+  const optionsStay = (index: typeof pIndex) => {
+    const all = index.model.nodes.map((n) => n.id);
+    const ownKinds = index.profile.kinds.filter((k) => k.role === 'part' || k.role === 'check').map((k) => k.id);
+    expect(ownKinds.length).toBeGreaterThan(0);
+    const only = { ...none, kinds: ownKinds };
+    expect(applyFilters(index, all, only).length).toBeGreaterThan(0);
+    const counts = facetCounts(index, all, only, 'lifecycles');
+    expect(counts.size).toBeGreaterThan(0);
+    expect(counts.has('')).toBe(false);
+    counts.forEach((count, value) => expect(count).toBe(applyFilters(index, all, { ...only, lifecycles: [value] }).length));
   };
   const keepsPartsOfMatchingOwner = (index: typeof pIndex) => {
     const all = index.model.nodes.map((n) => n.id);
@@ -747,6 +769,8 @@ describe('the Lifecycle facet', () => {
   };
   it('counts only the nodes of kinds that have a lifecycle (product)', () => countsOnlyLifecycleKinds(pIndex));
   it('counts only the nodes of kinds that have a lifecycle (safety)', () => countsOnlyLifecycleKinds(sIndex));
+  it('keeps the Lifecycle options when only parts or checks remain (product)', () => optionsStay(pIndex));
+  it('keeps the Lifecycle options when only parts or checks remain (safety)', () => optionsStay(sIndex));
   it('keeps the parts and checks of an owner that matches (product)', () => keepsPartsOfMatchingOwner(pIndex));
   it('keeps the parts and checks of an owner that matches (safety)', () => keepsPartsOfMatchingOwner(sIndex));
 });

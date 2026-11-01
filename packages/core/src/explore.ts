@@ -307,10 +307,14 @@ export function applyFilters(index: Index, ids: Iterable<string>, f: Filters, sk
 }
 
 // The number of nodes for each value of 1 facet, with every other filter applied.
+// For the Lifecycle facet, a part or a check counts under the lifecycle of each of its owners, as the filter keeps it for them.
+// It never counts as None. So the count of a value is the number of nodes that the filter returns for it, and the options stay when only parts or checks remain.
 export function facetCounts(index: Index, ids: Iterable<string>, f: Filters, key: string): Map<string, number> {
   const counts = new Map<string, number>();
   for (const id of applyFilters(index, ids, f, key)) {
-    for (const v of facetValues(index, index.byId.get(id)!, key, f, key)) counts.set(v, (counts.get(v) ?? 0) + 1);
+    const n = index.byId.get(id)!;
+    const values = key === 'lifecycles' && !hasLifecycle(index, n) ? Array.from(new Set(ownerLifecycles(index, n))).filter(Boolean) : facetValues(index, n, key, f, key);
+    for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
   }
   return counts;
 }
@@ -441,6 +445,8 @@ export function summaryOf(index: Index, n: VNode): Summary {
   const k = kindOf(P, n.kind);
   const chips: Chip[] = [];
   const muted = isMuted(P, n.lifecycle);
+  // A profile with no checks gets a placeholder check kind. It has no kind entry, so no check chip shows.
+  const checks = P.checks && kindOf(P, P.checks.kind) ? P.checks : undefined;
   for (const spec of k?.chips ?? []) {
     if (spec === 'lifecycle') {
       if (n.lifecycle) chips.push({ text: fieldLabel(P, P.lifecycle.field, n.lifecycle), tone: muted ? 'muted' : 'life', struck: muted });
@@ -451,10 +457,10 @@ export function summaryOf(index: Index, n: VNode): Summary {
       if (first) chips.push({ text: plural(index, first[1], first[0]), tone: 'count' });
     } else if (spec === 'coverage') {
       // The count of parts with checks. The words come from the check kind, so they never read as a status.
-      if (n.cov?.parts && P.checks) chips.push({ text: `${n.cov.verified} of ${n.cov.parts} with ${kindPlural(P, P.checks.kind)}`, tone: n.cov.verified === n.cov.parts ? 'good' : 'warn' });
+      if (n.cov?.parts && checks) chips.push({ text: `${n.cov.verified} of ${n.cov.parts} with ${kindPlural(P, checks.kind)}`, tone: n.cov.verified === n.cov.parts ? 'good' : 'warn' });
     } else if (spec === 'verified') {
       const v = (n.d.checks as unknown[]) ?? [];
-      if (P.checks) chips.push({ text: v.length ? plural(index, v.length, P.checks.kind) : `no ${kindLabel(P, P.checks.kind).toLowerCase()}`, tone: v.length ? 'good' : 'warn' });
+      if (checks) chips.push({ text: v.length ? plural(index, v.length, checks.kind) : `no ${kindLabel(P, checks.kind).toLowerCase()}`, tone: v.length ? 'good' : 'warn' });
     } else if (spec === 'verifyTypes') {
       const types: string[] = [];
       ((n.d.checks as Record<string, string>[]) ?? []).forEach((x) => {

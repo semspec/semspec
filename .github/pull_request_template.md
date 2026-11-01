@@ -100,5 +100,6 @@ Each gate line reads "<gate>: <result> at <head sha>", with the head sha of the 
 - licences: <result> at <head sha>
 - site tests: <result> at <head sha>
 - browser check: none, or what was checked, in which browser, at which width
+- codex review: <number> findings, all fixed or answered at <head sha>
 
 Each commit carries a DCO `Signed-off-by` line (`git commit -s`).

@@ -64,3 +64,13 @@ acceptance:
       - type: unit
         file: test/core.test.ts
         name: shows the chips that the profile names for each kind
+  - id: chip-no-checks
+    text: "A profile with no checks shows no coverage chip, and never an internal name."
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: shows no coverage chip when the profile has no checks (product)
+      - type: unit
+        file: test/core.test.ts
+        name: shows no coverage chip when the profile has no checks (safety)

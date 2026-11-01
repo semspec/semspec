@@ -21,6 +21,9 @@ acceptance:
   - id: review
     text: "A pull request needs the approval of a code owner before it merges."
     status: open
+  - id: codex-review
+    text: "Each pull request gets a Codex review against its base before it is ready. The Gates section of the body records the number of findings and the commit that fixes or answers them."
+    status: open
   - id: signed
     text: "Every commit of a pull request is signed and has a DCO sign-off, and a check fails a commit without them."
     status: open
