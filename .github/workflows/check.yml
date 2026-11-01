@@ -7,17 +7,38 @@ on:
     branches: [master]
   pull_request:
 
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
-  check:
+  # The runtime promises the lowest Node version of the engines field (package.json).
+  # This job runs the build and the node tests on that version.
+  runtime:
+    name: Runtime on Node 20
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx vitest run --project node
+
+  # The test tools (jsdom and its undici) need Node 22.22 or later. This job runs every gate.
+  check:
+    name: All gates on Node 24
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
           cache: npm
           cache-dependency-path: |
             package-lock.json
