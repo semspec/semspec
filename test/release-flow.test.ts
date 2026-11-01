@@ -353,3 +353,11 @@ describe('the release guide', () => {
     expect(front.documents).toEqual(['cap-release', 'req-release-changeset', 'req-release-version-pr', 'req-release-tag']);
   });
 });
+
+describe('the concurrency of the Check workflow', () => {
+  it('never cancels the run of a push to master and cancels an older run of the same pull request', () => {
+    const workflow = parse(text('.github/workflows/check.yml'));
+    expect(workflow.concurrency.group).toBe("check-${{ github.event_name == 'push' && github.sha || github.ref }}");
+    expect(workflow.concurrency['cancel-in-progress']).toBe("${{ github.event_name == 'pull_request' }}");
+  });
+});

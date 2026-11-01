@@ -7,9 +7,10 @@ on:
     branches: [master]
   pull_request:
 
+# A new push to a pull request cancels its older run. A push to master is never cancelled, because its run can make a release.
 concurrency:
-  group: check-${{ github.ref }}
-  cancel-in-progress: true
+  group: check-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

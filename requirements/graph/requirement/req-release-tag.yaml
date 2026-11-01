@@ -64,6 +64,13 @@ acceptance:
       - type: unit
         file: test/release-scripts.test.ts
         name: "prints the section when run as a command and exits with 1 for a missing version"
+  - id: no-cancel
+    text: "A later push never cancels the run of a push to master, so the run of a version merge always reaches its release job."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "never cancels the run of a push to master and cancels an older run of the same pull request"
   - id: one-path
     text: "The release job is the only way to make a release. No workflow runs on a tag push."
     status: verified
