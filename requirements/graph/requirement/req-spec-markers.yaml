@@ -1,0 +1,76 @@
+id: req-spec-markers
+kind: requirement
+title: Fill the marked sections of a template in place
+statement: "The spec command rewrites only the content between a start marker and an end marker, and keeps every other line of the file."
+capabilities:
+  - cap-spec-sections
+area:
+  - cli
+acceptance:
+  - id: markers
+    text: "A section starts with the HTML comment `<!-- semspec:section ... -->` and ends with `<!-- semspec:end -->`. The markers do not show when the Markdown is rendered."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "reads a section marker and a node marker, with quoted values and lists"
+      - type: unit
+        file: test/spec.test.ts
+        name: "ignores a marker inside a fenced code block"
+  - id: in-place
+    text: "The command replaces the content between the markers and keeps the author text before, between and after the sections, byte for byte."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "replaces the text between the markers and keeps the author text byte for byte"
+      - type: unit
+        file: test/spec.test.ts
+        name: "keeps the line breaks of a template with CRLF"
+  - id: idempotent
+    text: "A second run on an unchanged graph changes no byte of the file."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "changes no byte on a second run"
+  - id: deterministic
+    text: "The output has a stable order and holds no build time, so a diff shows only changes of the graph."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "gives the same text for two runs, orders the nodes in a stable way and holds no time"
+  - id: header
+    text: "Each filled section holds a short line that names the generator and says not to edit the section."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "starts each filled section with the generator line, with no version"
+  - id: errors
+    text: "An unknown option, an unknown node id, a marker that is not closed or a nested marker is an error that names the file and the line."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "names the line of an unknown option"
+      - type: unit
+        file: test/spec.test.ts
+        name: "names the line of an unknown node id"
+      - type: unit
+        file: test/spec.test.ts
+        name: "names the line of a marker that is not closed"
+      - type: unit
+        file: test/spec.test.ts
+        name: "names the line of a nested marker and of an end marker without a start"
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes nothing and prints the file and the line of an error"
+  - id: node-marker
+    text: "The marker `<!-- semspec:node id=... -->` with its end marker inserts 1 node in the text of the author."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "inserts 1 node with a node marker"

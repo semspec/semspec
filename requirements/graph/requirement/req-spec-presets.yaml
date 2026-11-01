@@ -1,0 +1,30 @@
+id: req-spec-presets
+kind: requirement
+title: Name section presets in the profile
+statement: "The profile defines named section presets, and a marker uses a preset by name and can override its options."
+capabilities:
+  - cap-spec-sections
+area:
+  - profile
+acceptance:
+  - id: profile-key
+    text: "The profile schema has a key for named section presets with the options of a marker."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "accepts the spec key in a profile and rejects an unknown option in a preset"
+  - id: use
+    text: "A marker with `use=<name>` takes the options of the preset, and its own options win over them."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "uses the options of a preset, and the options of the marker win"
+  - id: unknown
+    text: "A marker that uses an unknown preset is an error that names the file and the line."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "names the line of an unknown preset"

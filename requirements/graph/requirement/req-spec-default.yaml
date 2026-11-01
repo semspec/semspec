@@ -1,0 +1,33 @@
+id: req-spec-default
+kind: requirement
+title: Write default documents with no template
+statement: "Without a template, the spec command writes 1 document for each root node that the profile names, with the same section engine."
+capabilities:
+  - cap-spec-sections
+area:
+  - cli
+acceptance:
+  - id: per-root
+    text: "The command with --out writes 1 Markdown file for each root node of the kinds that the profile or an option names, with a tree section and a traceability section."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes 1 file for each root node of the kinds of the profile, with a tree and a traceability section"
+      - type: unit
+        file: test/spec.test.ts
+        name: "names the documents in a stable way, with the graph as a prefix on a clash"
+  - id: same-engine
+    text: "A default document is a template with generated sections, so a second run with --check passes."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "is a template with generated sections, so a second run and --check pass and the author text stays"
+  - id: glossary-doc
+    text: "In a workspace, the command can write 1 glossary document for a graph, and cross links from other documents point to its anchors."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes a glossary document, and cross links from other documents point to its anchors"

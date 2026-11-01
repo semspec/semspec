@@ -29,5 +29,7 @@ jobs:
       - run: npm test
       - name: Check the requirements of Semspec
         run: node bin/semspec.js check --graph requirements/graph --profile requirements/profile.yaml
+      - name: Check the spec document of the requirements
+        run: node bin/semspec.js spec --graph requirements/graph --profile requirements/profile.yaml docs/reference/requirements.md --check
       - run: npm ci --prefix site
       - run: npm test --prefix site

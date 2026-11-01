@@ -1,0 +1,40 @@
+id: req-spec-check
+kind: requirement
+title: Fail when a spec is stale
+statement: "The spec command with --check writes nothing and fails when a filled section differs from what the graph gives."
+capabilities:
+  - cap-spec-sections
+area:
+  - cli
+acceptance:
+  - id: stale
+    text: "With --check, a section that differs from the graph makes the command exit with a code other than 0 and names the file and the section."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "fails a stale section, names the file and the section, and writes nothing"
+  - id: edited
+    text: "A section that an author changed by hand fails --check the same way."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "fails a section that an author changed by hand"
+  - id: clean
+    text: "With --check on up-to-date files, the command exits 0 and changes no file."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "exits with 0 on up-to-date files and changes no file"
+      - type: unit
+        file: test/spec.test.ts
+        name: "does not write a file on --check even when it is stale"
+  - id: gate
+    text: "The guide for gates shows how CI runs the spec check."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "shows the spec check in the guide for gates and in the workflow of the repository"

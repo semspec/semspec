@@ -4,8 +4,8 @@ kind: guide
 title: Gates
 description: Block a change that breaks the graph with semspec check, an agent hook, a pre-commit hook and a CI step.
 order: 8
-related: [cli, profile]
-documents: [feat-gates, cap-gate, req-gate-check, req-gate-hooks, req-deliverables]
+related: [cli, profile, specs]
+documents: [feat-gates, cap-gate, req-gate-check, req-gate-hooks, req-deliverables, req-spec-check]
 ---
 The command `semspec check` reads the graph and the profile with the rules of `build`. It exits with a code that a hook or a CI step can use. The examples on this page are copies for your project. Semspec installs none of them.
 
@@ -131,3 +131,15 @@ jobs:
       - run: npm ci
       - run: npx semspec check --graph requirements/graph --profile requirements/profile.yaml
 ```
+
+## Spec check in CI
+
+A document that `semspec spec` fills can go stale when the graph changes. `semspec spec --check` writes nothing. It exits with 1 when a marked section differs from the graph, and it names the file, the line and the section. See [Markdown specs](specs.md).
+
+Add a step after the graph check:
+
+```yaml
+      - run: npx semspec spec --graph requirements/graph --profile requirements/profile.yaml docs/requirements.md --check
+```
+
+To fix a failed step, run the same command without `--check` and commit the files that it changes. This repository does the same for `docs/reference/requirements.md`.

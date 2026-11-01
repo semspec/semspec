@@ -1,0 +1,115 @@
+id: req-spec-options
+kind: requirement
+title: Select and shape the content of a section
+statement: "The options of a section marker select the nodes and set the shape, the detail and the heading level of the content."
+capabilities:
+  - cap-spec-sections
+area:
+  - cli
+acceptance:
+  - id: select
+    text: "The options graph, scope, kinds, lifecycle, status, priority, ids and any field filter of the profile select the nodes, with the same rules as the filters of the app."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "selects by kinds, lifecycle, status roll-up, priority and a field filter"
+      - type: unit
+        file: test/spec.test.ts
+        name: "selects by scope with depth and by ids"
+      - type: unit
+        file: test/spec.test.ts
+        name: "selects the nodes of the named graph of a workspace"
+      - type: unit
+        file: test/spec.test.ts
+        name: "rejects a value that the profile does not know"
+  - id: shapes
+    text: "The option shape takes tree, list, table, traceability, glossary or gaps, and each shape writes valid Markdown."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes a tree with the headings in tree order"
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes a list"
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes a table"
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes a traceability table with the words of the profile"
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes a glossary with the definitions, the synonyms and the coded labels"
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes the gaps: the status that is not good, the missing checks and the missing deliverables"
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes the missing deliverables"
+  - id: detail
+    text: "The option show selects the parts of a node: statement, fields, conditions, tests, links, cross links and provenance. The option depth limits a tree, and sort sets the order."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "shows the parts that show names"
+      - type: unit
+        file: test/spec.test.ts
+        name: "limits a tree with depth and sorts the nodes with sort"
+  - id: level
+    text: "The option level sets the heading level of the first heading of the section, so the section fits under a heading of the author."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "sets the heading level of the first heading"
+  - id: empty
+    text: "The option empty sets the text of a section whose selection is empty."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "writes the empty text for an empty selection"
+  - id: labels
+    text: "Coded values show their vocabulary labels, and kinds and edges show their labels from the profile."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "shows vocabulary labels for coded values and the labels of kinds and edges"
+  - id: anchors
+    text: "Each node heading has an anchor equal to the node id, and links between nodes in the same document use these anchors."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "puts an anchor with the node id in each heading and links to it inside the document"
+  - id: cross-links
+    text: "A link to a node of another graph or another document is a relative Markdown link when that node has a generated document, else plain text with the id."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "links to the generated document of another graph and writes plain text otherwise"
+  - id: columns
+    text: "For shape table and shape traceability, the option columns names the columns and their order. A cell shows a short value in 1 line, and a long text is cut with an ellipsis."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "sets the columns of a table and of a traceability table"
+      - type: unit
+        file: test/spec.test.ts
+        name: "cuts a long cell with an ellipsis, in 1 line, and escapes pipes and Markdown"
+      - type: unit
+        file: test/spec.test.ts
+        name: "escapes Markdown characters and table pipes in values"
+  - id: conditions-form
+    text: "The option conditions takes list or table and sets how the acceptance conditions of each node show, apart from the shape of the section."
+    status: verified
+    tests:
+      - type: unit
+        file: test/spec.test.ts
+        name: "shows the acceptance conditions as a list or as a table"

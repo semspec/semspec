@@ -49,6 +49,10 @@ status:
     - { value: open, label: Open, tone: bad }
 gates:
   fail: [unplaced, unresolved-link, no-source]
+spec:
+  roots: [feature]
+  presets:
+    gaps: { shape: gaps, empty: No gap. }
 deliverables:
   requirement:
     parts: { min: 1 }

@@ -4,8 +4,8 @@ kind: reference
 title: The profile
 description: The keys of a profile.
 order: 2
-related: [markdown-folder, kinds-and-roles, edges, vocabularies, provenance, export, layouts, cross-links]
-documents: [feat-profile, req-profile-only, req-validate-profile, req-deliverables, req-embed-provider]
+related: [markdown-folder, kinds-and-roles, edges, vocabularies, provenance, export, layouts, cross-links, specs]
+documents: [feat-profile, req-profile-only, req-validate-profile, req-deliverables, req-embed-provider, req-spec-presets]
 ---
 The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../schema/profile.schema.json) and the 2 examples in [`fixtures/`](../../fixtures/).
 
@@ -30,6 +30,7 @@ The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../s
 | `search` | The words that the search reads. `synonymFields` names node fields with words that mean the same as the title, for example a list of words to avoid. `fields` names more node fields to index. `boost` maps a field name to a weight. The built-in names are `id`, `title`, `sub`, `statement` and `parts`, with the weights 2, 3, 1, 1 and 1. A coded field is indexed under its own name with the weight 1. `embeddings` names the optional model for meaning search: `provider` (`ollama`, `openai-compatible` or `command`), `model`, and the optional `endpoint`, `dimensions`, `batch`, `apiKeyEnv`, `command`, `documentPrefix`, `queryPrefix` and `index`. The workspace file can hold the same key, and then it wins. Semspec ships no model and has no default model. See [Meaning search](../guide/meaning-search.md) and [MCP server](mcp.md). |
 | `gates` | The gap kinds that fail `semspec check`: `gates.fail` lists any of `bad-status`, `no-check`, `no-source`, `unplaced`, `unresolved-link`, `broken-cross-link` and `missing-deliverable`. The default is none. See [Gates](../guide/gates.md). |
 | `deliverables` | What a task on a node of a kind must deliver, by kind id. See [Deliverables](#deliverables). |
+| `spec` | The settings of `semspec spec`. `roots` lists the kinds whose nodes get a default document. `presets` maps a name to the options of a section marker, for example `{ shape: table, status: [open] }`. A marker takes a set with `use=<name>`. An unknown option in a set is an error. See [Markdown specs](../guide/specs.md). |
 | `provenance` | Where a fact comes from: the fields of the marker, the source, the date, the agent and the note, and the markers that need a source. See [Provenance](provenance.md). |
 | `iri`, `fieldIris` | The IRIs of the export: a base, prefixes, the field that holds a node IRI, and the property of a field. A kind, an edge, an edge property, a vocabulary and a concept can name an `iri` too. See [Export](export.md). |
 | `layout` | The layout of the Graph and Cards views. The optional `default` is `layered`, `grouped` or `force`. The optional `groupEdge` names the edge whose target is the container of its source. The value `grouped` needs `groupEdge`. See [Layouts](../guide/layouts.md). |

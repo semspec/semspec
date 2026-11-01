@@ -4,7 +4,7 @@
 // the names that the profile gives.
 import { readFileSync } from 'node:fs';
 import Ajv from 'ajv/dist/2020.js';
-import { embeddingConfigProblems, profileDeliverableProblems, profileIriProblems, parentFields, profileProvenanceProblems, profileVocabularyProblems, refsOf, validateGraph, type Profile } from '@semspec/core';
+import { embeddingConfigProblems, profileDeliverableProblems, profileIriProblems, parentFields, profileProvenanceProblems, profileSpecProblems, profileVocabularyProblems, refsOf, validateGraph, type Profile } from '@semspec/core';
 
 export { validateGraph };
 
@@ -35,6 +35,7 @@ function crossCheckProfile(p: Profile): string[] {
   errors.push(...profileProvenanceProblems(p));
   errors.push(...profileIriProblems(p));
   errors.push(...profileDeliverableProblems(p));
+  errors.push(...profileSpecProblems(p));
   if (p.search?.embeddings !== undefined) errors.push(...embeddingConfigProblems(p.search.embeddings, 'profile search.embeddings'));
   need('source defaultKind', p.source.defaultKind);
   const body = p.source.markdown?.body;

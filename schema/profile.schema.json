@@ -327,6 +327,35 @@
         }
       }
     },
+    "spec": {
+      "type": "object",
+      "description": "The settings of the spec command. Every part is optional.",
+      "additionalProperties": false,
+      "properties": {
+        "roots": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "The kinds of the root nodes. The spec command with --out writes 1 document for each node of these kinds."
+        },
+        "presets": {
+          "type": "object",
+          "description": "Named sets of marker options. A marker uses a set with use=<name>, and its own options win over the set.",
+          "additionalProperties": {
+            "type": "object",
+            "description": "The options of a section marker, except use. A value is text, a number, a boolean or a list.",
+            "additionalProperties": {
+              "anyOf": [
+                { "type": "string" },
+                { "type": "number" },
+                { "type": "boolean" },
+                { "type": "array", "items": { "type": ["string", "number"] } }
+              ]
+            }
+          }
+        }
+      }
+    },
     "deliverables": {
       "type": "object",
       "description": "What a task on a node of a kind must deliver, by kind id. The check command, the gaps tool and the slice report what a node misses.",

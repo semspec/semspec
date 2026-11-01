@@ -4,8 +4,8 @@ kind: reference
 title: Command line
 description: The commands and options of the semspec command.
 order: 1
-related: [getting-started, yaml-folder, workspace, export, schemas, mcp, gates, meaning-search]
-documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check, req-context-slice, req-deliverables, req-embed-provider, req-embed-index, req-embed-hybrid]
+related: [getting-started, yaml-folder, workspace, export, schemas, mcp, gates, meaning-search, specs]
+documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check, req-context-slice, req-deliverables, req-embed-provider, req-embed-index, req-embed-hybrid, req-spec-markers, req-spec-check, req-spec-default]
 ---
 ## Commands
 
@@ -25,6 +25,8 @@ semspec slice --graph <graph> --profile <profile> <id> [--depth <n>] [--budget <
 semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
 semspec deliverables --graph <graph> --profile <profile> [--scope <id>] [--kind <kind>]... [--json]
 semspec deliverables --workspace <file> [--in <graph>] [--scope <id>] [--kind <kind>]... [--json]
+semspec spec --graph <graph> --profile <profile> <template.md>... [--check] [--json] [--exclude <pattern>]...
+semspec spec --workspace <file> --out <dir> [--roots <kind,...>] [--glossary <graph id>] [--check] [--json]
 semspec check --graph <graph> --profile <profile> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
 semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
 semspec schema --profile <profile> --out <dir>
@@ -44,6 +46,7 @@ semspec version --json
 - `eval-search` prints recall at 5 and MRR of the keyword and the hybrid search. See below.
 - `slice` prints the brief for a task on 1 node. See below.
 - `deliverables` lists the nodes that miss a deliverable of the profile. See below.
+- `spec` fills the marked sections of Markdown templates from the graph, or writes default documents. See below.
 - `schema` writes 1 JSON Schema for each kind of the profile. See [The schemas of the kinds](schemas.md).
 - `export` writes the graph for other tools. See [Export](export.md).
 - `semspec --version` (or `-v`) prints `semspec <version> (<commit>)`, with ` dirty` after the commit when the tree was dirty at build time. `semspec version --json` prints `{ "name", "version", "commit", "dirty" }`. The page has the same text in `<meta name="generator">`.
@@ -105,6 +108,27 @@ The command exits with 0, or with 1 and a message on stderr when the node, the g
 
 ```
 semspec slice --graph requirements/graph --profile requirements/profile.yaml req-mcp-check-tools
+```
+
+## Spec
+
+`semspec spec` writes Markdown specification documents from the graph. The author owns the document, and Semspec owns its marked sections. See [Markdown specs](../guide/specs.md) for the markers, the options and the shapes.
+
+| Option | Meaning |
+| --- | --- |
+| `<template.md>...` | Template files. The command fills their marked sections and rewrites each file in place. A file that has no change stays as it is. |
+| `--out <dir>` | Write default documents into the folder, in place of template files. A file that exists keeps its text, and only its marked sections change. |
+| `--roots <kind,...>` | With `--out`: the kinds of the root nodes. The default is `spec.roots` of the profile. Each node of these kinds gets a document with a tree section and a traceability section. |
+| `--glossary <graph id>` | With `--out`: also write a glossary document for this graph. |
+| `--check` | Write nothing. Exit with 1 and name the file, the line and the section when a section is stale or an author changed it. Exit with 0 when all sections match the graph. |
+| `--json` | Print `{ "ok", "findings", "written", "sections" }` as 1 line of JSON. A finding has `code` (`error` or `stale`), `file`, `line`, `section` and `message`. |
+| `--exclude <pattern>` | As for `build`. |
+
+The command exits with 0, with 1 when a section is stale (with `--check`), when a template has an error or when a file cannot be read, and with 2 when the options are wrong. An error names the file and the line, as `docs/spec.md:12: Unknown option "colour".`. When one section has an error, the command writes no file.
+
+```
+semspec spec --graph requirements/graph --profile requirements/profile.yaml docs/requirements.md
+semspec spec --graph requirements/graph --profile requirements/profile.yaml docs/requirements.md --check
 ```
 
 ## Search

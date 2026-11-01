@@ -263,6 +263,13 @@ export interface SearchSpec {
   embeddings?: import('./embed.js').EmbeddingConfig;
 }
 
+// The settings of the spec command. `roots` names the kinds of the root nodes that get a default document.
+// `presets` names sets of marker options. A marker uses a set with `use=<name>`.
+export interface SpecSpec {
+  roots?: string[];
+  presets?: Record<string, Record<string, string | number | boolean | (string | number)[]>>;
+}
+
 export interface Profile {
   // The name of the project, shown as secondary text.
   project: string;
@@ -305,6 +312,8 @@ export interface Profile {
   search?: SearchSpec;
   // The gates of the check command. See `GateSpec`.
   gates?: GateSpec;
+  // The settings of the spec command. See `SpecSpec`.
+  spec?: SpecSpec;
   // What a task on a node of a kind must deliver, by kind id. See `DeliverableSpec`.
   deliverables?: Record<string, DeliverableSpec>;
   facets?: { groupKind: string; groupLabel: string };
