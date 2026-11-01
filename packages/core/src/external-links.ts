@@ -54,12 +54,12 @@ const fill = (specs: ExternalLinkSpec[], fields: unknown): ExternalLink[] =>
   });
 
 // The links of a node. A placeholder reads the fields of the node. The key of the node id (the profile key
-// `source.id`) holds the id of the node, unless the fields have a value under that key.
+// `source.id`) holds the id of the node and the key of the kind (`source.kind`) holds the kind, unless the fields have a value under that key.
 // A check node gets the links of its check type.
 export function nodeLinks(p: Pick<Profile, 'externalLinks' | 'checks' | 'source'>, n: Pick<VNode, 'id' | 'kind' | 'd'>): ExternalLink[] {
   if (!p.externalLinks?.length) return [];
   if (p.checks && n.kind === p.checks.kind) return checkLinks(p, n.d);
-  return fill(p.externalLinks.filter((s) => (s.kinds ? s.kinds.includes(n.kind) : !s.checkTypes)), { [p.source.id]: n.id, ...n.d });
+  return fill(p.externalLinks.filter((s) => (s.kinds ? s.kinds.includes(n.kind) : !s.checkTypes)), { [p.source.id]: n.id, [p.source.kind]: n.kind, ...n.d });
 }
 
 // The links of a check. `check` holds the fields of the check.
@@ -98,8 +98,8 @@ export function profileExternalLinkProblems(p: Profile): string[] {
   return out;
 }
 
-// A link as Markdown: `[label](url)`. The label gets escapes, and a parenthesis in the URL gets a percent code.
+// A link as Markdown: `[label](url)`. The label gets escapes, and a character in the URL that breaks a link or a table cell gets a percent code.
 export function markdownLink(link: ExternalLink): string {
   const label = link.label.replace(/\s+/g, ' ').trim().replace(/[\\`*_[\]<>&|~]/g, (c) => (c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : `\\${c}`));
-  return `[${label}](${link.url.replace(/\(/g, '%28').replace(/\)/g, '%29')})`;
+  return `[${label}](${link.url.replace(/[|()<>\s\\`]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')}`)})`;
 }

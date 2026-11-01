@@ -191,8 +191,8 @@ describe('the RDF export', () => {
 });
 
 describe('the Markdown specs', () => {
-  const run = (name: string, options: string) => {
-    const graphs = indexGraphs([{ id: 'graph', label: name, model: modelOf(name) }]);
+  const run = (name: string, options: string, profile?: ProfileInput) => {
+    const graphs = indexGraphs([{ id: 'graph', label: name, model: buildModel(read(name, 'graph.json') as Graph, profile ?? profileOf(name)) }]);
     const text = `# Doc\n\n<!-- semspec:section ${options} -->\n<!-- semspec:end -->\n`;
     const r = fillSpecs(graphs, [{ path: '/work/doc.md', text }]);
     expect(r.findings.filter((f) => f.code === 'error')).toEqual([]);
@@ -219,6 +219,42 @@ describe('the Markdown specs', () => {
     const trace = run('safety', 'shape=traceability kinds=subgoal');
     expect(trace).toContain('[Document](https://docs.example.org/documents/FTA-12)');
     expect(trace).not.toContain('FTA-12#section');
+  });
+
+  // condition: spec-shapes
+  it('shows the link of a node in the list, table and traceability shapes of 2 fixtures', () => {
+    const product = 'https://tracker.example.org/items/story-pay-by-card';
+    expect(run('product', 'shape=list kinds=story')).toContain(`**Pay by card** [Tracker](${product})`);
+    expect(run('product', 'shape=table kinds=story')).toMatch(/\| Pay by card \[Tracker\]\(https:\/\/tracker\.example\.org\/items\/story-pay-by-card\) \|/);
+    expect(run('product', 'shape=traceability kinds=story')).toMatch(/\| Pay by card \[Tracker\]\(https:\/\/tracker\.example\.org\/items\/story-pay-by-card\) \|/);
+    const hazard = 'https://hazards.example.org/entries/hz-overheat';
+    expect(run('safety', 'shape=list kinds=hazard')).toMatch(new RegExp(`\\*\\*[^\\n]*\\*\\* \\[Hazard log\\]\\(${hazard.replace(/\./g, '\\.')}\\)`));
+    expect(run('safety', 'shape=table kinds=hazard')).toMatch(new RegExp(`\\| [^|\\n]* \\[Hazard log\\]\\(${hazard.replace(/\./g, '\\.')}\\) \\|`));
+    const profile = withLinks('safety', [{ label: 'Goal', kinds: ['subgoal'], template: 'https://goals.example.org/{type}/{key}' }]);
+    expect(run('safety', 'shape=traceability kinds=subgoal', profile)).toMatch(/\[Goal\]\(https:\/\/goals\.example\.org\/subgoal\/[^)]+\)/);
+  });
+
+  // condition: source-fields
+  it('reads the id and the kind of the source node in a template on 2 fixtures', () => {
+    for (const [name, id, kind] of [['product', 'story-pay-by-card', 'story'], ['safety', 'hz-overheat', 'hazard']] as const) {
+      const source = profileOf(name).source;
+      const profile = withLinks(name, [{ label: 'Any', template: `https://host.example.org/{${source.kind}}/{${source.id}}` }]);
+      const model = buildModel(read(name, 'graph.json') as Graph, profile);
+      const n = model.nodes.find((x) => x.id === id)!;
+      expect(nodeLinks(model.profile, n)).toEqual([{ label: 'Any', url: `https://host.example.org/${kind}/${id}` }]);
+    }
+  });
+
+  // condition: markdown-safe
+  it('keeps a table row intact when the URL has a pipe or a parenthesis, on 2 fixtures', () => {
+    expect(markdownLink({ label: 'a', url: 'https://a.example.org/x|y(1)<z> w' })).toBe('[a](https://a.example.org/x%7Cy%281%29%3Cz%3E%20w)');
+    for (const [name, options] of [['product', 'shape=table kinds=story'], ['safety', 'shape=table kinds=hazard']] as const) {
+      const profile = withLinks(name, [{ label: 'Pipe', template: 'https://a.example.org/p|q' }]);
+      const rows = run(name, options, profile).split('\n').filter((l) => l.startsWith('| ') && !l.startsWith('| ---'));
+      const widths = new Set(rows.map((l) => l.replace(/\\\|/g, '').split('|').length));
+      expect(widths.size).toBe(1);
+      expect(rows.join('\n')).toContain('%7C');
+    }
   });
 
   it('escapes a label and a parenthesis of a URL', () => {

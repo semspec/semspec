@@ -102,3 +102,24 @@ acceptance:
       - type: unit
         file: test/external-links.test.ts
         name: "puts links in the slice and the node detail of 2 fixtures"
+  - id: spec-shapes
+    text: "The Markdown specs show the links of a node in every shape: tree, list, table and traceability."
+    status: verified
+    tests:
+      - type: unit
+        file: test/external-links.test.ts
+        name: "shows the link of a node in the list, table and traceability shapes of 2 fixtures"
+  - id: source-fields
+    text: "A template reads every field of the source node, the id and the kind included, for example `https://host/{kind}/{id}`."
+    status: verified
+    tests:
+      - type: unit
+        file: test/external-links.test.ts
+        name: "reads the id and the kind of the source node in a template on 2 fixtures"
+  - id: markdown-safe
+    text: "A link in a Markdown table keeps the row intact: a pipe and other table characters in the URL are percent-encoded."
+    status: verified
+    tests:
+      - type: unit
+        file: test/external-links.test.ts
+        name: "keeps a table row intact when the URL has a pipe or a parenthesis, on 2 fixtures"

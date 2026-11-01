@@ -500,7 +500,7 @@ function renderList(c: Ctx, ids: string[]): string[] {
     const n = index.byId.get(id)!;
     c.anchored.add(id);
     const statement = c.s.show.has('statement') && n.statement ? `: ${paragraphs(n.statement).join(' ')}` : '';
-    lines.push(`- ${anchorTag(c, id)}**${esc(n.title || id)}**${statement}`);
+    lines.push(`- ${anchorTag(c, id)}**${esc(n.title || id)}**${linksText(profileOf(c), n)}${statement}`);
     // A title of a block is a bullet. The block below it sits 1 level deeper.
     let nest = '';
     for (const b of detailBlocks(c, n, true)) {
@@ -527,7 +527,7 @@ function renderTable(c: Ctx, ids: string[]): string[] {
     return columns.map((col, i) => {
       let cell: string;
       if (col === 'id') cell = code(n.id);
-      else if (col === 'title') cell = esc(cut(n.title || n.id, CELL_MAX));
+      else if (col === 'title') cell = esc(cut(n.title || n.id, CELL_MAX)) + linksText(p, n);
       else if (col === 'kind') cell = esc(kindLabel(p, n.kind));
       else if (col === 'lifecycle') cell = esc(lifecycleLabel(p, n));
       else if (col === 'status') cell = esc(statusLabelOf(p, statusOf(index, id).value));
@@ -560,7 +560,7 @@ function renderTrace(c: Ctx, ids: string[]): string[] {
       rows.push(
         columns.map((col, i) => {
           let cell = '';
-          if (col === 'requirement') cell = esc(cut(n.title || n.id, CELL_MAX));
+          if (col === 'requirement') cell = esc(cut(n.title || n.id, CELL_MAX)) + linksText(p, n);
           else if (col === 'id') cell = code(n.id);
           else if (col === 'condition') cell = `${code(key)} ${esc(cut(part.statement || part.title, TEXT_MAX))}`;
           else if (col === 'key') cell = code(key);
