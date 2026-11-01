@@ -22,6 +22,15 @@ import { fileURLToPath } from 'node:url';
 const SHIPPED = ['MIT', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause', 'ISC', '0BSD'];
 const TOOLS = [...SHIPPED, 'BlueOak-1.0.0', 'CC0-1.0', 'MIT-0', 'CC-BY-4.0', 'MPL-2.0'];
 
+// Tool packages with a reviewed licence that the rule does not list. Each key is name@version, so a
+// new version needs a new review. A shipped package never uses this list.
+// spawndamnit: the field says "SEE LICENSE IN LICENSE", and that file is the MIT text.
+// argparse: Python-2.0 is a permissive licence. A dev tool (js-yaml of @changesets/cli) reads it, and no bundle inlines it.
+const REVIEWED_TOOLS = new Map([
+  ['spawndamnit@3.0.1', 'SEE LICENSE IN LICENSE'],
+  ['argparse@2.0.1', 'Python-2.0'],
+]);
+
 const args = process.argv.slice(2);
 const rootArg = args.indexOf('--root');
 const root = realpathSync(resolve(rootArg >= 0 ? args[rootArg + 1] : fileURLToPath(new URL('..', import.meta.url))));
@@ -306,8 +315,9 @@ function check(map, allowed, isShipped, via) {
   for (const [dir, info] of map) {
     const licence = licenceOf(info.pkg);
     const row = { name: info.pkg.name ?? dir, version: info.pkg.version ?? '?', licence: licence ?? '(none)', status: 'ok', path: pathOf(dir, via(dir)) };
+    const reviewed = !isShipped && REVIEWED_TOOLS.get(`${row.name}@${row.version}`) === licence;
     if (!licence) row.status = isShipped ? 'violation' : 'warning';
-    else if (!isAllowed(licence, allowed)) row.status = 'violation';
+    else if (!isAllowed(licence, allowed) && !reviewed) row.status = 'violation';
     row.outside = !licence || !isAllowed(licence, SHIPPED);
     rows.push(row);
   }

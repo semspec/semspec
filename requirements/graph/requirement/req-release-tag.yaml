@@ -1,0 +1,76 @@
+id: req-release-tag
+kind: requirement
+title: Release from a signed tag
+state: draft
+priority: now
+statement: "A maintainer signs a tag `v<version>` on the merged version commit. A workflow on the tag runs the gates and makes the GitHub Release."
+capabilities:
+  - cap-release
+area:
+  - repository
+acceptance:
+  - id: signed
+    text: "The release workflow stops when the tag is not an annotated tag with a signature."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "stops when the tag is a lightweight tag or an annotated tag without a signature"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "passes a signed annotated tag"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "checks the key with git tag -v only when .github/allowed_signers exists"
+  - id: version-match
+    text: "The release workflow stops when the tag version is not the version in package.json."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "stops when the tag version is not the version in package.json or the core version differs"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "checks that the tagged commit is on master"
+  - id: gates
+    text: "The release workflow runs all gates of CI before it makes the release."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "runs every gate of the check workflow before it makes the release"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "uses Node 22 and the same cache paths as the check workflow"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "starts on the push of a tag v* with the permission contents write only"
+  - id: notes
+    text: "The GitHub Release has the CHANGELOG.md section of its version as its text."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "makes the GitHub Release with the changelog section of the version as its text"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "returns the section of a version without its heading and up to the next version heading"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "returns the last section up to the end of the file"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "returns nothing for a version without a section or with an empty section"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "prints the section when run as a command and exits with 1 for a missing version"
+  - id: guide
+    text: "A guide for maintainers says each step of a release, with the commands."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "says each step of a release with its commands"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "has the front matter of a guide that documents the release requirements"

@@ -88,6 +88,10 @@ Each dependency that this pull request adds, removes or changes, with its exact 
 
 What a profile author, a graph author or a user of the CLI, the MCP server or `@semspec/core` must change. Write "None." if nothing breaks.
 
+## Release
+
+The changeset file and its bump, for example `.changeset/short-name.md`: `@semspec/core` minor. Or "empty changeset: <reason>" when the change has nothing for a user. Run `npx changeset` to add the file.
+
 ## Gates
 
 Each gate line reads "<gate>: <result> at <head sha>", with the head sha of the pull request (7 or more hex characters), or "<gate>: not run: <reason>". Run the gates again after every push and write the new head sha. The pre-push hook runs the same gates.

@@ -40,3 +40,22 @@ jobs:
         run: node bin/semspec.js spec --graph requirements/graph --profile requirements/profile.yaml docs/reference/requirements.md --check
       - run: npm ci --prefix site
       - run: npm test --prefix site
+
+  # A pull request needs a changeset against its base branch. An empty changeset counts.
+  # The version pull request removes the changesets, so it is exempt. This job needs the history of
+  # the base branch, but no build, so it installs without scripts.
+  changeset:
+    name: Changeset
+    if: github.event_name == 'pull_request' && github.head_ref != 'changeset-release/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Check the changeset of the pull request
+        run: npx changeset status --since=origin/${{ github.base_ref }}
