@@ -14,6 +14,7 @@ const jobs = Object.values(workflow.jobs as Record<string, { steps: Step[] }>);
 const nodeOf = (steps: Step[]) => Number(String(steps.find((s) => s.uses?.startsWith('actions/setup-node'))?.with?.['node-version']));
 const runs = (steps: Step[]) => steps.map((s) => s.run ?? '').join('\n');
 const lowest = Number(/>=\s*(\d+)/.exec(pkg.engines.node)![1]);
+const runsNodeTests = (steps: Step[]) => /npm test\b|vitest run --project node/.test(runs(steps));
 // The lowest major version that the engines range of jsdom allows.
 const toolMajor = Math.min(...[...String(jsdom.engines.node).matchAll(/(\d+)\.\d+\.\d+/g)].map((m) => Number(m[1])));
 
@@ -21,7 +22,7 @@ describe('the Node versions of CI', () => {
   it('runs the node tests on the lowest Node version of the engines field', () => {
     const job = jobs.find((j) => nodeOf(j.steps) === lowest);
     expect(job).toBeDefined();
-    expect(runs(job!.steps)).toMatch(/vitest run --project node/);
+    expect(runsNodeTests(job!.steps)).toBe(true);
   });
 
   it('runs all tests, the build and the site on a Node version that the test tools support', () => {

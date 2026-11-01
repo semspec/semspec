@@ -399,7 +399,8 @@ describe('the hooks of the gates guide', () => {
     const text = readFileSync(file, 'utf8');
     expect(text).toMatch(/run: .*semspec(\.js)? check --graph requirements\/graph --profile requirements\/profile\.yaml/);
     for (const step of ['npm ci', 'npm run typecheck', 'npm test', 'npm run build']) expect(text).toContain(`run: ${step}`);
-    expect(text).toMatch(/node-version: 20\b/);
+    const lowest = /\d+/.exec(JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).engines.node)![0];
+    expect(text).toMatch(new RegExp(`node-version: ${lowest}\\b`));
     const uses = [...text.matchAll(/uses: (\S+)(.*)/g)];
     expect(uses.length).toBeGreaterThan(0);
     for (const [, action, rest] of uses) {
