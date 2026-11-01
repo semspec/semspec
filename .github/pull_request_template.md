@@ -90,7 +90,7 @@ What a profile author, a graph author or a user of the CLI, the MCP server or `@
 
 ## Release
 
-The changeset file and its bump, for example `.changeset/short-name.md`: `@semspec/core` minor. Or "empty changeset: <reason>" when the change has nothing for a user. Run `npx changeset` to add the file.
+The changeset file and its bump, for example `.changeset/short-name.md`: `@semspec/core` minor. Or "empty changeset: <reason>" when the change has nothing for a user. A user-facing change in `app`, `cli` or `mcp` puts its bump on `@semspec/core`, because that package carries the version of both public packages. Run `npx changeset` to add the file.
 
 ## Gates
 

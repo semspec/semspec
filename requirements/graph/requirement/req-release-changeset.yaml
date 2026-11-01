@@ -20,7 +20,7 @@ acceptance:
         file: test/release-scripts.test.ts
         name: "collects a minor changeset into the core version, writes the changelog, removes the file and gives the private package no version"
   - id: ci
-    text: "CI fails on a pull request that has no changeset against its base branch."
+    text: "CI fails on a pull request that adds no changeset file against its base branch, also when the pull request changes only a private package."
     status: verified
     tests:
       - type: unit
@@ -35,6 +35,15 @@ acceptance:
       - type: unit
         file: test/release-scripts.test.ts
         name: "fails the status without a changeset and passes it with an empty changeset"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "fails for a pull request that changes only a private package and adds no changeset"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "passes with an empty changeset or a changeset with a bump, and ignores the README of the changeset folder"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "runs the changeset file check of the pull request before the status check"
   - id: template
     text: "The pull request template has a Release section that names the changeset file and its bump."
     status: verified

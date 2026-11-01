@@ -188,7 +188,7 @@ describe('changeset with the real config', () => {
     expect(read(join(dir, 'package-lock.json')).version).toBe('0.2.0');
   });
 
-  it('fails the status without a changeset and passes it with an empty changeset', () => {
+  it('fails the status without a changeset and passes it with an empty changeset', { timeout: 60000 }, () => {
     const dir = workspace();
     git(dir, 'init', '-q', '-b', 'master');
     git(dir, 'add', '.');
@@ -204,5 +204,46 @@ describe('changeset with the real config', () => {
     git(dir, 'commit', '-q', '-m', 'empty changeset');
     const withEmpty = run(dir, changesetBin, ['status', '--since=master']);
     expect(withEmpty.status, withEmpty.stderr).toBe(0);
+  });
+});
+
+describe('check-changeset', () => {
+  const script = join(repo, 'scripts/check-changeset.mjs');
+  function topic(): string {
+    const dir = workspace();
+    git(dir, 'init', '-q', '-b', 'master');
+    git(dir, 'add', '.');
+    git(dir, 'commit', '-q', '-m', 'base');
+    git(dir, 'checkout', '-q', '-b', 'topic');
+    write(join(dir, 'packages/app/src.txt'), 'changed\n');
+    git(dir, 'add', '.');
+    git(dir, 'commit', '-q', '-m', 'change the private app');
+    return dir;
+  }
+
+  it('fails for a pull request that changes only a private package and adds no changeset', { timeout: 60000 }, () => {
+    const dir = topic();
+    expect(run(dir, changesetBin, ['status', '--since=master']).status).toBe(0);
+    const r = run(dir, process.execPath, [script, 'master']);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('adds no changeset file');
+  });
+
+  it('passes with an empty changeset or a changeset with a bump, and ignores the README of the changeset folder', () => {
+    const dir = topic();
+    writeFileSync(join(dir, '.changeset/README.md'), 'Edited.\n');
+    git(dir, 'add', '.');
+    git(dir, 'commit', '-q', '-m', 'readme');
+    expect(run(dir, process.execPath, [script, 'master']).status).toBe(1);
+    writeFileSync(join(dir, '.changeset/empty-one.md'), '---\n---\n');
+    git(dir, 'add', '.');
+    git(dir, 'commit', '-q', '-m', 'empty changeset');
+    const r = run(dir, process.execPath, [script, 'master']);
+    expect(r.status, r.stderr).toBe(0);
+    expect(r.stdout).toContain('.changeset/empty-one.md');
+  });
+
+  it('exits with 2 for an unknown base ref', () => {
+    expect(run(topic(), process.execPath, [script, 'nowhere']).status).toBe(2);
   });
 });

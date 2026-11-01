@@ -29,7 +29,9 @@ Run `npx changeset` and choose `@semspec/core` and the bump. The command writes 
 | Break for a profile author, a graph author or a user of the CLI, the MCP server or `@semspec/core` | major |
 | Nothing for a user (docs, tests, CI) | `npx changeset add --empty` |
 
-The job Changeset in CI runs `npx changeset status --since=origin/<base>`. It fails when the pull request has no changeset file. The pull request template has a Release section. Name the file and the bump there.
+A user-facing change in `app`, `cli` or `mcp` puts its bump on `@semspec/core`. These packages are private, and `@semspec/core` carries the version of both public packages.
+
+The job Changeset in CI runs `node scripts/check-changeset.mjs origin/<base>`. It fails when the pull request adds no changeset file, also when only a private package changes. Then it runs `npx changeset status --since=origin/<base>` to check the format. The pull request template has a Release section. Name the file and the bump there.
 
 ## 2. The Version Packages pull request
 

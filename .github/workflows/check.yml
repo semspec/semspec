@@ -42,6 +42,7 @@ jobs:
       - run: npm test --prefix site
 
   # A pull request needs a changeset against its base branch. An empty changeset counts.
+  # The step with scripts/check-changeset.mjs also covers the private packages, which `changeset status` ignores.
   # The version pull request removes the changesets, so it is exempt. This job needs the history of
   # the base branch, but no build, so it installs without scripts.
   changeset:
@@ -57,5 +58,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
-      - name: Check the changeset of the pull request
+      - name: Check that the pull request adds a changeset file
+        run: node scripts/check-changeset.mjs origin/${{ github.base_ref }}
+      - name: Check the format of the changesets
         run: npx changeset status --since=origin/${{ github.base_ref }}

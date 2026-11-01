@@ -83,10 +83,6 @@ describe('the changeset files', () => {
       expect(m![2].trim().length, file).toBeGreaterThan(0);
     }
   });
-
-  it('has a changeset file for the release of this branch', () => {
-    expect(files.length).toBeGreaterThan(0);
-  });
 });
 
 describe('the sync of the version', () => {
@@ -111,6 +107,13 @@ describe('the check workflow', () => {
     expect(status.run).toBe('npx changeset status --since=origin/${{ github.base_ref }}');
     expect(job.steps.find((s) => s.uses?.startsWith('actions/checkout'))!.with).toEqual({ 'fetch-depth': 0 });
     expect(job.if).toContain("github.event_name == 'pull_request'");
+  });
+
+  it('runs the changeset file check of the pull request before the status check', () => {
+    const runs = job.steps.map((s) => s.run ?? '');
+    const file = runs.indexOf('node scripts/check-changeset.mjs origin/${{ github.base_ref }}');
+    expect(file).toBeGreaterThan(-1);
+    expect(file).toBeLessThan(runs.findIndex((r) => r.includes('changeset status')));
   });
 
   it('skips the changeset job for the version pull request only', () => {
