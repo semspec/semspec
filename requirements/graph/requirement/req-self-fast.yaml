@@ -1,0 +1,42 @@
+id: req-self-fast
+kind: requirement
+title: Keep the gates fast
+state: draft
+priority: now
+statement: "The gates run fast enough that a contributor runs them before each push and CI answers within minutes."
+capabilities:
+  - cap-self-check
+area:
+  - repository
+acceptance:
+  - id: suite-time
+    text: "The full test suite runs in under 60 seconds in the CI job."
+    status: partial
+    note: "No test can fail on the suite time, because the time depends on the machine. On a local 8 core machine under load, the full run took 77 s before the change and 26 to 33 s after it. The CI time is not measured yet. npm run test:time prints the total and the 10 slowest files."
+  - id: no-real-waits
+    text: "No test waits on the real clock for more than 100 ms. A test of a delay uses fake timers."
+    status: verified
+    tests:
+      - type: unit
+        file: test/speed.test.ts
+        name: "holds no wait on the real clock over 100 ms in a test file, outside the allow-list"
+      - type: unit
+        file: test/speed.test.ts
+        name: "gives each entry of the allow-list a reason"
+      - type: unit
+        file: test/speed.test.ts
+        name: "runs the DOM tests on a fake clock"
+  - id: shared-setup
+    text: "A test file that needs a server process or a large render starts it once for the file, unless a test needs a fresh one, and says why."
+    status: verified
+    tests:
+      - type: unit
+        file: test/speed.test.ts
+        name: "starts each server of mcp.test.ts in a beforeAll, or marks it as an own server with a reason"
+      - type: unit
+        file: test/speed.test.ts
+        name: "shares 1 server between the tests that only read the fixture workspace"
+  - id: ci-time
+    text: "The CI job takes under 4 minutes from the checkout to the last gate."
+    status: partial
+    note: "The time of the CI job is not measured in this repository. The job runs the tests in about 30 s on a local 8 core machine, plus npm ci, the build and the site tests. Read the time of the job in the CI log."

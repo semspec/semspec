@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { patchGraph, useAppStore } from '@/lib/store';
-import { fixtureModel, flowNode, installStorage, pickInTree, renderWorkspace, settle } from './harness';
+import { fixtureModel, flowNode, installStorage, pickInTree, renderWorkspace, settle, wait } from './harness';
 
 // The product graph points at a node of the safety graph.
 function crossWorkspace() {
@@ -20,7 +20,6 @@ function crossWorkspace() {
 
 const state = () => useAppStore.getState();
 const selectedIn = (graph: string) => state().graphs[graph].selected;
-const wait = (ms: number) => act(async () => void (await new Promise((r) => setTimeout(r, ms))));
 
 let realReplace: History['replaceState'];
 

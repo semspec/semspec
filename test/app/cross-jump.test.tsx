@@ -7,7 +7,7 @@ import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SIZE } from '@/lib/layout';
 import { patchGraph, positionsOf, useAppStore } from '@/lib/store';
-import { fixtureModel, installStorage, pickInTree, renderWorkspace, settle, switchTo } from './harness';
+import { fixtureModel, installStorage, pickInTree, renderWorkspace, settle, switchTo, wait } from './harness';
 
 const TARGET = 'sg-stop-heater';
 
@@ -22,7 +22,6 @@ function crossWorkspace() {
 
 const graphState = (id: string) => useAppStore.getState().graphs[id];
 const transform = () => (document.querySelector('.react-flow__viewport') as HTMLElement | null)?.style.transform ?? '';
-const wait = (ms: number) => act(async () => void (await new Promise((r) => setTimeout(r, ms))));
 
 // Follows the cross link of epic-checkout in the details panel.
 async function jump() {

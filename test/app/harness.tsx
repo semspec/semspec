@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { act, render, screen } from '@testing-library/react';
 import { buildModel, type Graph, type ProfileInput, type WorkspaceData } from '@semspec/core';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { App } from '@/App';
 import { setPhone } from './setup';
 
@@ -27,8 +28,11 @@ export function renderApp(name = 'product', options: { phone?: boolean; edit?: (
   return render(<App data={workspaceOf(name, options.edit)} />);
 }
 
+// Moves the fake clock forward. The setup file installs fake timers before each test, so no test waits on the real clock.
+export const wait = (ms: number) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)));
+
 // The wait that lets React Flow measure its nodes and draw its edges.
-export const settle = () => act(async () => void (await new Promise((r) => setTimeout(r, 120))));
+export const settle = () => wait(120);
 
 export const flowNode = (id: string) => document.querySelector(`.react-flow__node[data-id="${id}"]`) as HTMLElement;
 

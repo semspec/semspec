@@ -2,7 +2,19 @@
 // Copyright 2026 The Semspec Authors
 // Setup of the DOM tests. jsdom lacks what React Flow and the app need, so this file adds small stubs.
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterEach, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
+
+// Each test runs on a fake clock, so a delay costs no real time. A test moves the clock with `wait` of the harness.
+// Testing Library moves the clock in `waitFor` and `findBy` only when it finds a global `jest` with a fake clock.
+(globalThis as unknown as { jest: object }).jest = { advanceTimersByTime: (ms: number) => vi.advanceTimersByTime(ms) };
+// The pointer actions of user-event pause between steps with a timer. This default moves the fake clock for them.
+const setup = userEvent.setup.bind(userEvent);
+(userEvent as { setup: typeof userEvent.setup }).setup = (options) => setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms), ...options });
+
+// The fake clock starts once for the file, before the app code loads. The animation library d3-timer binds
+// requestAnimationFrame at load, so a clock that starts later would not drive the canvas animations.
+vi.useFakeTimers();
 
 // jsdom has no layout. Each element gets a fixed size, and the observer reports it once, so React Flow measures its nodes.
 const SIZE = { width: 800, height: 600 };
@@ -62,8 +74,10 @@ window.matchMedia = ((query: string) => {
   return mq as unknown as MediaQueryList;
 }) as typeof window.matchMedia;
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  // The libraries release their locks and listeners in timers after an unmount. Run them, so no state stays for the next test.
+  await vi.runOnlyPendingTimersAsync();
   setPhone(false);
   // The page writes the link into the hash. A test must not see the hash of the test before.
   try {
