@@ -10,7 +10,7 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@semspec/core": "0.1.0"
+    "@semspec/core": "0.2.0"
   },
   "devDependencies": {
     "@base-ui/react": "1.8.0",

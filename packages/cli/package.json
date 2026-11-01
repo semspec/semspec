@@ -13,7 +13,7 @@
     "@modelcontextprotocol/sdk": "1.32.1",
     "ajv": "8.20.0",
     "yaml": "2.9.1",
-    "@semspec/core": "0.1.0",
+    "@semspec/core": "0.2.0",
     "@semspec/mcp": "0.1.0"
   },
   "devDependencies": {
