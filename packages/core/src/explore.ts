@@ -240,7 +240,27 @@ type FacetKey = 'kinds' | 'lifecycles' | 'deliveries' | 'modules' | 'statuses' |
 const NODE_FIELD = { kinds: 'kind', lifecycles: 'lifecycle', deliveries: 'delivery' } as const;
 const FACET_KEYS: FacetKey[] = ['kinds', 'lifecycles', 'deliveries', 'modules', 'statuses', 'markers'];
 
+// A node has a lifecycle when its kind is a hierarchy or linked kind. Parts and checks have none.
+const hasLifecycle = (index: Index, n: VNode): boolean => {
+  const role = kindOf(index.profile, n.kind)?.role;
+  return role !== 'part' && role !== 'check';
+};
+
+// The lifecycle values of the owners of a part or a check. A check of a part has the owner of the part.
+// The Lifecycle filter keeps a part or a check when 1 owner matches, so a filtered-out owner hides its parts and checks.
+function ownerLifecycles(index: Index, n: VNode, seen = new Set<string>()): string[] {
+  if (hasLifecycle(index, n)) return [n.lifecycle];
+  if (seen.has(n.id)) return [];
+  seen.add(n.id);
+  const owners = n.parents.length ? n.parents : (index.inc.get(n.id) ?? []).map((e) => e.s);
+  return owners.flatMap((id) => {
+    const o = index.byId.get(id);
+    return o ? ownerLifecycles(index, o, seen) : [];
+  });
+}
+
 function facetValues(index: Index, n: VNode, key: string, f: Filters, skip?: string): string[] {
+  if (key === 'lifecycles' && !hasLifecycle(index, n)) return [];
   if (key.startsWith('field:')) return Array.from(fieldValues(index, key.slice(6), n.id));
   if (key === 'modules') return Array.from(groupsOf(index, n.id));
   if (key === 'markers') return [markerOf(index.profile.provenance, n.d)];
@@ -267,7 +287,8 @@ export function applyFilters(index: Index, ids: Iterable<string>, f: Filters, sk
     for (const key of FACET_KEYS) {
       const list = f[key];
       if (key === skip || !list?.length) continue;
-      if (!facetValues(index, n, key, f, skip).some((v) => list.includes(v))) {
+      const values = key === 'lifecycles' && !hasLifecycle(index, n) ? ownerLifecycles(index, n) : facetValues(index, n, key, f, skip);
+      if (!values.some((v) => list.includes(v))) {
         ok = false;
         break;
       }

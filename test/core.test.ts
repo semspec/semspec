@@ -697,3 +697,33 @@ describe('a field that is an embedded field and a cross link field', () => {
     expect(model.crossLinks.filter((l) => groups.includes(l.s))).toEqual([]);
   });
 });
+
+describe('the Lifecycle facet', () => {
+  const none = { q: '', kinds: [], lifecycles: [], deliveries: [], modules: [], statuses: [] };
+  const roleOf = (index: typeof pIndex, kind: string) => index.profile.kinds.find((k) => k.id === kind)?.role;
+  for (const [name, index] of [['product', pIndex], ['safety', sIndex]] as const) {
+    const all = index.model.nodes.map((n) => n.id);
+    const own = (id: string) => ['part', 'check'].includes(roleOf(index, index.byId.get(id)!.kind) ?? '');
+    it(`counts only the nodes of kinds that have a lifecycle (${name})`, () => {
+      const counts = facetCounts(index, all, none, 'lifecycles');
+      const total = Array.from(counts.values()).reduce((a, b) => a + b, 0);
+      expect(total).toBe(all.filter((id) => !own(id)).length);
+      expect(own(all.find(own)!)).toBe(true);
+      // The profile has a fallback lifecycle, so no node of a lifecycle kind counts as None here.
+      expect(counts.get('') ?? 0).toBe(all.filter((id) => !own(id) && index.byId.get(id)!.lifecycle === '').length);
+    });
+    it(`keeps the parts and checks of an owner that matches (${name})`, () => {
+      const owner = index.model.nodes.find((n) => n.cov && n.cov.parts > 0)!;
+      const hit = applyFilters(index, all, { ...none, lifecycles: [owner.lifecycle] });
+      const partIds = all.filter((id) => index.byId.get(id)!.parents.includes(owner.id));
+      expect(partIds.length).toBeGreaterThan(0);
+      partIds.forEach((id) => expect(hit).toContain(id));
+      const checkIds = partIds.flatMap((id) => (index.out.get(id) ?? []).map((e) => e.t)).filter(own);
+      expect(checkIds.length).toBeGreaterThan(0);
+      checkIds.forEach((id) => expect(hit).toContain(id));
+      // A value that no owner has hides the parts and checks too.
+      const other = applyFilters(index, all, { ...none, lifecycles: ['no-such-state'] });
+      expect(other).toEqual([]);
+    });
+  }
+});

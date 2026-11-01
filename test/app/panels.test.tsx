@@ -231,3 +231,28 @@ describe('the filters', () => {
     expect(options.find((o) => o.textContent!.startsWith('Medium'))!.closest('[cmdk-group]')).not.toBe(group);
   });
 });
+
+describe('the built-in facets', () => {
+  const withoutDelivery = (profile: any) => {
+    delete profile.fields.delivery;
+    delete profile.fields.level;
+  };
+  for (const [fixture, scope] of [['product', 'epic-checkout'], ['safety', 'g-safe-operation']] as const) {
+    it(`hides the Delivery filter and column when the profile has no delivery field (${fixture})`, async () => {
+      renderApp(fixture, { edit: withoutDelivery });
+      expect(screen.queryByRole('button', { name: 'Filter by delivery' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Filter by lifecycle' })).toBeTruthy();
+      await pickInTree(scope);
+      await userEvent.setup().click(screen.getByRole('tab', { name: 'Table' }));
+      expect(tableHeads()).not.toContain('Delivery');
+      expect(tableHeads()).not.toContain('Level');
+    });
+    it(`shows the Delivery filter and column when the profile has the field (${fixture})`, async () => {
+      renderApp(fixture);
+      expect(screen.getByRole('button', { name: 'Filter by delivery' })).toBeTruthy();
+      await pickInTree(scope);
+      await userEvent.setup().click(screen.getByRole('tab', { name: 'Table' }));
+      expect(tableHeads()).toContain('Delivery');
+    });
+  }
+});
