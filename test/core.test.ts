@@ -701,18 +701,24 @@ describe('a field that is an embedded field and a cross link field', () => {
 describe('the Lifecycle facet', () => {
   const none = { q: '', kinds: [], lifecycles: [], deliveries: [], modules: [], statuses: [] };
   const roleOf = (index: typeof pIndex, kind: string) => index.profile.kinds.find((k) => k.id === kind)?.role;
-  for (const [name, index] of [['product', pIndex], ['safety', sIndex]] as const) {
+  // The titles stay literal, because the requirements link tests by their exact title.
+  const ownOf = (index: typeof pIndex) => (id: string) => ['part', 'check'].includes(roleOf(index, index.byId.get(id)!.kind) ?? '');
+  const countsOnlyLifecycleKinds = (index: typeof pIndex) => {
     const all = index.model.nodes.map((n) => n.id);
-    const own = (id: string) => ['part', 'check'].includes(roleOf(index, index.byId.get(id)!.kind) ?? '');
-    it(`counts only the nodes of kinds that have a lifecycle (${name})`, () => {
+    const own = ownOf(index);
+    {
       const counts = facetCounts(index, all, none, 'lifecycles');
       const total = Array.from(counts.values()).reduce((a, b) => a + b, 0);
       expect(total).toBe(all.filter((id) => !own(id)).length);
       expect(own(all.find(own)!)).toBe(true);
       // The profile has a fallback lifecycle, so no node of a lifecycle kind counts as None here.
       expect(counts.get('') ?? 0).toBe(all.filter((id) => !own(id) && index.byId.get(id)!.lifecycle === '').length);
-    });
-    it(`keeps the parts and checks of an owner that matches (${name})`, () => {
+    }
+  };
+  const keepsPartsOfMatchingOwner = (index: typeof pIndex) => {
+    const all = index.model.nodes.map((n) => n.id);
+    const own = ownOf(index);
+    {
       const owner = index.model.nodes.find((n) => n.cov && n.cov.parts > 0)!;
       const hit = applyFilters(index, all, { ...none, lifecycles: [owner.lifecycle] });
       const partIds = all.filter((id) => index.byId.get(id)!.parents.includes(owner.id));
@@ -724,6 +730,10 @@ describe('the Lifecycle facet', () => {
       // A value that no owner has hides the parts and checks too.
       const other = applyFilters(index, all, { ...none, lifecycles: ['no-such-state'] });
       expect(other).toEqual([]);
-    });
-  }
+    }
+  };
+  it('counts only the nodes of kinds that have a lifecycle (product)', () => countsOnlyLifecycleKinds(pIndex));
+  it('counts only the nodes of kinds that have a lifecycle (safety)', () => countsOnlyLifecycleKinds(sIndex));
+  it('keeps the parts and checks of an owner that matches (product)', () => keepsPartsOfMatchingOwner(pIndex));
+  it('keeps the parts and checks of an owner that matches (safety)', () => keepsPartsOfMatchingOwner(sIndex));
 });
