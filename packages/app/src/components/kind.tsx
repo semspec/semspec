@@ -8,8 +8,9 @@ import { Core, type Chip, type Kind, type NodeStatus, type StatusTone, type Summ
 
 export const kindColor = (kind: Kind) => `var(--kind-${kind})`;
 
-export function KindDot({ kind, className }: { kind: Kind; className?: string }) {
-  return <span aria-hidden className={cn('inline-block size-2 shrink-0 rounded-full', className)} style={{ background: kindColor(kind) }} />;
+// With `neutral`, the dot is grey. The status colour is on, and only the status tones colour a node.
+export function KindDot({ kind, className, neutral }: { kind: Kind; className?: string; neutral?: boolean }) {
+  return <span aria-hidden className={cn('inline-block size-2 shrink-0 rounded-full', className)} style={{ background: neutral ? 'var(--muted-foreground)' : kindColor(kind) }} />;
 }
 
 export function KindBadge({ kind, className }: { kind: Kind; className?: string }) {
@@ -56,7 +57,8 @@ export function CountBadge({ count, className }: { count: number; className?: st
 }
 
 // The summary of a node: kind, title, id and the attribute chips. It shows no long text.
-// With a status, the border takes the colour of the status and a chip shows the share of good nodes.
+// With a status, the border takes the colour of the status, a chip shows the share of good nodes
+// and the kind header turns neutral.
 export function NodeSummaryView({ summary, count, status, className }: { summary: Summary; count?: number; status?: NodeStatus; className?: string }) {
   return (
     <div
@@ -65,7 +67,11 @@ export function NodeSummaryView({ summary, count, status, className }: { summary
     >
       <div
         className="flex h-6 items-center justify-between gap-2 px-2 text-[11px] font-semibold"
-        style={{ color: kindColor(summary.kind), background: `color-mix(in oklab, ${kindColor(summary.kind)} 16%, var(--card))`, borderBottom: `2px solid ${kindColor(summary.kind)}` }}
+        style={
+          status
+            ? { color: 'var(--muted-foreground)', background: 'var(--card)', borderBottom: '2px solid var(--border)' }
+            : { color: kindColor(summary.kind), background: `color-mix(in oklab, ${kindColor(summary.kind)} 16%, var(--card))`, borderBottom: `2px solid ${kindColor(summary.kind)}` }
+        }
       >
         <span className="uppercase tracking-wide">{Core.KIND_LABEL[summary.kind]}</span>
         {count !== undefined && <CountBadge count={count} />}

@@ -42,3 +42,16 @@ acceptance:
       - type: unit
         file: test/core.test.ts
         name: keeps the detail field on a part node
+  - id: colour-alternative
+    text: "The canvas colours the nodes either by kind or by status, never by both. With the status colour on, the kind colours turn neutral on the nodes, the containers, the kind dots, the edges and the minimap."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/graph.test.tsx
+        name: turns the kind colours neutral when the status colour is on, on the product fixture
+      - type: unit
+        file: test/app/graph.test.tsx
+        name: turns the kind colours neutral when the status colour is on, on the safety fixture
+      - type: unit
+        file: test/app/graph.test.tsx
+        name: turns the kind header of a card neutral when the status colour is on
