@@ -3,6 +3,7 @@
 {
   "name": "semspec",
   "compatibility_date": "2026-10-01",
+  "build": { "command": "npm ci --prefix site && npm run build --prefix site" },
   "assets": {
     "directory": "./site/dist",
     "html_handling": "auto-trailing-slash",

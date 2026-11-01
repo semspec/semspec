@@ -29,10 +29,20 @@ describe('the deploy of the site', () => {
     expect(text('site/scripts/build.mjs')).toContain('dist');
   });
 
+  it('builds the site into site/dist in the build command of wrangler.jsonc', () => {
+    const config = JSON.parse(text('wrangler.jsonc').replace(/^\s*\/\/.*$/gm, ''));
+    expect(config.build.command).toBe('npm ci --prefix site && npm run build --prefix site');
+    expect(JSON.parse(text('site/package.json')).scripts.build).toContain('scripts/build.mjs');
+    // The site build builds the root packages first, then writes site/dist.
+    expect(text('site/scripts/build.mjs')).toContain('buildRoot()');
+    expect(text('site/scripts/build.mjs')).toContain('dist/');
+    expect(config.assets.directory).toBe('./site/dist');
+  });
+
   it('names each setting of the Worker and its build in the guide', () => {
     const guide = text('docs/guide/deploying.md');
     expect(guide).toMatch(/documents: \[req-site-deploy\]/);
-    for (const setting of ['`semspec/semspec`', 'Branch | `master`', 'npm run build && npm ci --prefix site && npm run build --prefix site', '`npx wrangler deploy`', '`wrangler.jsonc`', '`.node-version`', '`semspec.dev`']) {
+    for (const setting of ['`semspec/semspec`', 'Branch | `master`', '`npm run build`', '`npx wrangler deploy`', '`wrangler.jsonc`', '`.node-version`', '`semspec.dev`']) {
       expect(guide).toContain(setting);
     }
   });

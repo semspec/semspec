@@ -31,7 +31,7 @@ acceptance:
         name: "skips the changeset job for the version pull request only"
       - type: unit
         file: test/release-flow.test.ts
-        name: "fetches the full history in the changeset job only"
+        name: "fetches the full history in the changeset job and the release job only"
       - type: unit
         file: test/release-scripts.test.ts
         name: "fails the status without a changeset and passes it with an empty changeset"
@@ -51,3 +51,13 @@ acceptance:
       - type: unit
         file: test/release-flow.test.ts
         name: "has a Release section after Breaking changes that names the changeset file and its bump"
+  - id: dependabot
+    text: "A pull request of Dependabot needs no changeset, because it changes only the version of a dependency. The changeset gate passes it."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "skips the changeset job for a pull request whose author is dependabot[bot]"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "keeps the other jobs independent of the changeset job, so a skip does not skip them"

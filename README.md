@@ -27,7 +27,7 @@ Semspec is not on npm yet. Install it from GitHub:
 npm install --save-dev github:semspec/semspec
 ```
 
-The install builds the tool. The lockfile keeps the commit. It needs Node 22.22.2 or later.
+The install builds the tool. The lockfile keeps the commit. It needs Node 22.23.4 or later.
 
 ## Contents
 

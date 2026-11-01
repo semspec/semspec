@@ -1,57 +1,57 @@
 id: req-release-tag
 kind: requirement
-title: Release from a signed tag
+title: Release when the version pull request merges
 state: draft
 priority: now
-statement: "A maintainer signs a tag `v<version>` on the merged version commit. A workflow on the tag runs the gates and makes the GitHub Release."
+statement: "When the version pull request merges, the Check workflow makes the tag `v<version>` and the GitHub Release after the gates pass on that commit. No person makes a tag by hand."
 capabilities:
   - cap-release
 area:
   - repository
 acceptance:
-  - id: signed
-    text: "The release workflow stops when the tag is not an annotated tag with a signature."
-    status: verified
+  - id: auto
+    text: "A push to master whose package.json version has no tag makes the tag `v<version>` on that commit and the GitHub Release. A push whose version has a tag makes nothing."
+    status: partial
+    note: "The files and a test repository prove the decision. Only a real run on master proves that gh release create makes the tag and the release with the default token."
     tests:
       - type: unit
         file: test/release-flow.test.ts
-        name: "stops when the tag is a lightweight tag or an annotated tag without a signature"
+        name: "prints release=true and the tag when the version has no tag"
       - type: unit
         file: test/release-flow.test.ts
-        name: "passes a signed annotated tag"
+        name: "prints release=false when the tag exists locally, as a lightweight or an annotated tag"
       - type: unit
         file: test/release-flow.test.ts
-        name: "checks the key with git tag -v only when .github/allowed_signers exists"
-  - id: version-match
-    text: "The release workflow stops when the tag version is not the version in package.json."
-    status: verified
-    tests:
+        name: "prints release=false when only origin has the tag, and release=true when origin has not"
       - type: unit
         file: test/release-flow.test.ts
-        name: "stops when the tag version is not the version in package.json or the core version differs"
+        name: "exits with 1 when semspec and @semspec/core have different versions"
       - type: unit
         file: test/release-flow.test.ts
-        name: "checks that the tagged commit is on master"
+        name: "runs on a push to master only"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "has the permission contents write on this job only, and read as the default"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "checks out the full history with the tags and pins the actions by SHA"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "decides with scripts/release-plan.mjs and makes the release only when the plan says so"
   - id: gates
-    text: "The release workflow runs all gates of CI before it makes the release."
+    text: "The release job runs only after every gate of the Check workflow passes on the same commit."
     status: verified
     tests:
       - type: unit
         file: test/release-flow.test.ts
-        name: "runs every gate of the check workflow before it makes the release"
-      - type: unit
-        file: test/release-flow.test.ts
-        name: "uses Node 22 and the same cache paths as the check workflow"
-      - type: unit
-        file: test/release-flow.test.ts
-        name: "starts on the push of a tag v* with the permission contents write only"
+        name: "needs every other job of the workflow and runs only when each gate passed or was skipped"
   - id: notes
     text: "The GitHub Release has the CHANGELOG.md section of its version as its text."
     status: verified
     tests:
       - type: unit
         file: test/release-flow.test.ts
-        name: "makes the GitHub Release with the changelog section of the version as its text"
+        name: "writes the release notes before it makes the release, with the changelog section of the version as the text"
       - type: unit
         file: test/release-scripts.test.ts
         name: "returns the section of a version without its heading and up to the next version heading"
@@ -64,13 +64,20 @@ acceptance:
       - type: unit
         file: test/release-scripts.test.ts
         name: "prints the section when run as a command and exits with 1 for a missing version"
-  - id: guide
-    text: "A guide for maintainers says each step of a release, with the commands."
+  - id: one-path
+    text: "The release job is the only way to make a release. No workflow runs on a tag push."
     status: verified
     tests:
       - type: unit
         file: test/release-flow.test.ts
-        name: "says each step of a release with its commands"
+        name: "is the only way to release: no workflow runs on a tag push and none makes a tag by git"
+  - id: guide
+    text: "A guide for maintainers says each step of a release, and that a merge of the version pull request is the last step."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "says each step of a release with its commands and that the merge of the version pull request is the last step"
       - type: unit
         file: test/release-flow.test.ts
         name: "has the front matter of a guide that documents the release requirements"

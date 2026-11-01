@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
-// Tests of the release files: the changeset config, the 3 workflows, the pull request template and the guide.
+// Tests of the release files: the changeset config, the 2 workflows, the pull request template and the guide.
 // A file cannot prove everything. The step that makes verified commits needs a real run (see req-release-version-pr).
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,15 +18,13 @@ afterAll(() => {
   for (const t of temps) rmSync(t, { recursive: true, force: true });
 });
 
-type Step = { name?: string; uses?: string; run?: string; with?: Record<string, unknown>; env?: Record<string, string> };
+type Step = { name?: string; if?: string; uses?: string; run?: string; with?: Record<string, unknown>; env?: Record<string, string> };
 type Workflow = { on: Record<string, unknown>; permissions: Record<string, string>; concurrency: { group: string }; jobs: Record<string, { if?: string; steps: Step[] }> };
 const workflow = (name: string) => parse(text(`.github/workflows/${name}.yml`)) as Workflow;
 const steps = (w: Workflow) => Object.values(w.jobs).flatMap((j) => j.steps);
-const stepNamed = (w: Workflow, name: string) => steps(w).find((s) => s.name === name)!;
 
 const check = workflow('check');
 const version = workflow('version');
-const release = workflow('release');
 const pins = (w: Workflow) => steps(w).filter((s) => s.uses).map((s) => s.uses!);
 const CHECKOUT = 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2';
 const SETUP_NODE = 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0';
@@ -126,10 +124,10 @@ describe('the check workflow', () => {
     expect(job.if).toContain("github.head_ref != 'changeset-release/master'");
   });
 
-  it('fetches the full history in the changeset job only', () => {
+  it('fetches the full history in the changeset job and the release job only', () => {
     for (const [name, j] of Object.entries(check.jobs)) {
       const depth = j.steps.find((s) => s.uses?.startsWith('actions/checkout'))?.with?.['fetch-depth'];
-      expect(depth, name).toBe(name === 'changeset' ? 0 : undefined);
+      expect(depth, name).toBe(name === 'changeset' || name === 'release' ? 0 : undefined);
     }
   });
 
@@ -197,143 +195,156 @@ describe('the version workflow', () => {
   });
 });
 
-describe('the release workflow', () => {
-  const tagStep = stepNamed(release, 'Check that the tag is annotated and signed');
-  const versionStep = stepNamed(release, 'Check that the tag version is the package version');
+describe('the release job of the check workflow', () => {
+  const job = check.jobs.release as unknown as { if: string; needs: string[]; permissions: Record<string, string>; steps: Step[] };
+  const named = (name: string) => job.steps.find((s) => s.name === name)!;
 
-  it('starts on the push of a tag v* with the permission contents write only', () => {
-    expect(release.on).toEqual({ push: { tags: ['v*'] } });
-    expect(release.permissions).toEqual({ contents: 'write' });
+  it('runs on a push to master only', () => {
+    expect(job.if).toContain("github.event_name == 'push'");
+    expect(job.if).toContain("github.ref == 'refs/heads/master'");
+    expect(check.on).toHaveProperty('push');
   });
 
-  it('pins checkout and setup-node to the SHAs of the check workflow and checks out the tag with the full history', () => {
-    expect(pins(release).map(sha)).toEqual([sha(CHECKOUT), sha(SETUP_NODE)]);
-    const checkout = steps(release).find((s) => s.uses?.startsWith('actions/checkout'))!;
-    expect(checkout.with).toEqual({ ref: '${{ github.ref }}', 'fetch-depth': 0 });
+  it('needs every other job of the workflow and runs only when each gate passed or was skipped', () => {
+    const others = Object.keys(check.jobs).filter((n) => n !== 'release').sort();
+    expect([...job.needs].sort()).toEqual(others);
+    expect(job.if).toContain('always()');
+    expect(job.if).toContain("needs.check.result == 'success'");
+    // The changeset job is skipped on a push. A skip passes, a failure or a cancel does not.
+    expect(job.if).toContain("needs.changeset.result == 'success' || needs.changeset.result == 'skipped'");
+    for (const n of others) expect(job.if, n).toContain(`needs.${n}.result`);
   });
 
-  it('uses a concurrency group per tag', () => {
-    expect(release.concurrency.group).toBe('release-${{ github.ref }}');
+  it('has the permission contents write on this job only, and read as the default', () => {
+    expect(check.permissions).toEqual({ contents: 'read' });
+    expect(job.permissions).toEqual({ contents: 'write' });
+    for (const [name, j] of Object.entries(check.jobs)) {
+      if (name !== 'release') expect((j as { permissions?: unknown }).permissions, name).toBeUndefined();
+    }
   });
 
-  function gitRepo(): string {
-    const dir = mkdtempSync(join(tmpdir(), 'semspec-tag-'));
-    temps.push(dir);
-    const sh = (cmd: string[], env: Record<string, string> = {}) => {
-      const r = spawnSync(cmd[0], cmd.slice(1), { cwd: dir, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', ...env } });
-      expect(r.status, `${cmd.join(' ')}: ${r.stderr}`).toBe(0);
-    };
-    sh(['git', 'init', '-q', '-b', 'master']);
-    for (const [k, v] of [['user.name', 't'], ['user.email', 't@example.com'], ['commit.gpgsign', 'false'], ['tag.gpgsign', 'false'], ['gpg.format', 'ssh'], ['user.signingkey', join(dir, 'key.pub')]]) sh(['git', 'config', k, v]);
-    sh(['ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C', 't@example.com', '-f', join(dir, 'key')]);
-    writeFileSync(join(dir, '.gitignore'), 'key\nkey.pub\n');
-    sh(['git', 'add', '.']);
-    sh(['git', 'commit', '-q', '-m', 'base']);
-    sh(['git', 'tag', 'v-light']);
-    sh(['git', 'tag', '-a', 'v-plain', '-m', 'plain']);
-    sh(['git', 'tag', '-s', 'v-signed', '-m', 'signed']);
-    return dir;
-  }
-  const bash = (dir: string, script: string, tag: string) => spawnSync('bash', ['-e', '-c', script], { cwd: dir, encoding: 'utf8', env: { ...process.env, TAG: tag } });
-
-  it('stops when the tag is a lightweight tag or an annotated tag without a signature', () => {
-    const dir = gitRepo();
-    const light = bash(dir, tagStep.run!, 'v-light');
-    expect(light.status).toBe(1);
-    expect(light.stdout).toContain('is not an annotated tag');
-    const plain = bash(dir, tagStep.run!, 'v-plain');
-    expect(plain.status).toBe(1);
-    expect(plain.stdout).toContain('has no signature');
+  it('checks out the full history with the tags and pins the actions by SHA', () => {
+    const checkout = job.steps.find((s) => s.uses?.startsWith('actions/checkout'))!;
+    expect(checkout.with).toEqual({ 'fetch-depth': 0, 'fetch-tags': true });
+    for (const s of job.steps.filter((x) => x.uses)) expect(s.uses, s.uses).toMatch(/^[\w-]+\/[\w-]+@[0-9a-f]{40}$/);
+    expect(sha(checkout.uses!)).toBe(sha(CHECKOUT));
   });
 
-  it('passes a signed annotated tag', () => {
-    const dir = gitRepo();
-    expect(bash(dir, tagStep.run!, 'v-signed').status).toBe(0);
+  it('decides with scripts/release-plan.mjs and makes the release only when the plan says so', () => {
+    expect(named('Decide whether the version has a release').run).toBe('node scripts/release-plan.mjs >> "${GITHUB_OUTPUT}"');
+    expect(named('Write the release notes').if).toBe("steps.plan.outputs.release == 'true'");
+    expect(named('Make the tag and the GitHub Release').if).toBe("steps.plan.outputs.release == 'true'");
+    expect(named('Stop when the tag exists').if).toBe("steps.plan.outputs.release != 'true'");
   });
 
-  it('checks the key with git tag -v only when .github/allowed_signers exists', () => {
-    const run = stepNamed(release, 'Check the signature key').run!;
-    expect(run).toContain('if [ -f .github/allowed_signers ]');
-    expect(run).toContain('gpg.ssh.allowedSignersFile=.github/allowed_signers tag -v "${TAG}"');
-    const dir = gitRepo();
-    const without = bash(dir, run, 'v-signed');
-    expect(without.status).toBe(0);
-    expect(without.stdout).toContain('the key is not checked');
-    mkdirSync(join(dir, '.github'));
-    const pub = readFileSync(join(dir, 'key.pub'), 'utf8').trim().split(' ');
-    writeFileSync(join(dir, '.github/allowed_signers'), `t@example.com ${pub[0]} ${pub[1]}\n`);
-    expect(bash(dir, run, 'v-signed').status).toBe(0);
-    const other = spawnSync('ssh-keygen', ['-q', '-t', 'ed25519', '-N', '', '-C', 'o@example.com', '-f', join(dir, 'other')]);
-    expect(other.status).toBe(0);
-    const otherPub = readFileSync(join(dir, 'other.pub'), 'utf8').trim().split(' ');
-    writeFileSync(join(dir, '.github/allowed_signers'), `o@example.com ${otherPub[0]} ${otherPub[1]}\n`);
-    expect(bash(dir, run, 'v-signed').status).not.toBe(0);
+  it('writes the release notes before it makes the release, with the changelog section of the version as the text', () => {
+    const runs = job.steps.map((s) => s.run ?? '');
+    const notes = runs.findIndex((r) => r.startsWith('node scripts/release-notes.mjs'));
+    const make = runs.findIndex((r) => r.startsWith('gh release create'));
+    expect(notes).toBeGreaterThan(-1);
+    expect(notes).toBeLessThan(make);
+    expect(named('Write the release notes').run).toBe('node scripts/release-notes.mjs "${TAG#v}" > "${RUNNER_TEMP}/notes.md"');
+    const gh = named('Make the tag and the GitHub Release');
+    expect(gh.run).toBe('gh release create "${TAG}" --target "${{ github.sha }}" --title "${TAG}" --notes-file "${RUNNER_TEMP}/notes.md"');
+    expect(gh.env!.GH_TOKEN).toBe('${{ github.token }}');
   });
 
-  it('stops when the tag version is not the version in package.json or the core version differs', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'semspec-tagver-'));
+  it('is the only way to release: no workflow runs on a tag push and none makes a tag by git', () => {
+    const dir = join(repo, '.github/workflows');
+    const files = readdirSync(dir).sort();
+    expect(files).toEqual(['check.yml', 'version.yml']);
+    for (const f of files) {
+      const w = parse(readFileSync(join(dir, f), 'utf8')) as Workflow;
+      expect(JSON.stringify(w.on), f).not.toContain('tags');
+      expect(readFileSync(join(dir, f), 'utf8'), f).not.toMatch(/git\s+(push|tag)/);
+    }
+    expect(existsSync(join(repo, '.github/workflows/release.yml'))).toBe(false);
+  });
+});
+
+describe('release-plan', () => {
+  const script = join(repo, 'scripts/release-plan.mjs');
+  function project(version: string, core = version): string {
+    const dir = mkdtempSync(join(tmpdir(), 'semspec-plan-'));
     temps.push(dir);
     mkdirSync(join(dir, 'packages/core'), { recursive: true });
-    const put = (root: string, core: string) => {
-      writeFileSync(join(dir, 'package.json'), JSON.stringify({ version: root }));
-      writeFileSync(join(dir, 'packages/core/package.json'), JSON.stringify({ version: core }));
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ version }));
+    writeFileSync(join(dir, 'packages/core/package.json'), JSON.stringify({ version: core }));
+    const sh = (...args: string[]) => {
+      const r = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', ...args], { cwd: dir, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+      expect(r.status, r.stderr).toBe(0);
     };
-    put('0.2.0', '0.2.0');
-    expect(bash(dir, versionStep.run!, 'v0.2.0').status).toBe(0);
-    const wrongTag = bash(dir, versionStep.run!, 'v0.2.1');
-    expect(wrongTag.status).toBe(1);
-    expect(wrongTag.stdout).toContain('is not v0.2.0');
-    put('0.2.0', '0.1.0');
-    const differ = bash(dir, versionStep.run!, 'v0.2.0');
-    expect(differ.status).toBe(1);
-    expect(differ.stdout).toContain('differ');
+    sh('init', '-q', '-b', 'master');
+    sh('add', '.');
+    sh('commit', '-q', '-m', 'base');
+    return dir;
+  }
+  const plan = (dir: string) => spawnSync(process.execPath, [script], { cwd: dir, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+
+  it('prints release=true and the tag when the version has no tag', () => {
+    const r = plan(project('1.2.3'));
+    expect(r.status, r.stderr).toBe(0);
+    expect(r.stdout).toBe('release=true\ntag=v1.2.3\n');
   });
 
-  it('checks that the tagged commit is on master', () => {
-    expect(stepNamed(release, 'Check that the tag is on master').run).toContain('git merge-base --is-ancestor');
-  });
-
-  it('runs every gate of the check workflow before it makes the release', () => {
-    const gates = check.jobs.check.steps.map((s) => s.run).filter((r): r is string => !!r);
-    const releaseRuns = release.jobs.release.steps.map((s) => s.run ?? '');
-    const at = releaseRuns.findIndex((r) => r.startsWith('gh release create'));
-    expect(at).toBeGreaterThan(0);
-    let last = -1;
-    for (const gate of gates) {
-      const i = releaseRuns.indexOf(gate);
-      expect(i, gate).toBeGreaterThan(last);
-      expect(i, gate).toBeLessThan(at);
-      last = i;
+  it('prints release=false when the tag exists locally, as a lightweight or an annotated tag', () => {
+    for (const args of [['tag', 'v1.2.3'], ['tag', '-a', 'v1.2.3', '-m', 'x']]) {
+      const dir = project('1.2.3');
+      const r0 = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { cwd: dir, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+      expect(r0.status, r0.stderr).toBe(0);
+      const r = plan(dir);
+      expect(r.status, r.stderr).toBe(0);
+      expect(r.stdout).toBe('release=false\ntag=v1.2.3\n');
     }
-    expect(gates).toEqual(
-      expect.arrayContaining(['npm run licences', 'npm run typecheck', 'npm run build', 'npm test', 'npm ci --prefix site', 'npm test --prefix site']),
-    );
   });
 
-  it('uses Node 22 and the same cache paths as the check workflow', () => {
-    const a = steps(check).find((s) => s.uses?.startsWith('actions/setup-node'))!.with;
-    const b = steps(release).find((s) => s.uses?.startsWith('actions/setup-node'))!.with;
-    expect(b).toEqual(a);
+  it('prints release=false when only origin has the tag, and release=true when origin has not', () => {
+    const origin = project('1.2.3');
+    const tagged = spawnSync('git', ['tag', 'v1.2.3'], { cwd: origin });
+    expect(tagged.status).toBe(0);
+    const clone = mkdtempSync(join(tmpdir(), 'semspec-plan-clone-'));
+    temps.push(clone);
+    // A clone without tags has the tag only on origin.
+    const c = spawnSync('git', ['clone', '-q', '--no-tags', origin, join(clone, 'w')], { encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+    expect(c.status, c.stderr).toBe(0);
+    expect(plan(join(clone, 'w')).stdout).toBe('release=false\ntag=v1.2.3\n');
+    spawnSync('git', ['tag', '-d', 'v1.2.3'], { cwd: origin });
+    expect(plan(join(clone, 'w')).stdout).toBe('release=true\ntag=v1.2.3\n');
   });
 
-  it('makes the GitHub Release with the changelog section of the version as its text', () => {
-    const notes = stepNamed(release, 'Write the release notes').run!;
-    expect(notes).toBe('node scripts/release-notes.mjs "${TAG#v}" > "${RUNNER_TEMP}/notes.md"');
-    const make = stepNamed(release, 'Make the GitHub Release');
-    expect(make.run).toBe('gh release create "${TAG}" --verify-tag --title "${TAG}" --notes-file "${RUNNER_TEMP}/notes.md"');
-    expect(make.env!.GH_TOKEN).toBe('${{ secrets.GITHUB_TOKEN }}');
+  it('exits with 1 when semspec and @semspec/core have different versions', () => {
+    const r = plan(project('1.2.3', '1.2.2'));
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('differ');
+  });
+});
+
+describe('the dependabot rule', () => {
+  it('skips the changeset job for a pull request whose author is dependabot[bot]', () => {
+    expect(check.jobs.changeset.if).toContain("github.event.pull_request.user.login != 'dependabot[bot]'");
+    expect(check.jobs.changeset.if).toContain("github.event_name == 'pull_request'");
+  });
+
+  it('keeps the other jobs independent of the changeset job, so a skip does not skip them', () => {
+    for (const [name, j] of Object.entries(check.jobs)) {
+      if (name === 'release') continue;
+      expect((j as { needs?: unknown }).needs, name).toBeUndefined();
+    }
+    const release = check.jobs.release as unknown as { if: string };
+    expect(release.if).toContain('always()');
+    expect(release.if).toContain("needs.changeset.result == 'skipped'");
   });
 });
 
 describe('the release guide', () => {
   const guide = text('docs/guide/releasing.md');
 
-  it('says each step of a release with its commands', () => {
-    for (const part of ['npx changeset', 'npx changeset add --empty', 'npm run version', 'git pull', 'git tag -s v', 'git push origin v', 'gh release create']) {
+  it('says each step of a release with its commands and that the merge of the version pull request is the last step', () => {
+    for (const part of ['npx changeset', 'npx changeset add --empty', 'npm run version', 'Merge the Version Packages pull request', 'no person makes a tag']) {
       expect(guide, part).toContain(part);
     }
     expect(guide).toContain('Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests"');
-    expect(guide).toContain('.github/allowed_signers');
+    expect(guide).not.toMatch(/git tag|git push|allowed_signers|signed tag/i);
   });
 
   it('has the front matter of a guide that documents the release requirements', () => {

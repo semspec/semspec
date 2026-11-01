@@ -47,3 +47,10 @@ acceptance:
       - type: unit
         file: test/deploy.test.ts
         name: "names each setting of the Worker and its build in the guide"
+  - id: build-on-deploy
+    text: "The deploy builds the site itself before it reads site/dist, so a deploy never fails on a missing site/dist, whatever the build command of the dashboard is."
+    status: verified
+    tests:
+      - type: unit
+        file: test/deploy.test.ts
+        name: "builds the site into site/dist in the build command of wrangler.jsonc"
