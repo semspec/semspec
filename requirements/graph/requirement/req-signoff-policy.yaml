@@ -1,0 +1,29 @@
+id: req-signoff-policy
+kind: requirement
+title: Need more than 1 sign-off for a node
+state: draft
+priority: next
+statement: "The profile states for each kind how many sign-offs a node needs and from which roles, and a node counts as signed off only when its policy is met."
+capabilities:
+  - cap-signoff
+area:
+  - core
+acceptance:
+  - id: policy
+    text: "The profile states for each kind that needs a sign-off the number of sign-offs and, optionally, the roles that must be among them."
+    status: open
+  - id: roles
+    text: "The reviewers file gives each reviewer 1 or more roles, and a change of a role is a change of the reviewers file under the same review rule."
+    status: open
+  - id: distinct
+    text: "The sign-offs of a node count only once for each person, so 1 person cannot meet a policy of 2 sign-offs alone, even with 2 keys."
+    status: open
+  - id: states
+    text: "A node is signed off when its policy is met, partly signed off with a count such as 1 of 2 while it is not, and out of date when its fingerprint changed after any of its sign-offs."
+    status: open
+  - id: all-outdated
+    text: "A change of the fingerprint makes all earlier sign-offs of the node out of date, so each person signs off again."
+    status: open
+  - id: review-slots
+    text: "The Review view shows who signed off a node and which roles are still missing, and offers a node to a person only when the sign-off of that person counts for the policy."
+    status: open

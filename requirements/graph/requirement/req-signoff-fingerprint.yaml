@@ -1,0 +1,23 @@
+id: req-signoff-fingerprint
+kind: requirement
+title: Fingerprint what a person checks
+state: draft
+priority: next
+statement: "A fingerprint of a node covers the fields that the profile names and the evidence, so a change of either changes the fingerprint."
+capabilities:
+  - cap-signoff
+area:
+  - core
+acceptance:
+  - id: fields
+    text: "The profile names the kinds that need a sign-off and the fields that go into the fingerprint, by default the statement and the text of each acceptance condition."
+    status: open
+  - id: evidence
+    text: "The fingerprint covers the evidence of each condition: the file and the title of each linked test, and, when the profile asks for it, a hash of the test file."
+    status: open
+  - id: normalised
+    text: "The fingerprint ignores a change of white space and of line breaks only."
+    status: open
+  - id: stable
+    text: "The fingerprint does not depend on the order of the keys in a file or on the order of the files in a folder."
+    status: open
