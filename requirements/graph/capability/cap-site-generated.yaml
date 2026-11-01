@@ -1,0 +1,6 @@
+id: cap-site-generated
+kind: capability
+title: Site content from the graph
+statement: "The build of the site reads the requirements graph and the docs of this repository, so the site never falls behind them."
+features:
+  - feat-distribute

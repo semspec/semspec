@@ -1,0 +1,26 @@
+id: req-signoff-check
+kind: requirement
+title: Fail on out-of-date or forged sign-offs
+state: draft
+priority: next
+statement: "The check verifies each sign-off and reports the nodes that need a person."
+capabilities:
+  - cap-signoff
+area:
+  - cli
+acceptance:
+  - id: outdated
+    text: "A node whose fingerprint differs from its sign-off is a finding of the gate kind outdated-signoff."
+    status: open
+  - id: no-signoff
+    text: "A node of a kind that needs a sign-off and has none is a finding of the gate kind no-signoff."
+    status: open
+  - id: forged
+    text: "A sign-off whose signature does not verify against the reviewers file, or whose reviewer is unknown, is an error."
+    status: open
+  - id: explorer
+    text: "The explorer shows a badge Signed off by a person on a date, or Out of date, a filter by sign-off state, and the sign-off in the details panel."
+    status: open
+  - id: export
+    text: "The RDF export writes each sign-off as a PROV attribution with the role signer and the time."
+    status: open

@@ -96,3 +96,41 @@ describe('the status colour of the Graph view', () => {
     expect(new Set(tones).size).toBeGreaterThan(1);
   });
 });
+
+describe('the colour alternative of the canvas', () => {
+  const nodes = () => [...document.querySelectorAll<HTMLElement>('.react-flow__node, .react-flow__node *, .react-flow__minimap-node, [data-testid^="rf__minimap"] *')];
+  const styles = () => nodes().map((n) => n.getAttribute('style') ?? '');
+  const usesKind = (css: string) => css.includes('--kind-');
+
+  const checkFlip = async (fixture: string, root: string, label: string) => {
+    renderApp(fixture);
+    await pickInTree(root);
+    await settle();
+    expect(styles().some(usesKind)).toBe(true);
+    await userEvent.setup().click(screen.getByRole('button', { name: label }));
+    await settle();
+    expect(styles().filter(usesKind)).toEqual([]);
+    const borders = [...document.querySelectorAll('.react-flow__node')].map((n) => (n.firstElementChild as HTMLElement).style.borderColor);
+    expect(borders.every((b) => /var\(--(good|warn|destructive|muted-foreground)\)/.test(b))).toBe(true);
+    document.querySelectorAll('.react-flow__minimap-node').forEach((m) => expect(m.getAttribute('style') ?? '').not.toContain('--kind-'));
+    await userEvent.setup().click(screen.getByRole('button', { name: label }));
+    await settle();
+    expect(styles().some(usesKind)).toBe(true);
+  };
+
+  it('turns the kind colours neutral when the status colour is on, on the product fixture', () => checkFlip('product', 'epic-checkout', 'Colour the nodes by result'));
+
+  it('turns the kind colours neutral when the status colour is on, on the safety fixture', () => checkFlip('safety', 'g-safe-operation', 'Colour the nodes by assurance'));
+
+  it('turns the kind header of a card neutral when the status colour is on', async () => {
+    renderApp('product');
+    await pickInTree('epic-checkout');
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'Cards' }));
+    await settle();
+    expect(styles().some(usesKind)).toBe(true);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Colour the nodes by result' }));
+    await settle();
+    expect(styles().filter(usesKind)).toEqual([]);
+    expect(screen.getAllByText('Scenario').length).toBeGreaterThan(0);
+  });
+});

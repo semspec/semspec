@@ -7,7 +7,7 @@
   "author": "The Semspec Authors",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.22.2"
   },
   "scripts": {
     "demo": "node scripts/demo.mjs",

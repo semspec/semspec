@@ -5,7 +5,7 @@ title: Export
 description: Write a graph or a workspace as RDF, SHACL shapes or a Cypher script.
 order: 7
 related: [profile, provenance, vocabularies, cli]
-documents: [feat-export, cap-export-graph, req-export-rdf-cypher]
+documents: [feat-connect, cap-export-graph, req-export-rdf-cypher]
 ---
 `semspec export` writes a graph for other tools. The model is a labelled property graph, so each format maps it in the closest way.
 
@@ -51,6 +51,7 @@ The profile can name the IRIs. All parts are optional.
 | Semspec | RDF |
 |---|---|
 | a node | `rdf:type` the class of its kind, `rdfs:label` its title, `dct:identifier` its id |
+| a link to an outside tool, of a node or a check | `rdfs:seeAlso` with the IRI of the URL. See `externalLinks` in the [profile](profile.md). |
 | a node field | a property. A string is a plain literal. A number is `xsd:integer`, `xsd:decimal` or `xsd:double`. A boolean is `xsd:boolean`. An ISO date string is `xsd:gYear`, `xsd:gYearMonth` or `xsd:date`. A list gives 1 value for each item. An object is an `rdf:JSON` literal (`@json` in JSON-LD). |
 | a coded field | the IRI of the concept |
 | a cross link of a workspace | an object property to the IRI of the target node. A target that does not exist stays a literal. |

@@ -1,0 +1,20 @@
+id: req-self-tests
+kind: requirement
+title: Link every test to a condition
+state: draft
+priority: now
+statement: Every test proves an acceptance condition, or has an exemption.
+capabilities:
+  - cap-self-check
+area:
+  - repository
+acceptance:
+  - id: linked
+    text: "Every test is linked to an acceptance condition, or listed in 1 exemption file."
+    status: open
+  - id: reason
+    text: "Each entry of the exemption file has a reason."
+    status: open
+  - id: finding
+    text: "A test with no link and no exemption is a finding."
+    status: open

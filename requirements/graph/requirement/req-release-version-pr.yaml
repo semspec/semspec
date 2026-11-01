@@ -1,0 +1,80 @@
+id: req-release-version-pr
+kind: requirement
+title: Collect the changesets in a version pull request
+state: draft
+priority: now
+statement: "After a merge to master, a workflow collects the open changesets into 1 version pull request. Nothing is released until a maintainer merges it."
+capabilities:
+  - cap-release
+area:
+  - repository
+acceptance:
+  - id: collect
+    text: "The version pull request bumps the versions of the public packages, writes CHANGELOG.md from the release notes, and removes the changeset files."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "collects a minor changeset into the core version, writes the changelog, removes the file and gives the private package no version"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "runs changeset version and then the sync script in npm run version"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "pins the changesets action by SHA and runs npm run version"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "runs on a push to master"
+  - id: one-version
+    text: "The packages semspec and @semspec/core always have the same version, and the private packages get no version and no tag."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "keeps the root package and @semspec/core at the same version"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "gives private packages no version and no tag"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "writes the version of the core package into package.json and the root entries of package-lock.json"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "keeps the other fields and the version of a private package"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "copies the range of a workspace dependency into the lock file"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "gives the root package and the core package the same version after npm run version steps"
+  - id: verified-commits
+    text: "The workflow makes its commits through the GitHub API, so they show as verified and pass a rule that needs signed commits."
+    status: partial
+    note: The files set push-with-git-cli to false and give the workflow the permissions contents write and pull-requests write, so the action commits through the GitHub API. Only a real run proves it. The run on master must show the commit of the Version Packages branch with the badge Verified and must pass a rule that needs signed commits.
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "commits through the GitHub API"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "has the permissions contents write and pull-requests write only"
+  - id: no-push
+    text: "The workflow never pushes to master and never makes a tag."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "has no publish input, so it never publishes or makes a tag"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "runs no git push and no git tag"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "has the permissions contents write and pull-requests write only"
+  - id: cli-compatible
+    text: "The pinned Changesets action accepts the installed version of the Changesets CLI, so a push to master never fails before the version pull request."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: installs the major version of the changesets CLI that the pinned action accepts

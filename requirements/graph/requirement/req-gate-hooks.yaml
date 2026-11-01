@@ -33,3 +33,13 @@ acceptance:
       - type: unit
         file: test/check.test.ts
         name: has a workflow for this repository that runs the check on the requirements with pinned actions
+  - id: ci-node
+    text: "CI runs the node tests on the lowest Node version that the engines field of the package allows, and all tests, the build and the site on a Node version that every test tool supports."
+    status: verified
+    tests:
+      - type: unit
+        file: test/ci.test.ts
+        name: runs the node tests on the lowest Node version of the engines field
+      - type: unit
+        file: test/ci.test.ts
+        name: runs all tests, the build and the site on a Node version that the test tools support

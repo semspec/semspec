@@ -1,0 +1,17 @@
+id: req-self-docs
+kind: requirement
+title: Generate the reference docs from the graph
+state: draft
+priority: now
+statement: The reference docs that list requirements, commands, tools or profile keys are generated sections.
+capabilities:
+  - cap-self-check
+area:
+  - repository
+acceptance:
+  - id: generated
+    text: "Each list of requirements, commands, tools or profile keys in the reference docs is a generated section."
+    status: open
+  - id: spec-check
+    text: "The command semspec spec --check passes on every doc that has a generated section."
+    status: open

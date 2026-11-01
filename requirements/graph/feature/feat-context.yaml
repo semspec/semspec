@@ -1,6 +1,0 @@
-id: feat-context
-kind: feature
-title: Context
-statement: An agent gets the requirement slice for a task.
-products:
-  - prd-semspec

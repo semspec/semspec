@@ -8,13 +8,16 @@ import type { Index, Profile, StatusTone, VNode } from '../../../packages/core/s
 // The kinds and the lifecycle state that the roadmap reads. The defaults match requirements/profile.yaml.
 export interface RoadmapOptions {
   featureKind: string;
+  capabilityKind: string;
   requirementKind: string;
   conditionKind: string;
   // A feature in this lifecycle state is planned. Every other feature that is not muted has shipped.
   plannedState: string;
+  // The field of a feature node that holds its position in the lists. A feature with no number comes last.
+  orderField: string;
 }
 
-export const DEFAULT_OPTIONS: RoadmapOptions = { featureKind: 'feature', requirementKind: 'requirement', conditionKind: 'condition', plannedState: 'draft' };
+export const DEFAULT_OPTIONS: RoadmapOptions = { featureKind: 'feature', capabilityKind: 'capability', orderField: 'order', requirementKind: 'requirement', conditionKind: 'condition', plannedState: 'draft' };
 
 export interface StatusData {
   value: string;
@@ -38,8 +41,13 @@ export interface RequirementData {
   conditions: ConditionData[];
 }
 
+// A planned entry is a feature with state draft, or a capability with state draft in a feature that has shipped.
 export interface PlannedFeature {
   id: string;
+  // The kind of the node.
+  kind: string;
+  // The title of the feature that holds a planned capability. Null for a planned feature.
+  feature: string | null;
   title: string;
   statement: string;
   // The conditions below the feature that have the status of the good tone, and all conditions below it.
@@ -63,7 +71,9 @@ export interface RoadmapData {
   kinds: Record<string, { light: string; dark: string }>;
 }
 
-const byTitle = (a: { title: string }, b: { title: string }) => a.title.localeCompare(b.title, 'en');
+// Sorts by the order number of the feature, then by title. A feature with no number comes last.
+type Sortable = { title: string; order: number };
+const byOrder = (a: Sortable, b: Sortable) => a.order - b.order || a.title.localeCompare(b.title, 'en');
 
 // The status that the profile names for a value, or null when the profile names none.
 export function statusDataOf(profile: Profile, value: string | undefined): StatusData | null {
@@ -109,30 +119,45 @@ export function buildRoadmap(index: Index, options: Partial<RoadmapOptions> = {}
     return { verified: goodValue ? rolled.counts[goodValue] ?? 0 : 0, total: conditions.length };
   };
 
-  const planned: PlannedFeature[] = [];
-  const shipped: ShippedFeature[] = [];
+  const orderOf = (n: VNode): number => {
+    const v = n.d[o.orderField];
+    return typeof v === 'number' ? v : Number.POSITIVE_INFINITY;
+  };
+  const parentOf = (id: string): VNode | undefined => {
+    for (const [parent, childIds] of index.children) if (childIds.includes(id)) return index.byId.get(parent);
+    return undefined;
+  };
+
+  const planned: (PlannedFeature & Sortable)[] = [];
+  const shipped: (ShippedFeature & Sortable)[] = [];
+  const toPlanned = (n: VNode, feature: VNode | null): PlannedFeature & Sortable => {
+    const { verified, total } = counts(n);
+    const requirements = below(n.id, o.requirementKind).map<RequirementData>((r) => ({
+      id: r.id,
+      title: r.title,
+      statement: r.statement,
+      areas: areaLabels(r),
+      conditions: below(r.id, o.conditionKind).map((c) => ({ id: c.id, text: c.statement, status: statusDataOf(profile, c.status) })),
+    }));
+    return { id: n.id, kind: n.kind, feature: feature?.title ?? null, title: n.title, statement: n.statement, verified, total, requirements, order: orderOf(feature ?? n) };
+  };
   const features = index.model.nodes.filter((n) => n.kind === o.featureKind && live(n));
   for (const feature of features) {
-    const { verified, total } = counts(feature);
     if (feature.lifecycle === o.plannedState) {
-      const requirements = below(feature.id, o.requirementKind).map<RequirementData>((r) => ({
-        id: r.id,
-        title: r.title,
-        statement: r.statement,
-        areas: areaLabels(r),
-        conditions: below(r.id, o.conditionKind).map((c) => ({ id: c.id, text: c.statement, status: statusDataOf(profile, c.status) })),
-      }));
-      planned.push({ id: feature.id, title: feature.title, statement: feature.statement, verified, total, requirements });
+      planned.push(toPlanned(feature, null));
     } else {
-      shipped.push({ id: feature.id, title: feature.title, statement: feature.statement, verified, total });
+      const { verified, total } = counts(feature);
+      shipped.push({ id: feature.id, title: feature.title, statement: feature.statement, verified, total, order: orderOf(feature) });
+      // A draft capability of a shipped feature is planned work.
+      for (const capability of below(feature.id, o.capabilityKind)) if (capability.lifecycle === o.plannedState) planned.push(toPlanned(capability, feature));
     }
   }
-  planned.sort(byTitle);
-  shipped.sort(byTitle);
+  planned.sort(byOrder);
+  shipped.sort(byOrder);
 
   return {
-    planned,
-    shipped,
+    planned: planned.map(({ order: _o, ...rest }) => rest),
+    shipped: shipped.map(({ order: _o, ...rest }) => rest),
     kinds: Object.fromEntries(profile.kinds.map((k) => [k.id, { light: k.color.light, dark: k.color.dark }])),
   };
 }

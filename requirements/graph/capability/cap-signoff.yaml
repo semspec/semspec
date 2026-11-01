@@ -1,0 +1,8 @@
+id: cap-signoff
+kind: capability
+title: Requirement sign-off
+state: draft
+priority: next
+statement: "A person checks in the browser that the evidence of a requirement still proves its statement, and confirms it with a signature made with their own key. The confirmation goes out of date when the statement, a condition or the evidence changes."
+features:
+  - feat-harness

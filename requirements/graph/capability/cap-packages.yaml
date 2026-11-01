@@ -5,4 +5,4 @@ state: draft
 priority: now
 statement: "The code splits into 4 packages: core, app, mcp and cli."
 features:
-  - feat-distribution
+  - feat-distribute

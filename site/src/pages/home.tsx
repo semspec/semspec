@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 import type { ReactNode } from 'react';
+import cards from 'virtual:cards';
 import heroGraph from 'virtual:hero-graph';
 import roadmap from 'virtual:roadmap';
 import snippets from 'virtual:snippets';
 import trace from 'virtual:trace';
-import { ArrowRight, Download, FileCode, FileJson, FolderGit2, Layers, ListChecks, Network, Shapes, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { CodeBlock, CommandLine } from '@/components/code-block';
 import { CodeText } from '@/components/code-text';
 import { Demo } from '@/components/demo';
@@ -16,18 +17,8 @@ import { LinkButton } from '@/components/link-button';
 import { Trace } from '@/components/trace';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FEATURE_ICONS } from '@/lib/feature-icons';
 import { DOCS_URL, GITHUB_URL } from '@/lib/links';
-
-const FEATURES: { icon: LucideIcon; title: string; text: ReactNode }[] = [
-  { icon: Shapes, title: 'Any vocabulary', text: 'The profile defines every kind, edge, field, colour and label. The tool knows no project.' },
-  { icon: FolderGit2, title: 'Files in the repository', text: 'Keep 1 YAML file for each node, or the whole graph in 1 JSON or YAML file.' },
-  { icon: Network, title: 'Explore the graph', text: 'Use a hierarchy tree, a scope by any node and a walk by expansion. Read the result in the Graph, Cards and Table views.' },
-  { icon: ListChecks, title: 'Status that rolls up', text: 'A status rolls up from the nodes below. Filters select nodes by status and by any field of the profile.' },
-  { icon: FileJson, title: 'Schemas for editors and agents', text: (<><CodeText>semspec schema</CodeText> writes a JSON Schema for each kind. An editor or an agent checks the YAML files with it.</>) },
-  { icon: FileCode, title: '1 file to share', text: (<><CodeText>semspec build</CodeText> writes 1 HTML file. It opens from disk and makes no network request.</>) },
-  { icon: Layers, title: 'Workspaces', text: 'Show several graphs on 1 page, each with its own profile. A node of 1 graph can link to a node of another.' },
-  { icon: Download, title: 'Export', text: 'Write Turtle, TriG, JSON-LD, SHACL shapes or a Cypher script, with the IRIs from the profile.' },
-];
 
 const STANDARDS = [
   { name: 'ISO GQL and PG-Schema', use: 'The labelled property graph model' },
@@ -136,22 +127,25 @@ export function Home() {
           <h2 id="features-title" className={h2Class}>
             What Semspec does today
           </h2>
-          <ul role="list" className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map(({ icon: Icon, title, text }) => (
-              <li key={title} className="flex">
-                <Card className="w-full">
-                  <CardHeader>
-                    <span className="mb-2 flex size-9 items-center justify-center rounded-lg bg-muted text-foreground">
-                      <Icon aria-hidden="true" className="size-4.5" />
-                    </span>
-                    <CardTitle>
-                      <h3>{title}</h3>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-muted-foreground">{text}</CardContent>
-                </Card>
-              </li>
-            ))}
+          <ul role="list" className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {cards.map(({ id, title, text }) => {
+              const Icon = FEATURE_ICONS[id] ?? Sparkles;
+              return (
+                <li key={id} className="flex">
+                  <Card className="w-full">
+                    <CardHeader>
+                      <span className="mb-2 flex size-9 items-center justify-center rounded-lg bg-muted text-foreground">
+                        <Icon aria-hidden="true" className="size-4.5" />
+                      </span>
+                      <CardTitle>
+                        <h3>{title}</h3>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-muted-foreground">{text}</CardContent>
+                  </Card>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </section>
@@ -186,7 +180,7 @@ export function Home() {
                   <CardHeader>
                     <CardTitle>
                       <h3 className="flex items-center gap-2">
-                        <KindDot kind="feature" />
+                        <KindDot kind={f.kind} />
                         {f.title}
                       </h3>
                     </CardTitle>

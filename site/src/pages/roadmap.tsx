@@ -42,7 +42,7 @@ export function Roadmap() {
           Next
         </h2>
         <p className="mt-3 max-w-3xl text-muted-foreground">
-          Each planned feature lists its requirements and the status of each acceptance condition. This page comes from the <CodeText>requirements</CodeText> folder at commit{' '}
+          Each planned feature or capability lists its requirements and the status of each acceptance condition. This page comes from the <CodeText>requirements</CodeText> folder at commit{' '}
           <a href={`${GITHUB_URL}/tree/${buildInfo.commit}/requirements`} className="font-mono underline underline-offset-4 hover:text-foreground">
             {buildInfo.commit}
           </a>
@@ -86,10 +86,11 @@ function PlannedCard({ feature }: { feature: PlannedFeature }) {
       <CardHeader>
         <CardTitle className="text-lg">
           <h3 className="flex items-center gap-2">
-            <KindDot kind="feature" className="size-3" />
+            <KindDot kind={feature.kind} className="size-3" />
             {feature.title}
           </h3>
         </CardTitle>
+        {feature.feature && <p className="text-sm text-muted-foreground">In the feature {feature.feature}</p>}
         <CardDescription>{feature.statement}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">

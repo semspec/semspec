@@ -16,6 +16,8 @@
 //   semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
 //   semspec deliverables --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--json]
 //   semspec deliverables --workspace <file> [--in <graph>] [--scope <id>] [--kind <kind>]... [--json]
+//   semspec spec --graph <file> --profile <file> <template.md>... [--check] [--json]
+//   semspec spec --workspace <file> --out <dir> [--roots <kind,...>] [--glossary <graph>] [--check] [--json]
 //   semspec check --graph <file> --profile <file> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
 //   semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
 //   semspec --version | -v
@@ -40,6 +42,7 @@ import { loadInputs, loadProfile } from './inputs';
 import { mcpLoader } from './mcp';
 import { renderPage } from './page';
 import { parseSliceArgs, sliceInputs } from './slice';
+import { formatSpec, parseSpecArgs, specInputs } from './spec';
 import { formatHits, parseSearchArgs, searchInputs } from './search';
 import { buildInfo, versionLine } from './version';
 import { loadWorkspace } from './workspace';
@@ -64,6 +67,8 @@ Usage:
   semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
   semspec deliverables --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--json]
   semspec deliverables --workspace <file> [--in <graph>] [--scope <id>] [--kind <kind>]... [--json]
+  semspec spec --graph <file> --profile <file> <template.md>... [--check] [--json]
+  semspec spec --workspace <file> --out <dir> [--roots <kind,...>] [--glossary <graph>] [--check] [--json]
   semspec check --graph <file> --profile <file> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
   semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
   semspec schema --profile <file> --out <dir>
@@ -84,6 +89,7 @@ The index command embeds the nodes with the model of search.embeddings and write
 The eval-search command prints recall at 5 and MRR of the keyword and the hybrid search. See docs/guide/meaning-search.md.
 The slice command prints the brief for a task on 1 node. See docs/reference/cli.md.
 The deliverables command lists the nodes that miss a deliverable of the profile. See docs/reference/cli.md.
+The spec command fills the marked sections of Markdown templates from the graph. See docs/guide/specs.md.
 The schema command writes 1 JSON Schema for each kind of the profile. See docs/reference/schemas.md.
 The export command writes the graph as RDF (turtle, jsonld), as SHACL shapes (shacl) or as a Cypher script (cypher).
 With --workspace, it writes all graphs into 1 file. See docs/reference/export.md.`;
@@ -237,6 +243,19 @@ export async function run(rawArgv: string[]): Promise<number> {
     } catch (e) {
       console.error((e as Error).message);
       return 1;
+    }
+  }
+  if (command === 'spec') {
+    try {
+      const args = parseSpecArgs(argv.slice(1));
+      const outcome = specInputs(args);
+      outcome.warnings.forEach((w) => console.error(`warning: ${w}`));
+      const ok = outcome.findings.length === 0;
+      console.log(args.json ? JSON.stringify({ ok, findings: outcome.findings, written: outcome.written, sections: outcome.sections }) : formatSpec(outcome, args));
+      return ok ? 0 : 1;
+    } catch (e) {
+      console.error(e instanceof UsageError ? `${e.message}\n\n${USAGE}` : (e as Error).message);
+      return e instanceof UsageError ? 2 : 1;
     }
   }
   if (command === 'deliverables') {

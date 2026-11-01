@@ -1,0 +1,29 @@
+id: req-self-pull-requests
+kind: requirement
+title: Change the default branch only through a pull request
+state: draft
+priority: now
+statement: "Every change reaches the default branch through a pull request that uses the template, passes the gates and has the approval of a code owner."
+capabilities:
+  - cap-self-check
+area:
+  - repository
+acceptance:
+  - id: branch
+    text: "Work happens on a branch, and the default branch takes no direct push."
+    status: open
+  - id: template
+    text: "A pull request body follows the template, and a check fails a body that misses a section, names an unknown node or condition, or names a test that does not exist."
+    status: open
+  - id: gates
+    text: "The CI gates run on each pull request, and a pull request with a failing gate cannot merge."
+    status: open
+  - id: review
+    text: "A pull request needs the approval of a code owner before it merges."
+    status: open
+  - id: codex-review
+    text: "Each pull request gets a Codex review against its base before it is ready. The Gates section of the body records the number of findings and the commit that fixes or answers them."
+    status: open
+  - id: signed
+    text: "Every commit of a pull request is signed and has a DCO sign-off, and a check fails a commit without them."
+    status: open

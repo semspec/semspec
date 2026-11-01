@@ -1,0 +1,8 @@
+id: feat-connect
+kind: feature
+title: Connect
+order: 4
+statement: A user keeps several graphs about 1 system in a workspace, links their nodes and exports the graphs to other formats.
+tagline: "Show several graphs on 1 page and link a node of 1 graph to a node of another. Export CSV, RDF, SHACL shapes or a Cypher script, or build 1 HTML file."
+products:
+  - prd-semspec

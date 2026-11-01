@@ -1,0 +1,49 @@
+id: req-site-deploy
+kind: requirement
+title: Deploy the site to semspec.dev
+state: draft
+priority: now
+statement: "A Cloudflare Worker with static assets serves the site at semspec.dev. Workers Builds builds it from each commit on master. The repository holds no Cloudflare secret."
+capabilities:
+  - cap-site-generated
+area:
+  - repository
+  - site
+acceptance:
+  - id: from-master
+    text: "Workers Builds connects the Worker semspec to the repository and builds each commit on master, with the build command that the guide names, then deploys it."
+    status: open
+  - id: config
+    text: "The file wrangler.jsonc names the Worker semspec, serves the folder site/dist as static assets with no script, and routes the custom domain semspec.dev to it."
+    status: verified
+    tests:
+      - type: unit
+        file: test/deploy.test.ts
+        name: "serves the folder site/dist as static assets of the Worker semspec at semspec.dev"
+  - id: gated-master
+    text: "Master gets a commit only through a pull request whose checks pass, so each production build has passed the gates."
+    status: open
+  - id: node-version
+    text: "The file .node-version names the lowest Node version of the engines field, so the build uses the Node version that the tests use."
+    status: verified
+    tests:
+      - type: unit
+        file: test/deploy.test.ts
+        name: "names the lowest Node version of the engines field in .node-version"
+  - id: domain
+    text: "The domain semspec.dev serves the production build of the project."
+    status: open
+  - id: no-secrets
+    text: "No workflow of the repository reads a Cloudflare secret."
+    status: verified
+    tests:
+      - type: unit
+        file: test/deploy.test.ts
+        name: "has no workflow that reads a Cloudflare secret"
+  - id: guide
+    text: "A guide for maintainers names the settings of the Worker and its build: the repository, the branch, the build command, the deploy command, the Node version and the custom domain."
+    status: verified
+    tests:
+      - type: unit
+        file: test/deploy.test.ts
+        name: "names each setting of the Worker and its build in the guide"

@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const bin = join(repo, 'bin', 'semspec.js');
@@ -31,116 +31,116 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
 }
 
 describe('semspec mcp --workspace', () => {
+  // Shared server: the 2 tests that only read the fixture workspace use 1 server, as a server start costs seconds.
+  let shared: Client;
+  beforeAll(async () => {
+    shared = await connect(['--workspace', workspace]);
+  }, 60000);
+  afterAll(() => shared?.close());
+
   it('lists the tools and the resources, and answers each tool', { timeout: 60000 }, async () => {
-    const client = await connect(['--workspace', workspace]);
-    try {
-      expect(client.getServerVersion()?.name).toBe('semspec');
-      expect(client.getInstructions()).toContain('schema');
-      const tools = await client.listTools();
-      expect(tools.tools.map((t) => t.name)).toEqual(['schema', 'search', 'get', 'trace', 'walk', 'slice', 'impact', 'gaps', 'validate']);
-      for (const t of tools.tools) expect(t.inputSchema.type).toBe('object');
+    const client = shared;
+    expect(client.getServerVersion()?.name).toBe('semspec');
+    expect(client.getInstructions()).toContain('schema');
+    const tools = await client.listTools();
+    expect(tools.tools.map((t) => t.name)).toEqual(['schema', 'search', 'get', 'trace', 'walk', 'slice', 'impact', 'gaps', 'validate']);
+    for (const t of tools.tools) expect(t.inputSchema.type).toBe('object');
 
-      const resources = await client.listResources();
-      expect(resources.resources.map((r) => r.uri)).toEqual(['semspec://req/profile', 'semspec://req/vocabularies', 'semspec://domain/profile', 'semspec://domain/vocabularies']);
+    const resources = await client.listResources();
+    expect(resources.resources.map((r) => r.uri)).toEqual(['semspec://req/profile', 'semspec://req/vocabularies', 'semspec://domain/profile', 'semspec://domain/vocabularies']);
 
-      const schema = await call(client, 'schema', { graph: 'domain' });
-      expect(schema.json.graph).toBe('domain');
-      expect(schema.json.kinds.map((k: any) => k.id)).toContain('shop');
-      expect(schema.json.vocabularies.map((v: any) => v.id)).toContain('segment');
-      expect(schema.json.crossLinks).toEqual([{ field: 'area', graph: 'req', label: 'Area in the requirements' }]);
-      expect((await call(client, 'schema', { kind: 'story' })).json.schema.title).toBe('Story');
+    const schema = await call(client, 'schema', { graph: 'domain' });
+    expect(schema.json.graph).toBe('domain');
+    expect(schema.json.kinds.map((k: any) => k.id)).toContain('shop');
+    expect(schema.json.vocabularies.map((v: any) => v.id)).toContain('segment');
+    expect(schema.json.crossLinks).toEqual([{ field: 'area', graph: 'req', label: 'Area in the requirements' }]);
+    expect((await call(client, 'schema', { kind: 'story' })).json.schema.title).toBe('Story');
 
-      const found = await call(client, 'search', { query: 'prepaid code' });
-      expect(found.json.hits[0]).toMatchObject({ graph: 'domain', id: 'pay-voucher', kind: 'method' });
-      expect(found.json.hits[0].snippet).toContain('**prepaid**');
-      expect(found.text).not.toContain('\n');
-      const limited = await call(client, 'search', { query: 'buyer', graph: 'req', kinds: ['story'], limit: 2 });
-      expect(limited.json.hits.length).toBe(2);
-      expect(limited.json.hits.every((h: any) => h.graph === 'req' && h.kind === 'story')).toBe(true);
-      expect(limited.json.truncated.hits).toBe(limited.json.total - 2);
-      expect((await call(client, 'search', { query: 'zzqqxx' })).json).toMatchObject({ total: 0, hits: [] });
+    const found = await call(client, 'search', { query: 'prepaid code' });
+    expect(found.json.hits[0]).toMatchObject({ graph: 'domain', id: 'pay-voucher', kind: 'method' });
+    expect(found.json.hits[0].snippet).toContain('**prepaid**');
+    expect(found.text).not.toContain('\n');
+    const limited = await call(client, 'search', { query: 'buyer', graph: 'req', kinds: ['story'], limit: 2 });
+    expect(limited.json.hits.length).toBe(2);
+    expect(limited.json.hits.every((h: any) => h.graph === 'req' && h.kind === 'story')).toBe(true);
+    expect(limited.json.truncated.hits).toBe(limited.json.total - 2);
+    expect((await call(client, 'search', { query: 'zzqqxx' })).json).toMatchObject({ total: 0, hits: [] });
 
-      const get = await call(client, 'get', { id: 'story-pay-by-card' });
-      expect(get.json).toMatchObject({ graph: 'req', kind: 'story', title: 'Pay by card', status: { value: 'partial' } });
-      expect(get.json.crossLinks.length).toBe(4);
-      expect(get.text).not.toContain('\n');
+    const get = await call(client, 'get', { id: 'story-pay-by-card' });
+    expect(get.json).toMatchObject({ graph: 'req', kind: 'story', title: 'Pay by card', status: { value: 'partial' } });
+    expect(get.json.crossLinks.length).toBe(4);
+    expect(get.text).not.toContain('\n');
 
-      const up = await call(client, 'trace', { id: 'story-pay-by-card', direction: 'up' });
-      expect(up.json.paths).toEqual([['story-pay-by-card', 'epic-checkout', 'prd-shop']]);
-      const down = await call(client, 'trace', { id: 'epic-checkout', direction: 'down', depth: 1 });
-      expect(down.json.tree.children.map((c: any) => c.id)).toEqual(['story-pay-by-card', 'story-save-card']);
+    const up = await call(client, 'trace', { id: 'story-pay-by-card', direction: 'up' });
+    expect(up.json.paths).toEqual([['story-pay-by-card', 'epic-checkout', 'prd-shop']]);
+    const down = await call(client, 'trace', { id: 'epic-checkout', direction: 'down', depth: 1 });
+    expect(down.json.tree.children.map((c: any) => c.id)).toEqual(['story-pay-by-card', 'story-save-card']);
 
-      const walked = await call(client, 'walk', { id: 'story-pay-by-card', depth: 2, edges: ['concerns', 'offers'] });
-      expect(walked.json.steps[0].groups[0]).toMatchObject({ edge: 'concerns', direction: 'out', cross: true });
-      expect(walked.json.paths).toContain('story-pay-by-card =concerns=> domain:pay-card <-offers- domain:shop-brightcart');
-      expect(walked.text).not.toContain('\n');
-      const near = await call(client, 'walk', { id: 'story-pay-by-card', direction: 'in', kinds: ['scenario'], crossLinks: false, limit: 1 });
-      expect(near.json.steps[0].groups[0]).toMatchObject({ edge: 'scenario', direction: 'in', label: 'Has scenario' });
-      expect(near.json.truncated.nodes).toBe(1);
+    const walked = await call(client, 'walk', { id: 'story-pay-by-card', depth: 2, edges: ['concerns', 'offers'] });
+    expect(walked.json.steps[0].groups[0]).toMatchObject({ edge: 'concerns', direction: 'out', cross: true });
+    expect(walked.json.paths).toContain('story-pay-by-card =concerns=> domain:pay-card <-offers- domain:shop-brightcart');
+    expect(walked.text).not.toContain('\n');
+    const near = await call(client, 'walk', { id: 'story-pay-by-card', direction: 'in', kinds: ['scenario'], crossLinks: false, limit: 1 });
+    expect(near.json.steps[0].groups[0]).toMatchObject({ edge: 'scenario', direction: 'in', label: 'Has scenario' });
+    expect(near.json.truncated.nodes).toBe(1);
 
-      const brief = await call(client, 'slice', { id: 'story-pay-by-card', graph: 'req' }, true);
-      expect(brief.text.startsWith('# `story-pay-by-card` Pay by card')).toBe(true);
-      expect(brief.text).toContain('`domain:pay-card` Card payment');
-      const json = await call(client, 'slice', { id: 'story-pay-by-card', format: 'json', depth: 1, budget: 400 });
-      expect(json.json).toMatchObject({ graph: 'req', id: 'story-pay-by-card' });
-      expect(json.json.cut.length).toBeGreaterThan(0);
-      expect((await call(client, 'slice', { id: 'nope' })).text).toContain('"nope"');
-      expect((await call(client, 'slice', { id: 'story-pay-by-card', format: 'xml' })).error).toBe(true);
-      expect((await call(client, 'slice', { id: 'story-pay-by-card', depth: 9 })).error).toBe(true);
+    const brief = await call(client, 'slice', { id: 'story-pay-by-card', graph: 'req' }, true);
+    expect(brief.text.startsWith('# `story-pay-by-card` Pay by card')).toBe(true);
+    expect(brief.text).toContain('`domain:pay-card` Card payment');
+    const json = await call(client, 'slice', { id: 'story-pay-by-card', format: 'json', depth: 1, budget: 400 });
+    expect(json.json).toMatchObject({ graph: 'req', id: 'story-pay-by-card' });
+    expect(json.json.cut.length).toBeGreaterThan(0);
+    expect((await call(client, 'slice', { id: 'nope' })).text).toContain('"nope"');
+    expect((await call(client, 'slice', { id: 'story-pay-by-card', format: 'xml' })).error).toBe(true);
+    expect((await call(client, 'slice', { id: 'story-pay-by-card', depth: 9 })).error).toBe(true);
 
-      const impact = await call(client, 'impact', { id: 'pay-card', graph: 'domain' });
-      expect(impact.json.groups.map((g: any) => `${g.graph}:${g.kind}`)).toContain('req:story');
+    const impact = await call(client, 'impact', { id: 'pay-card', graph: 'domain' });
+    expect(impact.json.groups.map((g: any) => `${g.graph}:${g.kind}`)).toContain('req:story');
 
-      const gaps = await call(client, 'gaps', { graph: 'req' });
-      expect(gaps.json.counts).toMatchObject({ status: 2, uncheckedParts: 1, unplaced: 2 });
-      expect((await call(client, 'gaps', { graph: 'req', scope: 'story-pay-by-card' })).json.scope).toBe('story-pay-by-card');
+    const gaps = await call(client, 'gaps', { graph: 'req' });
+    expect(gaps.json.counts).toMatchObject({ status: 2, uncheckedParts: 1, unplaced: 2 });
+    expect((await call(client, 'gaps', { graph: 'req', scope: 'story-pay-by-card' })).json.scope).toBe('story-pay-by-card');
 
-      const good = await call(client, 'validate', { node: 'id: story-new\nkind: story\nepics: [epic-checkout]\npriority: low\n' });
-      expect(good.json).toEqual({ graph: 'req', valid: true, errors: [], warnings: [] });
-      const bad = await call(client, 'validate', { node: JSON.stringify({ id: 'story-new', kind: 'story', epics: 'epic-checkout', result: 'maybe' }) });
-      expect(bad.json.valid).toBe(false);
-      expect(bad.json.errors.join()).toContain('epics');
+    const good = await call(client, 'validate', { node: 'id: story-new\nkind: story\nepics: [epic-checkout]\npriority: low\n' });
+    expect(good.json).toEqual({ graph: 'req', valid: true, errors: [], warnings: [] });
+    const bad = await call(client, 'validate', { node: JSON.stringify({ id: 'story-new', kind: 'story', epics: 'epic-checkout', result: 'maybe' }) });
+    expect(bad.json.valid).toBe(false);
+    expect(bad.json.errors.join()).toContain('epics');
 
-      const profile = await client.readResource({ uri: 'semspec://domain/profile' });
-      expect(JSON.parse((profile.contents[0] as { text: string }).text).project).toBe('Online retail market');
-      const vocabularies = await client.readResource({ uri: 'semspec://domain/vocabularies' });
-      const vocab = JSON.parse((vocabularies.contents[0] as { text: string }).text);
-      expect(vocab.segment.concepts[0]).toMatchObject({ code: 'retail', label: 'Retail' });
-      expect(Object.keys(vocab)).toContain('status');
-    } finally {
-      await client.close();
-    }
+    const profile = await client.readResource({ uri: 'semspec://domain/profile' });
+    expect(JSON.parse((profile.contents[0] as { text: string }).text).project).toBe('Online retail market');
+    const vocabularies = await client.readResource({ uri: 'semspec://domain/vocabularies' });
+    const vocab = JSON.parse((vocabularies.contents[0] as { text: string }).text);
+    expect(vocab.segment.concepts[0]).toMatchObject({ code: 'retail', label: 'Retail' });
+    expect(Object.keys(vocab)).toContain('status');
   });
 
   it('returns an error that names an unknown id, graph, tool or resource', { timeout: 60000 }, async () => {
-    const client = await connect(['--workspace', workspace]);
-    try {
-      for (const tool of ['get', 'trace', 'impact']) {
-        const r = await call(client, tool, { id: 'nope', direction: 'up' });
-        expect(r.error).toBe(true);
-        expect(r.text).toContain('"nope"');
-      }
-      expect((await call(client, 'walk', { id: 'nope' })).text).toContain('"nope"');
-      expect((await call(client, 'walk', { id: 'story-pay-by-card', depth: 4 })).error).toBe(true);
-      expect((await call(client, 'walk', { id: 'story-pay-by-card', direction: 'up' })).text).toContain('"direction"');
-      expect((await call(client, 'gaps', { scope: 'nope' })).text).toContain('"nope"');
-      expect((await call(client, 'get', { id: 'x', graph: 'zzz' })).text).toContain('Unknown graph "zzz"');
-      expect((await call(client, 'get', {})).text).toContain('"id" is required');
-      expect((await call(client, 'search', {})).text).toContain('"query" is required');
-      expect((await call(client, 'search', { query: 'shop', kinds: ['nope'] })).text).toContain('Unknown kind "nope"');
-      expect((await call(client, 'search', { query: 'shop', kinds: 'shop' })).error).toBe(true);
-      expect((await call(client, 'validate', { node: '[1, 2]' })).error).toBe(true);
-      expect((await call(client, 'get', { id: 'x', limit: 0 })).error).toBe(true);
-      await expect(client.readResource({ uri: 'semspec://req/other' })).rejects.toThrow();
-    } finally {
-      await client.close();
+    const client = shared;
+    for (const tool of ['get', 'trace', 'impact']) {
+      const r = await call(client, tool, { id: 'nope', direction: 'up' });
+      expect(r.error).toBe(true);
+      expect(r.text).toContain('"nope"');
     }
+    expect((await call(client, 'walk', { id: 'nope' })).text).toContain('"nope"');
+    expect((await call(client, 'walk', { id: 'story-pay-by-card', depth: 4 })).error).toBe(true);
+    expect((await call(client, 'walk', { id: 'story-pay-by-card', direction: 'up' })).text).toContain('"direction"');
+    expect((await call(client, 'gaps', { scope: 'nope' })).text).toContain('"nope"');
+    expect((await call(client, 'get', { id: 'x', graph: 'zzz' })).text).toContain('Unknown graph "zzz"');
+    expect((await call(client, 'get', {})).text).toContain('"id" is required');
+    expect((await call(client, 'search', {})).text).toContain('"query" is required');
+    expect((await call(client, 'search', { query: 'shop', kinds: ['nope'] })).text).toContain('Unknown kind "nope"');
+    expect((await call(client, 'search', { query: 'shop', kinds: 'shop' })).error).toBe(true);
+    expect((await call(client, 'validate', { node: '[1, 2]' })).error).toBe(true);
+    expect((await call(client, 'get', { id: 'x', limit: 0 })).error).toBe(true);
+    await expect(client.readResource({ uri: 'semspec://req/other' })).rejects.toThrow();
   });
 
   it('reads the inputs again on each call', { timeout: 60000 }, async () => {
     const dir = mkdtempSync(join(tmpdir(), 'semspec-mcp-'));
     made.push(dir);
     cpSync(join(repo, 'fixtures', 'workspace'), dir, { recursive: true });
+    // Own server: the test changes the files of its own copy of the workspace, so it cannot use the shared server.
     const client = await connect(['--workspace', join(dir, 'workspace.json')]);
     try {
       expect((await call(client, 'get', { id: 'prd-shop' })).json.title).toBe('Shop');
@@ -161,12 +161,45 @@ describe('semspec mcp --workspace', () => {
 
 describe('semspec mcp --graph', () => {
   it('serves 1 graph with the id "graph"', { timeout: 60000 }, async () => {
+    // Own server: the server takes other options (1 graph, not the workspace), so it cannot use the shared server.
     const client = await connect(['--graph', join(repo, 'requirements', 'graph'), '--profile', join(repo, 'requirements', 'profile.yaml')]);
     try {
       expect((await client.listResources()).resources.map((r) => r.uri)).toEqual(['semspec://graph/profile', 'semspec://graph/vocabularies']);
       const g = await call(client, 'get', { id: 'req-mcp-serve' });
       expect(g.json).toMatchObject({ graph: 'graph', kind: 'requirement' });
       expect(g.json.fields.area).toEqual(['cli']);
+    } finally {
+      await client.close();
+    }
+  });
+});
+
+describe('semspec mcp links to outside tools', () => {
+  it('returns links for a node and for each check from 2 profiles', { timeout: 60000 }, async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'semspec-mcp-'));
+    made.push(dir);
+    const entry = (id: string) => ({ id, label: id, graph: join(repo, 'fixtures', id, 'graph.json'), profile: join(repo, 'fixtures', id, 'profile.json') });
+    writeFileSync(join(dir, 'workspace.json'), JSON.stringify({ title: 'Links', graphs: [entry('product'), entry('safety')] }));
+    // Own server: the workspace is made for this test.
+    const client = await connect(['--workspace', join(dir, 'workspace.json')]);
+    try {
+      const story = await call(client, 'get', { graph: 'product', id: 'story-pay-by-card' });
+      expect(story.json.links).toEqual([{ label: 'Tracker', url: 'https://tracker.example.org/items/story-pay-by-card' }]);
+      const part = await call(client, 'get', { graph: 'product', id: 'story-pay-by-card#declined' });
+      const checks = part.json.edges.out.tested;
+      expect(checks[0].links).toEqual([{ label: 'Test report', url: 'https://ci.example.org/report?file=tests%2Fpay.test.ts&test=showsDeclineMessage' }]);
+      // A node with no link has no key.
+      expect((await call(client, 'get', { graph: 'product', id: 'epic-checkout' })).json.links).toBeUndefined();
+
+      const sliced = await call(client, 'slice', { graph: 'product', id: 'story-pay-by-card', format: 'json' });
+      expect(sliced.json.links).toEqual(story.json.links);
+      expect(sliced.json.parts.find((p: any) => p.id === 'story-pay-by-card#declined').checks[0].links[0].label).toBe('Test report');
+
+      const fuse = await call(client, 'slice', { graph: 'safety', id: 'mit-thermal-fuse', format: 'json' });
+      expect(fuse.json.checks[0].links.map((l: any) => l.label)).toEqual(['Document', 'Section']);
+      expect((await call(client, 'slice', { graph: 'safety', id: 'mit-thermal-fuse' }, true)).text).toContain('[Section](https://docs.example.org/documents/FMEA-3#section-4.2)');
+      const hazard = await call(client, 'get', { graph: 'safety', id: 'hz-overheat' });
+      expect(hazard.json.links).toEqual([{ label: 'Hazard log', url: 'https://hazards.example.org/entries/hz-overheat' }]);
     } finally {
       await client.close();
     }

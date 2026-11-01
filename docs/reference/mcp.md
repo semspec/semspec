@@ -109,7 +109,7 @@ Returns 1 node.
 | `id` | Required. The node id. |
 | `graph`, `limit` | As above. |
 
-The answer has `kind`, `title`, `statement`, `lifecycle`, `status` (the own value or the roll-up of the nodes below), `fields`, `parents`, `childCount`, `edges` (`out` and `in`, grouped by edge name, each item with its `note` and `props`), `provenance`, `crossLinks` and `usedBy` (nodes of other graphs that link to this node).
+The answer has `kind`, `title`, `statement`, `lifecycle`, `status` (the own value or the roll-up of the nodes below), `fields`, `parents`, `childCount`, `edges` (`out` and `in`, grouped by edge name, each item with its `note` and `props`), `provenance`, `links` (the links of the node to outside tools, as `{ label, url }`), `crossLinks` and `usedBy` (nodes of other graphs that link to this node). An item of the check edge in `edges.out` has `links` too.
 
 ```json
 {"graph":"req","id":"story-pay-by-card","kind":"story","title":"Pay by card","lifecycle":"planned","status":{"value":"partial","label":"Partial","tone":"warn","own":false},"fields":{"priority":"high"},"parents":[{"id":"epic-checkout","kind":"epic","title":"Checkout"}],"edges":{"out":{"complies":[{"id":"std-card-data","kind":"standard","title":"Card Data Standard Clause 3(a)"}]},"in":{}},"crossLinks":[{"field":"concerns","label":"Concerns","graph":"domain","id":"pay-card","title":"Card payment"}],"usedBy":[]}
@@ -184,6 +184,7 @@ The slice has these sections. A section with no content is left out, except Gaps
 - The node: kind, graph, lifecycle, status, statement, fields and provenance.
 - The path to the root: ids and titles, root first.
 - The parts, each with its status, its checks, or the line `No check.`
+- The links of the node to outside tools, as Markdown links. In the JSON, `links` holds `{ label, url }`. Each check in the JSON can have `links` too.
 - The checks of the node itself.
 - The linked nodes: the nodes of a linked kind that the node links to or that link to it, and the nodes of a refs field. Each has its edge label, its note, its edge properties and its statement. The source, date, agent and note of an edge are provenance and are not shown.
 - The cross links into other graphs, each with the title and the statement of the target.

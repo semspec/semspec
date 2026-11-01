@@ -20,6 +20,7 @@ interface Names {
   conditionField: string;
   lifecycleField: string;
   planned: string;
+  orderField: string;
   areaField: string;
   good: string;
   warn: string;
@@ -28,11 +29,11 @@ interface Names {
 
 const SHOP: Names = {
   feature: 'feature', features: 'features', capability: 'capability', capabilities: 'capabilities', requirement: 'requirement', requirements: 'requirements',
-  condition: 'condition', conditionField: 'acceptance', lifecycleField: 'state', planned: 'draft', areaField: 'area', good: 'verified', warn: 'partial', bad: 'open',
+  condition: 'condition', conditionField: 'acceptance', lifecycleField: 'state', planned: 'draft', orderField: 'order', areaField: 'area', good: 'verified', warn: 'partial', bad: 'open',
 };
 const HARBOUR: Names = {
   feature: 'epic', features: 'epics', capability: 'theme', capabilities: 'themes', requirement: 'story', requirements: 'stories',
-  condition: 'criterion', conditionField: 'criteria', lifecycleField: 'phase', planned: 'proposed', areaField: 'scope', good: 'pass', warn: 'mixed', bad: 'fail',
+  condition: 'criterion', conditionField: 'criteria', lifecycleField: 'phase', planned: 'proposed', orderField: 'rank', areaField: 'scope', good: 'pass', warn: 'mixed', bad: 'fail',
 };
 
 const kind = (id: string, plural: string, role: string, parents?: string[][]) => ({
@@ -77,14 +78,16 @@ function graphOf(n: Names) {
   const unit = (name: string) => [{ type: 'unit', file: 'a.test.ts', name }];
   return {
     nodes: [
-      { id: 'f-zeta', kind: n.feature, title: 'Zeta', statement: 'Zeta is planned.', [n.lifecycleField]: n.planned },
-      { id: 'f-alpha', kind: n.feature, title: 'Alpha', statement: 'Alpha is planned.', [n.lifecycleField]: n.planned },
-      { id: 'f-mid', kind: n.feature, title: 'Mid', statement: 'Mid has shipped.' },
-      { id: 'f-beta', kind: n.feature, title: 'Beta', statement: 'Beta has shipped.' },
+      { id: 'f-zeta', kind: n.feature, title: 'Zeta', statement: 'Zeta is planned.', [n.lifecycleField]: n.planned, [n.orderField]: 1 },
+      { id: 'f-alpha', kind: n.feature, title: 'Alpha', statement: 'Alpha is planned.', [n.lifecycleField]: n.planned, [n.orderField]: 4 },
+      { id: 'f-mid', kind: n.feature, title: 'Mid', statement: 'Mid has shipped.', [n.orderField]: 3 },
+      { id: 'f-beta', kind: n.feature, title: 'Beta', statement: 'Beta has shipped.', [n.orderField]: 2 },
       { id: 'f-old', kind: n.feature, title: 'Old', statement: 'Old is retired.', [n.lifecycleField]: 'retired' },
       { id: 'c-alpha', kind: n.capability, title: 'Alpha capability', [n.features]: ['f-alpha'] },
       { id: 'c-mid', kind: n.capability, title: 'Mid capability', [n.features]: ['f-mid'] },
       { id: 'c-beta', kind: n.capability, title: 'Beta capability', [n.features]: ['f-beta'] },
+      { id: 'c-later', kind: n.capability, title: 'Later capability', statement: 'Later is planned.', [n.lifecycleField]: n.planned, [n.features]: ['f-beta'] },
+      { id: 'r-later', kind: n.requirement, title: 'Later', statement: 'Later holds.', [n.capabilities]: ['c-later'] },
       {
         id: 'r-one', kind: n.requirement, title: 'One', statement: 'One holds.', [n.capabilities]: ['c-alpha'], [n.areaField]: ['core', 'other'],
         [n.conditionField]: [
@@ -104,17 +107,23 @@ function graphOf(n: Names) {
 }
 
 describe.each([['shop', SHOP], ['harbour', HARBOUR]] as const)('roadmap of the %s profile', (_name, names) => {
-  const options = { featureKind: names.feature, requirementKind: names.requirement, conditionKind: names.condition, plannedState: names.planned };
+  const options = { featureKind: names.feature, requirementKind: names.requirement, conditionKind: names.condition, plannedState: names.planned, orderField: names.orderField, capabilityKind: names.capability };
   const index = buildIndex(buildModel(graphOf(names), profileOf(names)));
   const data = buildRoadmap(index, options);
 
-  it('splits the features into planned and shipped, sorted by title, and leaves out a retired feature', () => {
-    expect(data.planned.map((f) => f.title)).toEqual(['Alpha', 'Zeta']);
+  it('splits the features into planned and shipped, sorted by the order field, and leaves out a retired feature', () => {
+    // The planned capability of the shipped feature Beta sorts with the order of Beta.
+    expect(data.planned.map((f) => f.title)).toEqual(['Zeta', 'Later capability', 'Alpha']);
     expect(data.shipped.map((f) => f.title)).toEqual(['Beta', 'Mid']);
   });
 
+  it('names the kind of a planned entry and the feature of a planned capability', () => {
+    expect(data.planned.map((f) => [f.kind, f.feature])).toEqual([[names.feature, null], [names.capability, 'Beta'], [names.feature, null]]);
+    expect(data.planned[1].requirements.map((r) => r.id)).toEqual(['r-later']);
+  });
+
   it('lists the requirements of a planned feature through its capabilities, with area labels and conditions', () => {
-    const alpha = data.planned[0];
+    const alpha = data.planned[2];
     expect(alpha.requirements.map((r) => r.title)).toEqual(['One', 'Two']);
     // A value with a label shows the label. A value with no label shows as it is.
     expect(alpha.requirements[0].areas).toEqual(['Core library', 'other']);
@@ -124,20 +133,20 @@ describe.each([['shop', SHOP], ['harbour', HARBOUR]] as const)('roadmap of the %
       { id: 'r-one#second', text: 'The second condition.', status: { value: names.bad, label: 'Failed', tone: 'bad' } },
     ]);
     expect(alpha.requirements[1].conditions[1].status).toBeNull();
-    expect(data.planned[1].requirements).toEqual([]);
+    expect(data.planned[0].requirements).toEqual([]);
   });
 
   it('counts the verified conditions and all conditions below a feature', () => {
-    expect(data.planned[0]).toMatchObject({ verified: 1, total: 4 });
-    expect(data.planned[1]).toMatchObject({ verified: 0, total: 0 });
+    expect(data.planned[2]).toMatchObject({ verified: 1, total: 4 });
+    expect(data.planned[0]).toMatchObject({ verified: 0, total: 0 });
     expect(data.shipped.map((f) => [f.title, f.verified, f.total])).toEqual([['Beta', 1, 2], ['Mid', 2, 2]]);
   });
 
   it('takes the verified count from the status roll-up of the core module', () => {
     const rolled = statusOf(index, 'f-alpha');
-    expect(rolled.counts[names.good]).toBe(data.planned[0].verified);
+    expect(rolled.counts[names.good]).toBe(data.planned[2].verified);
     // The roll-up counts only the conditions that have a status.
-    expect(rolled.total).toBe(data.planned[0].total - 1);
+    expect(rolled.total).toBe(data.planned[2].total - 1);
     expect(statusOf(index, 'f-mid')).toMatchObject({ value: names.good, tone: 'good' });
   });
 
@@ -152,15 +161,28 @@ describe('roadmap of the requirements of this repository', () => {
   const { graph, profile } = loadInputs(`${root}requirements/graph`, `${root}requirements/profile.yaml`);
   const data = buildRoadmap(buildIndex(buildModel(graph, profile)));
 
-  it('lists every feature with state draft as planned', () => {
+  it('gives every feature a different number in the order field', () => {
     const dir = `${root}requirements/graph/feature/`;
-    const draft = readdirSync(dir)
+    const orders = readdirSync(dir)
       .filter((f) => f.endsWith('.yaml'))
-      .map((f) => parse(readFileSync(dir + f, 'utf8')) as { id: string; state?: string })
-      .filter((f) => f.state === 'draft')
-      .map((f) => f.id)
-      .sort();
-    expect(data.planned.map((f) => f.id).sort()).toEqual(draft);
+      .map((f) => (parse(readFileSync(dir + f, 'utf8')) as { order?: number }).order);
+    expect(orders.every((o) => Number.isInteger(o))).toBe(true);
+    expect(new Set(orders).size).toBe(orders.length);
+    expect(data.shipped.map((f) => f.id)).toEqual(
+      readdirSync(dir).filter((f) => f.endsWith('.yaml')).map((f) => parse(readFileSync(dir + f, 'utf8')) as { id: string; order: number }).sort((a, b) => a.order - b.order).map((f) => f.id),
+    );
+  });
+
+  it('lists every feature and every capability with state draft as planned', () => {
+    const ids = (kind: string) => {
+      const dir = `${root}requirements/graph/${kind}/`;
+      return readdirSync(dir)
+        .filter((f) => f.endsWith('.yaml'))
+        .map((f) => parse(readFileSync(dir + f, 'utf8')) as { id: string; state?: string })
+        .filter((f) => f.state === 'draft')
+        .map((f) => f.id);
+    };
+    expect(data.planned.map((f) => f.id).sort()).toEqual([...ids('feature'), ...ids('capability')].sort());
     // No feature is in both lists.
     const shipped = new Set(data.shipped.map((f) => f.id));
     expect(data.planned.some((f) => shipped.has(f.id))).toBe(false);

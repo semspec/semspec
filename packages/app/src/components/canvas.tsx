@@ -85,7 +85,7 @@ function PillNode({ data }: NodeProps<Node<NodeData>>) {
       )}
       style={status ? { borderColor: toneColor(status.tone), borderWidth: 2 } : { borderColor: `color-mix(in oklab, ${kindColor(summary.kind)} 55%, var(--border))` }}
     >
-      <KindDot kind={summary.kind} className="size-2.5" />
+      <KindDot kind={summary.kind} className="size-2.5" neutral={!!status} />
       <span className={cn('min-w-0 flex-1 truncate', summary.muted && 'line-through')}>{summary.title}</span>
       {!!status?.total && (
         <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
@@ -131,7 +131,7 @@ function ContainerNode({ data }: NodeProps<Node<NodeData>>) {
       style={{ borderColor: `color-mix(in oklab, ${color} 60%, var(--border))`, background: `color-mix(in oklab, ${color} 6%, transparent)` }}
     >
       <div className="flex h-8 items-center gap-2 px-3 text-[13px] font-medium">
-        <KindDot kind={summary.kind} className="size-2.5" />
+        <KindDot kind={summary.kind} className="size-2.5" neutral={!!status} />
         <span className={cn('min-w-0 flex-1 truncate', summary.muted && 'line-through')}>{summary.title}</span>
         {!!status?.total && (
           <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
@@ -441,7 +441,10 @@ function Inner({ v, mode, center, onCentered }: { v: Viewer; mode: Mode; center?
     >
       <Background gap={20} size={1} className="opacity-60" />
       <Controls showInteractive={false} position="bottom-left" className="mb-9" />
-      {!phone && <MiniMap pannable zoomable position="bottom-right" nodeColor={(n) => kindColor((n.data as NodeData).kind)} nodeStrokeWidth={0} nodeBorderRadius={4} className="rounded-md! border! bg-card!" maskColor="color-mix(in oklab, var(--foreground) 8%, transparent)" />}
+      {!phone && <MiniMap pannable zoomable position="bottom-right" nodeColor={(n) => {
+          const d = n.data as NodeData;
+          return d.status ? toneColor(d.status.tone) : kindColor(d.kind);
+        }} nodeStrokeWidth={0} nodeBorderRadius={4} className="rounded-md! border! bg-card!" maskColor="color-mix(in oklab, var(--foreground) 8%, transparent)" />}
       <Panel position="top-left" className="flex items-center gap-1.5 rounded-lg border bg-card/95 p-1 shadow-xs max-md:max-w-[calc(100%-1.5rem)] max-md:flex-wrap">
         {tool('Re-layout the canvas', <LayoutGrid />, v.relayout)}
         {tool('Fit the canvas', <Maximize2 />, () => fit(true))}
@@ -475,12 +478,19 @@ function Inner({ v, mode, center, onCentered }: { v: Viewer; mode: Mode; center?
           </div>
         )}
         <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 rounded-lg border bg-card/95 px-2.5 py-1 text-[11px] shadow-xs max-md:hidden">
-          {kinds.map((k) => (
-            <span key={k} className="inline-flex items-center gap-1.5">
-              <KindDot kind={k} />
-              {Core.KIND_LABEL[k]}
-            </span>
-          ))}
+          {v.statusColour && Core.profile.status
+            ? Core.profile.status.values.map((x) => (
+                <span key={x.value} className="inline-flex items-center gap-1.5">
+                  <StatusDot tone={x.tone} />
+                  {x.label}
+                </span>
+              ))
+            : kinds.map((k) => (
+                <span key={k} className="inline-flex items-center gap-1.5">
+                  <KindDot kind={k} />
+                  {Core.KIND_LABEL[k]}
+                </span>
+              ))}
         </div>
       </Panel>
     </ReactFlow>

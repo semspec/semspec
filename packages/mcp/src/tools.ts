@@ -133,7 +133,7 @@ export const TOOLS: Tool[] = [
   },
   {
     name: 'get',
-    description: 'Return 1 node: its kind, title, statement, fields, lifecycle and status, its edges in and out grouped by edge name, its provenance, and its cross links out and in.',
+    description: 'Return 1 node: its kind, title, statement, fields, lifecycle and status, its edges in and out grouped by edge name, its provenance, its cross links out and in, and its links to outside tools (`links`, for the node and for each check in its edges).',
     inputSchema: { type: 'object', properties: { id: { type: 'string', description: 'The id of the node.' }, graph: graphProp, limit: limitProp }, required: ['id'], additionalProperties: false },
     run: (loaded, graphs, args) => nodeDetail(graphs, text(args, 'graph', false), text(args, 'id', true)!, whole(args, 'limit', DEFAULT_LIMIT, MAX_LIMIT)),
   },
@@ -195,7 +195,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'slice',
     description:
-      'Return the brief for a task on 1 node: the node with its fields, lifecycle, status and provenance, the path to the root, the parts with their checks, the linked nodes (decisions, rules, standards) with notes and edge properties, the cross links into other graphs with their definitions, the definitions of the coded values it uses, its gaps, its missing deliverables, and the nodes below it. Call it at the start of a task. The text stays near "budget" characters and names what it cut.',
+      'Return the brief for a task on 1 node: the node with its fields, lifecycle, status and provenance, the path to the root, the parts with their checks, the links of the node and of each check to outside tools (`links`), the linked nodes (decisions, rules, standards) with notes and edge properties, the cross links into other graphs with their definitions, the definitions of the coded values it uses, its gaps, its missing deliverables, and the nodes below it. Call it at the start of a task. The text stays near "budget" characters and names what it cut.',
     inputSchema: {
       type: 'object',
       properties: {

@@ -1,6 +1,0 @@
-id: feat-export
-kind: feature
-title: Export and delivery
-statement: A user exports the table to CSV, builds 1 HTML file or serves the page.
-products:
-  - prd-semspec

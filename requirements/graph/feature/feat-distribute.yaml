@@ -1,0 +1,8 @@
+id: feat-distribute
+kind: feature
+title: Distribute
+order: 6
+statement: A user installs Semspec as 1 command line tool. A developer uses the core library on its own. The website shows the roadmap and the docs.
+tagline: "Install Semspec as 1 command line tool, or use the core library on its own. The website builds its roadmap and docs from this repository."
+products:
+  - prd-semspec

@@ -1,6 +1,0 @@
-id: feat-profile
-kind: feature
-title: Profile and validation
-statement: A profile defines the kinds, the edges and the fields. Semspec checks both inputs and writes schemas of the kinds.
-products:
-  - prd-semspec

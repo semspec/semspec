@@ -196,14 +196,40 @@ describe('walk', () => {
 });
 
 describe('summary', () => {
+  it('names the coverage chips with the check kind and never with a status word', () => {
+    const chipsOf = (index: typeof pIndex, kind: string) =>
+      index.model.nodes.filter((n) => n.kind === kind).flatMap((n) => summaryOf(index, n).chips.map((c) => c.text));
+    const product = chipsOf(pIndex, 'scenario');
+    expect(product.some((t) => /^\d+ tests?$/.test(t))).toBe(true);
+    expect(product).toContain('no test');
+    const safety = chipsOf(sIndex, 'argument');
+    expect(safety.some((t) => /^\d+ evidence$/.test(t))).toBe(true);
+    const words = [...pIndex.profile.status!.values, ...sIndex.profile.status!.values].map((v) => v.label.toLowerCase());
+    for (const t of [...product, ...safety, ...chipsOf(pIndex, 'story'), ...chipsOf(sIndex, 'subgoal')]) {
+      if (/ of \d+ with | tests?$|evidence$|^no /.test(t)) words.forEach((w) => expect(t).not.toContain(w));
+    }
+  });
+  const withoutChecks = (f: { graph: Graph; profile: Profile }) => {
+    const { checks: _drop, ...profile } = f.profile as Profile & { checks?: unknown };
+    return buildIndex(buildModel(f.graph, profile as Profile));
+  };
+  const noCheckChips = (f: { graph: Graph; profile: Profile }) => {
+    const index = withoutChecks(f);
+    const texts = index.model.nodes.flatMap((n) => summaryOf(index, n).chips.map((c) => c.text));
+    expect(texts.length).toBeGreaterThan(0);
+    texts.forEach((t) => expect(t).not.toContain('__no_check'));
+    texts.forEach((t) => expect(t).not.toMatch(/ of \d+ with |^no /));
+  };
+  it('shows no coverage chip when the profile has no checks (product)', () => noCheckChips(product));
+  it('shows no coverage chip when the profile has no checks (safety)', () => noCheckChips(safety));
   it('shows the chips that the profile names for each kind', () => {
     const s = summaryOf(pIndex, pIndex.byId.get('story-pay-by-card')!);
-    expect(s.chips.map((c) => c.text)).toEqual(['HIGH', 'Planned', 'r1', '1 of 2 verified']);
+    expect(s.chips.map((c) => c.text)).toEqual(['HIGH', 'Planned', 'r1', '1 of 2 with tests']);
     const dropped = summaryOf(pIndex, pIndex.byId.get('story-loose-child')!);
     expect(dropped.muted).toBe(true);
     expect(dropped.chips.find((c) => c.text === 'Dropped')?.struck).toBe(true);
     expect(summaryOf(sIndex, sIndex.byId.get('hz-overheat')!).chips.map((c) => c.text)).toEqual(['critical']);
-    expect(summaryOf(sIndex, sIndex.byId.get('sg-detect-overheat')!).chips.map((c) => c.text)).toEqual(['open', '1 of 2 verified']);
+    expect(summaryOf(sIndex, sIndex.byId.get('sg-detect-overheat')!).chips.map((c) => c.text)).toEqual(['open', '1 of 2 with evidence']);
   });
 });
 
@@ -696,4 +722,55 @@ describe('a field that is an embedded field and a cross link field', () => {
     const groups = model.nodes.filter((n) => n.kind === e.kind).map((n) => n.id);
     expect(model.crossLinks.filter((l) => groups.includes(l.s))).toEqual([]);
   });
+});
+
+describe('the Lifecycle facet', () => {
+  const none = { q: '', kinds: [], lifecycles: [], deliveries: [], modules: [], statuses: [] };
+  const roleOf = (index: typeof pIndex, kind: string) => index.profile.kinds.find((k) => k.id === kind)?.role;
+  // The titles stay literal, because the requirements link tests by their exact title.
+  const ownOf = (index: typeof pIndex) => (id: string) => ['part', 'check'].includes(roleOf(index, index.byId.get(id)!.kind) ?? '');
+  const countsOnlyLifecycleKinds = (index: typeof pIndex) => {
+    const all = index.model.nodes.map((n) => n.id);
+    const own = ownOf(index);
+    const counts = facetCounts(index, all, none, 'lifecycles');
+    expect(own(all.find(own)!)).toBe(true);
+    // Parts and checks never count as None.
+    expect(counts.get('') ?? 0).toBe(all.filter((id) => !own(id) && index.byId.get(id)!.lifecycle === '').length);
+    // The count of a value is the number of nodes that the filter returns for it.
+    counts.forEach((count, value) => expect(count).toBe(applyFilters(index, all, { ...none, lifecycles: [value] }).length - (value === '' ? applyFilters(index, all, { ...none, lifecycles: [value] }).filter(own).length : 0)));
+  };
+  const optionsStay = (index: typeof pIndex) => {
+    const all = index.model.nodes.map((n) => n.id);
+    const ownKinds = index.profile.kinds.filter((k) => k.role === 'part' || k.role === 'check').map((k) => k.id);
+    expect(ownKinds.length).toBeGreaterThan(0);
+    const only = { ...none, kinds: ownKinds };
+    expect(applyFilters(index, all, only).length).toBeGreaterThan(0);
+    const counts = facetCounts(index, all, only, 'lifecycles');
+    expect(counts.size).toBeGreaterThan(0);
+    expect(counts.has('')).toBe(false);
+    counts.forEach((count, value) => expect(count).toBe(applyFilters(index, all, { ...only, lifecycles: [value] }).length));
+  };
+  const keepsPartsOfMatchingOwner = (index: typeof pIndex) => {
+    const all = index.model.nodes.map((n) => n.id);
+    const own = ownOf(index);
+    {
+      const owner = index.model.nodes.find((n) => n.cov && n.cov.parts > 0)!;
+      const hit = applyFilters(index, all, { ...none, lifecycles: [owner.lifecycle] });
+      const partIds = all.filter((id) => index.byId.get(id)!.parents.includes(owner.id));
+      expect(partIds.length).toBeGreaterThan(0);
+      partIds.forEach((id) => expect(hit).toContain(id));
+      const checkIds = partIds.flatMap((id) => (index.out.get(id) ?? []).map((e) => e.t)).filter(own);
+      expect(checkIds.length).toBeGreaterThan(0);
+      checkIds.forEach((id) => expect(hit).toContain(id));
+      // A value that no owner has hides the parts and checks too.
+      const other = applyFilters(index, all, { ...none, lifecycles: ['no-such-state'] });
+      expect(other).toEqual([]);
+    }
+  };
+  it('counts only the nodes of kinds that have a lifecycle (product)', () => countsOnlyLifecycleKinds(pIndex));
+  it('counts only the nodes of kinds that have a lifecycle (safety)', () => countsOnlyLifecycleKinds(sIndex));
+  it('keeps the Lifecycle options when only parts or checks remain (product)', () => optionsStay(pIndex));
+  it('keeps the Lifecycle options when only parts or checks remain (safety)', () => optionsStay(sIndex));
+  it('keeps the parts and checks of an owner that matches (product)', () => keepsPartsOfMatchingOwner(pIndex));
+  it('keeps the parts and checks of an owner that matches (safety)', () => keepsPartsOfMatchingOwner(sIndex));
 });

@@ -243,7 +243,7 @@ process.stdin.on('end', () => {
     setPermissions({ command: true });
     const dir = temp();
     writeFileSync(join(dir, 'slow.mjs'), `setTimeout(() => {}, 60000);`);
-    await expect(createEmbedder({ provider: 'command', model: 'm', command: [process.execPath, 'slow.mjs'] }, { cwd: dir, timeoutMs: 300 })(['x'])).rejects.toThrow('no answer');
+    await expect(createEmbedder({ provider: 'command', model: 'm', command: [process.execPath, 'slow.mjs'] }, { cwd: dir, timeoutMs: 100 })(['x'])).rejects.toThrow('no answer');
   });
 
   it('never put the API key in an error', async () => {

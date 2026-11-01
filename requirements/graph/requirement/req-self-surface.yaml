@@ -1,0 +1,20 @@
+id: req-self-surface
+kind: requirement
+title: Name every user-visible item in a requirement
+state: draft
+priority: now
+statement: Every user-visible surface item has a requirement that names it.
+capabilities:
+  - cap-self-check
+area:
+  - repository
+acceptance:
+  - id: inventory
+    text: "An inventory script lists the CLI commands and flags, the MCP tools and resources, the profile keys, the site pages and the controls of the app by their accessible names."
+    status: open
+  - id: coverage
+    text: "For each listed item, the inventory names the requirement that covers it."
+    status: open
+  - id: finding
+    text: "An item with no covering requirement is a finding."
+    status: open

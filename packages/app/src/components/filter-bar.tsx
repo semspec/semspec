@@ -72,6 +72,7 @@ export function FilterBar({ v }: { v: Viewer }) {
   const { index, filters } = v;
   // The group facet is named by the profile. A profile with no group kind has no group facet.
   const group = v.model.profile.facets;
+  // A built-in facet shows only when the profile defines its field: the lifecycle field for Lifecycle, `fields.delivery` for Delivery.
   // The status facet is named by the profile too.
   const status = v.model.profile.status;
   // The marker facet exists when the profile names a marker.
@@ -79,7 +80,7 @@ export function FilterBar({ v }: { v: Viewer }) {
   // The profile can add a filter for any list field or text field.
   const fieldFilters = v.model.profile.fieldFilters ?? [];
   const FACETS: { key: FacetKey; label: string }[] = [
-    ...BASE_FACETS.filter((f) => (f.key !== 'modules' || group) && (f.key !== 'statuses' || status) && (f.key !== 'markers' || provenance?.marker)).map((f) =>
+    ...BASE_FACETS.filter((f) => (f.key !== 'lifecycles' || v.model.profile.lifecycle?.field) && (f.key !== 'deliveries' || v.model.profile.fields.delivery) && (f.key !== 'modules' || group) && (f.key !== 'statuses' || status) && (f.key !== 'markers' || provenance?.marker)).map((f) =>
       f.key === 'modules' && group ? { ...f, label: group.groupLabel } : f.key === 'statuses' && status ? { ...f, label: status.label } : f.key === 'markers' ? { ...f, label: Core.provenanceLabel() } : f,
     ),
     ...fieldFilters.map((f) => ({ key: `field:${f.field}` as FacetKey, label: f.label })),

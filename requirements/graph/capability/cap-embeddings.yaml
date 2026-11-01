@@ -3,4 +3,4 @@ kind: capability
 title: Optional embeddings
 statement: A user turns on vector search next to keyword search, with a model that the user chooses.
 features:
-  - feat-navigate
+  - feat-harness

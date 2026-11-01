@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The Semspec Authors
+name: Version
+
+# After a merge to master, collect the open changesets into 1 version pull request.
+# The workflow has no publish input, so it never makes a tag and never publishes.
+# It commits through the GitHub API, so the commits are verified.
+on:
+  push:
+    branches: [master]
+
+concurrency:
+  group: version
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  version:
+    name: Version Packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          version-script: npm run version
+          commit-message: Version Packages
+          pr-title: Version Packages
+          create-github-releases: false
+          push-git-tags: false
+          push-with-git-cli: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

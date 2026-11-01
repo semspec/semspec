@@ -1,0 +1,38 @@
+id: req-signoff-signature
+kind: requirement
+title: Sign each sign-off with the key of the person
+state: draft
+priority: next
+statement: "Each sign-off carries a signature of the fingerprints that the person checked, made with a key that the reviewers file registers for that person."
+capabilities:
+  - cap-signoff
+area:
+  - app
+acceptance:
+  - id: signed
+    text: "A sign-off holds a signature over a message that names the signed-off nodes and their fingerprints, and the check verifies it with the public key of the reviewer."
+    status: open
+  - id: methods
+    text: "A reviewer can sign with more than 1 method, for example an SSH signing key as git uses or a passkey in the browser. The reviewers file records the method and the public key of each key, and no method is tied to 1 platform."
+    status: open
+  - id: presence
+    text: "The profile can require keys whose use needs an action of the person at each signature, and the check refuses a sign-off made with a key that the reviewers file does not mark so."
+    status: open
+  - id: reviewers
+    text: "A person registers a key once, and the public key goes into the reviewers file with the name of the person. A person may register more than 1 key."
+    status: open
+  - id: repo-trust
+    text: "The repository is the trust anchor: a reviewers entry counts once it is merged, and CODEOWNERS makes a change of the reviewers file need the approval of a maintainer."
+    status: open
+  - id: revocation
+    text: "A reviewers entry can be marked revoked with a date. A sign-off that a revoked key signed counts only if the commit that added it is older than the revocation."
+    status: open
+  - id: record
+    text: "The local server writes the sign-offs file with the fingerprint, the reviewer, the time, the note and the signature of each signed-off node, and writes nothing without a valid signature."
+    status: open
+  - id: local-only
+    text: "The local server takes Review writes only from the page on the same machine, and refuses a write with no valid signature."
+    status: open
+  - id: no-agent-path
+    text: "The MCP server and the command line can read the sign-off state, and neither can write a sign-off."
+    status: open

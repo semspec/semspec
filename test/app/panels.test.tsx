@@ -231,3 +231,31 @@ describe('the filters', () => {
     expect(options.find((o) => o.textContent!.startsWith('Medium'))!.closest('[cmdk-group]')).not.toBe(group);
   });
 });
+
+describe('the built-in facets', () => {
+  const withoutDelivery = (profile: any) => {
+    delete profile.fields.delivery;
+    delete profile.fields.level;
+  };
+  // The titles stay literal, because the requirements link tests by their exact title.
+  const hides = async (fixture: 'product' | 'safety', scope: string) => {
+    renderApp(fixture, { edit: withoutDelivery });
+    expect(screen.queryByRole('button', { name: 'Filter by delivery' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Filter by lifecycle' })).toBeTruthy();
+    await pickInTree(scope);
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'Table' }));
+    expect(tableHeads()).not.toContain('Delivery');
+    expect(tableHeads()).not.toContain('Level');
+  };
+  const shows = async (fixture: 'product' | 'safety', scope: string) => {
+    renderApp(fixture);
+    expect(screen.getByRole('button', { name: 'Filter by delivery' })).toBeTruthy();
+    await pickInTree(scope);
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'Table' }));
+    expect(tableHeads()).toContain('Delivery');
+  };
+  it('hides the Delivery filter and column when the profile has no delivery field (product)', () => hides('product', 'epic-checkout'));
+  it('hides the Delivery filter and column when the profile has no delivery field (safety)', () => hides('safety', 'g-safe-operation'));
+  it('shows the Delivery filter and column when the profile has the field (product)', () => shows('product', 'epic-checkout'));
+  it('shows the Delivery filter and column when the profile has the field (safety)', () => shows('safety', 'g-safe-operation'));
+});

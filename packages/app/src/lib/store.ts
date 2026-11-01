@@ -183,6 +183,8 @@ function cleanFilters(raw: unknown, index: Index): Filters {
   const valid = (key: string) => new Set(Core.facetCounts(index, all, EMPTY_FILTERS, key).keys());
   const out: Filters = { ...EMPTY_FILTERS, q: typeof raw.q === 'string' ? raw.q : '', fields: {} };
   for (const key of ['kinds', 'lifecycles', 'deliveries', 'modules', 'statuses', 'markers'] as const) {
+    // A facet that the profile does not define keeps no value.
+    if ((key === 'deliveries' && !index.profile.fields.delivery) || (key === 'lifecycles' && !index.profile.lifecycle?.field)) continue;
     const ok = valid(key);
     out[key] = strings(raw[key]).filter((v) => ok.has(v));
   }

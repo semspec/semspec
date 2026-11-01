@@ -1,0 +1,20 @@
+id: req-self-conditions
+kind: requirement
+title: Keep the status of the conditions honest
+state: draft
+priority: now
+statement: The status of each condition, requirement and capability matches the work that is done.
+capabilities:
+  - cap-self-check
+area:
+  - repository
+acceptance:
+  - id: status
+    text: "Every condition is verified, or partial with a note."
+    status: open
+  - id: draft-verified
+    text: "A requirement with state draft has at least 1 condition that is not verified."
+    status: open
+  - id: stale-priority
+    text: "A capability or requirement whose conditions are all verified has no priority."
+    status: open

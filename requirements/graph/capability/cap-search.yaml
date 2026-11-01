@@ -3,4 +3,4 @@ kind: capability
 title: Search
 statement: Semspec ranks nodes for a text query.
 features:
-  - feat-navigate
+  - feat-harness

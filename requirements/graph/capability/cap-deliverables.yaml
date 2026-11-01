@@ -3,4 +3,4 @@ kind: capability
 title: Deliverables
 statement: The profile lists the deliverables of a kind.
 features:
-  - feat-obligations
+  - feat-harness

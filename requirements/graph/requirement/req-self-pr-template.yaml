@@ -1,0 +1,23 @@
+id: req-self-pr-template
+kind: requirement
+title: Describe each pull request with its requirements and gates
+state: draft
+priority: now
+statement: "The pull request template asks for the affected part of the requirements graph, the acceptance conditions with their tests, the surface changes, the dependency changes and the gate results."
+capabilities:
+  - cap-self-check
+area:
+  - repository
+acceptance:
+  - id: sections
+    text: "The template has the sections What changed, Requirement graph, Acceptance conditions, Surface changes, Dependencies, Breaking changes and Gates."
+    status: open
+  - id: graph-diagram
+    text: "The Requirement graph section shows only the nodes that the pull request adds, changes or removes, and their direct neighbours, in small Mermaid diagrams with 1 shape for each node kind and 1 colour class for each kind of change."
+    status: open
+  - id: conditions-table
+    text: "The Acceptance conditions section lists each condition that the pull request delivers, verbatim, with the test that proves it and the result."
+    status: open
+  - id: gates-sha
+    text: "Each gate line names the gate, the result and the head commit of the pull request, or the reason why the gate did not run."
+    status: open

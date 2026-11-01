@@ -240,7 +240,27 @@ type FacetKey = 'kinds' | 'lifecycles' | 'deliveries' | 'modules' | 'statuses' |
 const NODE_FIELD = { kinds: 'kind', lifecycles: 'lifecycle', deliveries: 'delivery' } as const;
 const FACET_KEYS: FacetKey[] = ['kinds', 'lifecycles', 'deliveries', 'modules', 'statuses', 'markers'];
 
+// A node has a lifecycle when its kind is a hierarchy or linked kind. Parts and checks have none.
+const hasLifecycle = (index: Index, n: VNode): boolean => {
+  const role = kindOf(index.profile, n.kind)?.role;
+  return role !== 'part' && role !== 'check';
+};
+
+// The lifecycle values of the owners of a part or a check. A check of a part has the owner of the part.
+// The Lifecycle filter keeps a part or a check when 1 owner matches, so a filtered-out owner hides its parts and checks.
+function ownerLifecycles(index: Index, n: VNode, seen = new Set<string>()): string[] {
+  if (hasLifecycle(index, n)) return [n.lifecycle];
+  if (seen.has(n.id)) return [];
+  seen.add(n.id);
+  const owners = n.parents.length ? n.parents : (index.inc.get(n.id) ?? []).map((e) => e.s);
+  return owners.flatMap((id) => {
+    const o = index.byId.get(id);
+    return o ? ownerLifecycles(index, o, seen) : [];
+  });
+}
+
 function facetValues(index: Index, n: VNode, key: string, f: Filters, skip?: string): string[] {
+  if (key === 'lifecycles' && !hasLifecycle(index, n)) return [];
   if (key.startsWith('field:')) return Array.from(fieldValues(index, key.slice(6), n.id));
   if (key === 'modules') return Array.from(groupsOf(index, n.id));
   if (key === 'markers') return [markerOf(index.profile.provenance, n.d)];
@@ -267,7 +287,8 @@ export function applyFilters(index: Index, ids: Iterable<string>, f: Filters, sk
     for (const key of FACET_KEYS) {
       const list = f[key];
       if (key === skip || !list?.length) continue;
-      if (!facetValues(index, n, key, f, skip).some((v) => list.includes(v))) {
+      const values = key === 'lifecycles' && !hasLifecycle(index, n) ? ownerLifecycles(index, n) : facetValues(index, n, key, f, skip);
+      if (!values.some((v) => list.includes(v))) {
         ok = false;
         break;
       }
@@ -286,10 +307,14 @@ export function applyFilters(index: Index, ids: Iterable<string>, f: Filters, sk
 }
 
 // The number of nodes for each value of 1 facet, with every other filter applied.
+// For the Lifecycle facet, a part or a check counts under the lifecycle of each of its owners, as the filter keeps it for them.
+// It never counts as None. So the count of a value is the number of nodes that the filter returns for it, and the options stay when only parts or checks remain.
 export function facetCounts(index: Index, ids: Iterable<string>, f: Filters, key: string): Map<string, number> {
   const counts = new Map<string, number>();
   for (const id of applyFilters(index, ids, f, key)) {
-    for (const v of facetValues(index, index.byId.get(id)!, key, f, key)) counts.set(v, (counts.get(v) ?? 0) + 1);
+    const n = index.byId.get(id)!;
+    const values = key === 'lifecycles' && !hasLifecycle(index, n) ? Array.from(new Set(ownerLifecycles(index, n))).filter(Boolean) : facetValues(index, n, key, f, key);
+    for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
   }
   return counts;
 }
@@ -420,6 +445,8 @@ export function summaryOf(index: Index, n: VNode): Summary {
   const k = kindOf(P, n.kind);
   const chips: Chip[] = [];
   const muted = isMuted(P, n.lifecycle);
+  // A profile with no checks gets a placeholder check kind. It has no kind entry, so no check chip shows.
+  const checks = P.checks && kindOf(P, P.checks.kind) ? P.checks : undefined;
   for (const spec of k?.chips ?? []) {
     if (spec === 'lifecycle') {
       if (n.lifecycle) chips.push({ text: fieldLabel(P, P.lifecycle.field, n.lifecycle), tone: muted ? 'muted' : 'life', struck: muted });
@@ -429,10 +456,11 @@ export function summaryOf(index: Index, n: VNode): Summary {
       const first = Array.from(counts.entries())[0];
       if (first) chips.push({ text: plural(index, first[1], first[0]), tone: 'count' });
     } else if (spec === 'coverage') {
-      if (n.cov?.parts) chips.push({ text: `${n.cov.verified} of ${n.cov.parts} verified`, tone: n.cov.verified === n.cov.parts ? 'good' : 'warn' });
+      // The count of parts with checks. The words come from the check kind, so they never read as a status.
+      if (n.cov?.parts && checks) chips.push({ text: `${n.cov.verified} of ${n.cov.parts} with ${kindPlural(P, checks.kind)}`, tone: n.cov.verified === n.cov.parts ? 'good' : 'warn' });
     } else if (spec === 'verified') {
       const v = (n.d.checks as unknown[]) ?? [];
-      chips.push({ text: v.length ? 'verified' : 'not verified', tone: v.length ? 'good' : 'warn' });
+      if (checks) chips.push({ text: v.length ? plural(index, v.length, checks.kind) : `no ${kindLabel(P, checks.kind).toLowerCase()}`, tone: v.length ? 'good' : 'warn' });
     } else if (spec === 'verifyTypes') {
       const types: string[] = [];
       ((n.d.checks as Record<string, string>[]) ?? []).forEach((x) => {

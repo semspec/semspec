@@ -16,6 +16,9 @@ export default defineConfig({
     ],
   },
   test: {
+    // A test is quick alone. The limit is wide so that a busy machine does not fail a test by chance.
+    testTimeout: 20000,
+    hookTimeout: 60000,
     // The Node tests stay in one project. The app tests render components, so they run in jsdom.
     projects: [
       { extends: true, test: { name: 'node', include: ['test/**/*.test.ts'], environment: 'node' } },

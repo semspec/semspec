@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event';
 import { Core } from '@/lib/core';
 import { formatLink, parseLink } from '@/lib/link';
 import { patchGraph, shortHash, storageKey, STORE_VERSION, useAppStore } from '@/lib/store';
-import { blockStorage, installStorage, pickInTree, renderWorkspace, settle, storedKey, storedState, switchTo, twoGraphs } from './harness';
+import { blockStorage, installStorage, pickInTree, renderWorkspace, settle, storedKey, storedState, switchTo, twoGraphs, wait } from './harness';
 
 let store: Map<string, string>;
 beforeEach(() => {
@@ -113,7 +113,7 @@ describe('req-state-memory: canvas-state', () => {
     const pane = document.querySelector('.react-flow__pane') as HTMLElement;
     fireEvent.wheel(pane, { deltaY: -100, ctrlKey: true, clientX: 200, clientY: 200 });
     // The zoom ends 150 ms after the last wheel event.
-    await act(async () => void (await new Promise((r) => setTimeout(r, 400))));
+    await wait(400);
     const zoomed = graphState().viewport.graph!;
     expect(zoomed.zoom).toBeGreaterThan(fitted.zoom);
     expect(transform()).toContain(`scale(${zoomed.zoom})`);
@@ -220,7 +220,7 @@ describe('req-state-storage: reload', () => {
   it('writes the state to the storage after a short delay while the page stays open', async () => {
     renderWorkspace();
     await pickInTree('epic-checkout');
-    await act(async () => void (await new Promise((r) => setTimeout(r, 300))));
+    await wait(300);
     expect(storedState(store).graphs.product.scope).toEqual({ type: 'node', id: 'epic-checkout' });
   });
 });
@@ -480,7 +480,7 @@ describe('the Reset the view item', () => {
     expect(window.location.hash).toBe('#graph=product');
     // A later change is stored again.
     await pickInTree('epic-checkout');
-    await act(async () => void (await new Promise((r) => setTimeout(r, 300))));
+    await wait(300);
     expect(storedState(store).graphs.product.scope).toEqual({ type: 'node', id: 'epic-checkout' });
   });
 

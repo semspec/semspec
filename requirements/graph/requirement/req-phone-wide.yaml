@@ -1,8 +1,6 @@
 id: req-phone-wide
 kind: requirement
 title: Keep the layout from 768 px
-state: draft
-priority: later
 statement: "The layout from 768 px wide up does not change."
 capabilities:
   - cap-phone-layout

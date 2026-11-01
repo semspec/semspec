@@ -1,0 +1,53 @@
+id: req-release-changeset
+kind: requirement
+title: State the release in each pull request
+state: draft
+priority: now
+statement: "A pull request adds a changeset that names the bump and the release note, or an empty changeset when it changes nothing for a user."
+capabilities:
+  - cap-release
+area:
+  - repository
+acceptance:
+  - id: file
+    text: "A changeset is a Markdown file in `.changeset/` with the bump (patch, minor or major) of each public package and 1 line or more of release note."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "names a bump of a public package and a release note of 1 line or more in each changeset file"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "collects a minor changeset into the core version, writes the changelog, removes the file and gives the private package no version"
+  - id: ci
+    text: "CI fails on a pull request that adds no changeset file against its base branch, also when the pull request changes only a private package."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "runs changeset status against the base branch of a pull request with the full history"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "skips the changeset job for the version pull request only"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "fetches the full history in the changeset job only"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "fails the status without a changeset and passes it with an empty changeset"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "fails for a pull request that changes only a private package and adds no changeset"
+      - type: unit
+        file: test/release-scripts.test.ts
+        name: "passes with an empty changeset or a changeset with a bump, and ignores the README of the changeset folder"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "runs the changeset file check of the pull request before the status check"
+  - id: template
+    text: "The pull request template has a Release section that names the changeset file and its bump."
+    status: verified
+    tests:
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "has a Release section after Breaking changes that names the changeset file and its bump"

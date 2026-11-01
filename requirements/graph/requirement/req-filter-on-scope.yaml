@@ -21,3 +21,45 @@ acceptance:
       - type: unit
         file: test/core.test.ts
         name: counts a facet with the other filters applied and its own ignored
+  - id: facet-needs-field
+    text: "A built-in filter whose field the profile does not define, such as Delivery or Level, does not show. Its table column does not show either."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: hides the Delivery filter and column when the profile has no delivery field (product)
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: shows the Delivery filter and column when the profile has the field (product)
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: hides the Delivery filter and column when the profile has no delivery field (safety)
+      - type: unit
+        file: test/app/panels.test.tsx
+        name: shows the Delivery filter and column when the profile has the field (safety)
+  - id: facet-kinds
+    text: "The Lifecycle filter counts a node of a kind that has a lifecycle under its own value. A part or a check counts under the value of each of its owners and never as None. A part or a check passes the filter when one of its owners matches, so a filtered-out owner hides its parts and checks."
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: counts only the nodes of kinds that have a lifecycle (product)
+      - type: unit
+        file: test/core.test.ts
+        name: keeps the parts and checks of an owner that matches (product)
+      - type: unit
+        file: test/core.test.ts
+        name: counts only the nodes of kinds that have a lifecycle (safety)
+      - type: unit
+        file: test/core.test.ts
+        name: keeps the parts and checks of an owner that matches (safety)
+  - id: facet-options-stay
+    text: "The Lifecycle filter keeps its values as options when the other filters leave only parts or checks, because those pass through their owner. The order of the filters does not change what a user can select. The count of a value is the number of nodes that the filter returns for it."
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: keeps the Lifecycle options when only parts or checks remain (product)
+      - type: unit
+        file: test/core.test.ts
+        name: keeps the Lifecycle options when only parts or checks remain (safety)

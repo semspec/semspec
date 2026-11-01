@@ -1,0 +1,26 @@
+id: req-signoff-review
+kind: requirement
+title: Review requirements in the browser
+state: draft
+priority: next
+statement: "A Review view of the page that semspec serve shows lists the nodes that need a person, with what the person must check."
+capabilities:
+  - cap-signoff
+area:
+  - app
+acceptance:
+  - id: queue
+    text: "The Review view lists the nodes that have no sign-off, the nodes whose sign-off is out of date and the nodes with the provenance marker inferred, with a count of each."
+    status: open
+  - id: card
+    text: "A review card shows the statement, the acceptance conditions and the evidence of each condition: the test titles, the source of each test and the last test result when one is available."
+    status: open
+  - id: diff
+    text: "For an out-of-date sign-off, the card shows the words that changed in the statement, in the conditions and in the evidence since the sign-off."
+    status: open
+  - id: decide
+    text: "A person signs off a node, or rejects it with a note, and can sign off several nodes in 1 batch."
+    status: open
+  - id: read-only
+    text: "A page built as 1 HTML file shows the sign-off state of each node and has no Review actions, because it cannot write a file."
+    status: open

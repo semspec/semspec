@@ -1,0 +1,8 @@
+id: cap-release
+kind: capability
+title: Release
+state: draft
+priority: now
+statement: "Each pull request states its release with a changeset. A version pull request collects the changesets, and a signed tag makes the release."
+features:
+  - feat-distribute

@@ -1,6 +1,0 @@
-id: feat-scope-walk
-kind: feature
-title: Scope and walk
-statement: A user scopes the graph by any node and walks it by expansion.
-products:
-  - prd-semspec

@@ -1,6 +1,0 @@
-id: feat-views
-kind: feature
-title: Views
-statement: A user reads the graph in a tree, a Graph view, Cards, a Table and a details panel.
-products:
-  - prd-semspec
