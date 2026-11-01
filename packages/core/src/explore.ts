@@ -450,10 +450,11 @@ export function summaryOf(index: Index, n: VNode): Summary {
       const first = Array.from(counts.entries())[0];
       if (first) chips.push({ text: plural(index, first[1], first[0]), tone: 'count' });
     } else if (spec === 'coverage') {
-      if (n.cov?.parts) chips.push({ text: `${n.cov.verified} of ${n.cov.parts} verified`, tone: n.cov.verified === n.cov.parts ? 'good' : 'warn' });
+      // The count of parts with checks. The words come from the check kind, so they never read as a status.
+      if (n.cov?.parts && P.checks) chips.push({ text: `${n.cov.verified} of ${n.cov.parts} with ${kindPlural(P, P.checks.kind)}`, tone: n.cov.verified === n.cov.parts ? 'good' : 'warn' });
     } else if (spec === 'verified') {
       const v = (n.d.checks as unknown[]) ?? [];
-      chips.push({ text: v.length ? 'verified' : 'not verified', tone: v.length ? 'good' : 'warn' });
+      if (P.checks) chips.push({ text: v.length ? plural(index, v.length, P.checks.kind) : `no ${kindLabel(P, P.checks.kind).toLowerCase()}`, tone: v.length ? 'good' : 'warn' });
     } else if (spec === 'verifyTypes') {
       const types: string[] = [];
       ((n.d.checks as Record<string, string>[]) ?? []).forEach((x) => {

@@ -196,14 +196,27 @@ describe('walk', () => {
 });
 
 describe('summary', () => {
+  it('names the coverage chips with the check kind and never with a status word', () => {
+    const chipsOf = (index: typeof pIndex, kind: string) =>
+      index.model.nodes.filter((n) => n.kind === kind).flatMap((n) => summaryOf(index, n).chips.map((c) => c.text));
+    const product = chipsOf(pIndex, 'scenario');
+    expect(product.some((t) => /^\d+ tests?$/.test(t))).toBe(true);
+    expect(product).toContain('no test');
+    const safety = chipsOf(sIndex, 'argument');
+    expect(safety.some((t) => /^\d+ evidence$/.test(t))).toBe(true);
+    const words = [...pIndex.profile.status!.values, ...sIndex.profile.status!.values].map((v) => v.label.toLowerCase());
+    for (const t of [...product, ...safety, ...chipsOf(pIndex, 'story'), ...chipsOf(sIndex, 'subgoal')]) {
+      if (/ of \d+ with | tests?$|evidence$|^no /.test(t)) words.forEach((w) => expect(t).not.toContain(w));
+    }
+  });
   it('shows the chips that the profile names for each kind', () => {
     const s = summaryOf(pIndex, pIndex.byId.get('story-pay-by-card')!);
-    expect(s.chips.map((c) => c.text)).toEqual(['HIGH', 'Planned', 'r1', '1 of 2 verified']);
+    expect(s.chips.map((c) => c.text)).toEqual(['HIGH', 'Planned', 'r1', '1 of 2 with tests']);
     const dropped = summaryOf(pIndex, pIndex.byId.get('story-loose-child')!);
     expect(dropped.muted).toBe(true);
     expect(dropped.chips.find((c) => c.text === 'Dropped')?.struck).toBe(true);
     expect(summaryOf(sIndex, sIndex.byId.get('hz-overheat')!).chips.map((c) => c.text)).toEqual(['critical']);
-    expect(summaryOf(sIndex, sIndex.byId.get('sg-detect-overheat')!).chips.map((c) => c.text)).toEqual(['open', '1 of 2 verified']);
+    expect(summaryOf(sIndex, sIndex.byId.get('sg-detect-overheat')!).chips.map((c) => c.text)).toEqual(['open', '1 of 2 with evidence']);
   });
 });
 

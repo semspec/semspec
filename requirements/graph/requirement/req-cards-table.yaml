@@ -54,3 +54,13 @@ acceptance:
       - type: unit
         file: test/app/table-resize.test.tsx
         name: restores the body styles when the touch ends
+  - id: chip-words
+    text: "The coverage chips count the parts that have checks, and say so with the label of the check kind, for example \"1 of 2 with tests\" and \"2 tests\". They never use a word of the status, so they do not contradict the status chip."
+    status: verified
+    tests:
+      - type: unit
+        file: test/core.test.ts
+        name: names the coverage chips with the check kind and never with a status word
+      - type: unit
+        file: test/core.test.ts
+        name: shows the chips that the profile names for each kind
