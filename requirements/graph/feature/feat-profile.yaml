@@ -2,5 +2,6 @@ id: feat-profile
 kind: feature
 title: Profile and validation
 statement: A profile defines the kinds, the edges and the fields. Semspec checks both inputs and writes schemas of the kinds.
+tagline: "A profile defines the kinds, the edges and the fields, and Semspec checks it. Semspec writes a JSON Schema for each kind, for editors and agents."
 products:
   - prd-semspec

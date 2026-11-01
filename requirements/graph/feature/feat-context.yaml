@@ -2,5 +2,6 @@ id: feat-context
 kind: feature
 title: Context
 statement: An agent gets the requirement slice for a task.
+tagline: "An agent asks for the slice of the requirements that one task needs: the requirement, its conditions, its checks and the linked nodes."
 products:
   - prd-semspec

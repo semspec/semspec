@@ -2,5 +2,6 @@ id: feat-specs
 kind: feature
 title: Markdown specs
 statement: "Semspec writes specification documents in Markdown from the graph. An author writes the document, and Semspec fills the sections that come from the graph."
+tagline: "Semspec writes specification documents in Markdown. You write the text, and Semspec fills the sections that come from the graph and finds the stale ones."
 products:
   - prd-semspec

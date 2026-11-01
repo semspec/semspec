@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
-// Vite config of the web site. A plugin gives 7 virtual modules to the pages, so the dev server,
+// Vite config of the web site. A plugin gives 8 virtual modules to the pages, so the dev server,
 // the client build and the server build use the same data:
 //   virtual:roadmap     the planned and the shipped features, from the requirements of this repository
+//   virtual:cards       the shipped features for the cards of the home page, in the order of the feature nodes
 //   virtual:trace       the chain from the product down to a test for 1 requirement of this repository
 //   virtual:hero-graph  the radial drawing of the hierarchy of the requirements of this repository
 //   virtual:snippets    code from this repository, highlighted at build time
@@ -26,6 +27,7 @@ import { excerptBlocks } from './src/lib/excerpt';
 import { loadDocs } from './src/lib/docs-load';
 import type { DocsData } from './src/lib/docs-load';
 import { buildHeroGraph } from './src/lib/hero-graph';
+import { buildCards } from './src/lib/cards';
 import { buildRoadmap } from './src/lib/roadmap';
 import { buildTrace } from './src/lib/trace';
 import type { TraceData } from './src/lib/trace';
@@ -66,7 +68,7 @@ function commitOf(): string {
 }
 
 function dataPlugin(): Plugin {
-  const ids = new Set(['virtual:roadmap', 'virtual:trace', 'virtual:hero-graph', 'virtual:snippets', 'virtual:build-info', 'virtual:docs', 'virtual:doc-bodies']);
+  const ids = new Set(['virtual:roadmap', 'virtual:cards', 'virtual:trace', 'virtual:hero-graph', 'virtual:snippets', 'virtual:build-info', 'virtual:docs', 'virtual:doc-bodies']);
   // The docs load once for the 2 virtual modules. A change of a watched file clears the cache.
   let docs: Promise<DocsData> | undefined;
   return {
@@ -90,6 +92,12 @@ function dataPlugin(): Plugin {
         const { graph, profile } = loadInputs(GRAPH, PROFILE);
         this.addWatchFile(PROFILE);
         const data = buildRoadmap(buildIndex(buildModel(graph, profile)));
+        return `export default ${JSON.stringify(data)};`;
+      }
+      if (id === '\0virtual:cards') {
+        const { graph, profile } = loadInputs(GRAPH, PROFILE);
+        this.addWatchFile(PROFILE);
+        const data = buildCards(buildIndex(buildModel(graph, profile)));
         return `export default ${JSON.stringify(data)};`;
       }
       if (id === '\0virtual:trace') {

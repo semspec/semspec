@@ -2,5 +2,6 @@ id: feat-export
 kind: feature
 title: Export and delivery
 statement: A user exports the table to CSV, builds 1 HTML file or serves the page.
+tagline: "Write the table as CSV, build 1 HTML file or serve a live page. Export Turtle, TriG, JSON-LD, SHACL shapes or a Cypher script."
 products:
   - prd-semspec

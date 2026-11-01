@@ -1,0 +1,7 @@
+id: feat-site
+kind: feature
+title: Website
+statement: "The semspec.dev website shows what Semspec does, its roadmap and its documentation, from the graph and the docs of this repository."
+tagline: "The roadmap, the docs and these feature cards come from the requirements graph and the docs folder of this repository at build time."
+products:
+  - prd-semspec

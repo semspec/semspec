@@ -7,6 +7,12 @@ declare module 'virtual:roadmap' {
   export default data;
 }
 
+declare module 'virtual:cards' {
+  import type { FeatureCard } from '@/lib/cards';
+  const data: FeatureCard[];
+  export default data;
+}
+
 declare module 'virtual:trace' {
   import type { TraceData } from '@/lib/trace';
   const data: TraceData;

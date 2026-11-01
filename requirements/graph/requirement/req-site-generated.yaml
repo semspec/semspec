@@ -1,0 +1,56 @@
+id: req-site-generated
+kind: requirement
+title: Generate the roadmap, the docs and the feature cards
+statement: "The roadmap page, the docs pages and the feature cards of the home page come from the requirements graph and the docs folder at build time."
+capabilities:
+  - cap-site-generated
+area:
+  - site
+acceptance:
+  - id: roadmap
+    text: "The roadmap page lists the features of the requirements graph with their state and the verified count of their conditions."
+    status: verified
+    tests:
+      - type: unit
+        file: site/test/roadmap.test.ts
+        name: lists every feature with state draft as planned
+      - type: unit
+        file: site/test/roadmap.test.ts
+        name: counts the verified conditions and all conditions below a feature
+  - id: docs
+    text: "The docs pages come from the Markdown pages in docs/, and a new page there shows on the site with no change to the site code."
+    status: verified
+    tests:
+      - type: unit
+        file: site/test/docs.test.ts
+        name: renders every Markdown file as a page with a body
+      - type: unit
+        file: site/test/docs.test.ts
+        name: "lists the routes: the index, the docs graph and 1 for each page"
+  - id: home-cards
+    text: "The home page shows 1 card for each shipped feature, by the same rule as the roadmap (not draft and not retired), in the order of the feature nodes, with the tagline of the feature or else its statement."
+    status: verified
+    tests:
+      - type: unit
+        file: site/test/home.test.ts
+        name: shows 1 card for each shipped feature of the graph, in the order of the feature files
+      - type: unit
+        file: site/test/home.test.ts
+        name: uses the tagline of a feature and else its statement
+  - id: tagline
+    text: "A feature node can hold a short tagline for its card, and the requirements profile declares the field."
+    status: verified
+    tests:
+      - type: unit
+        file: site/test/home.test.ts
+        name: declares the tagline field in the profile
+      - type: unit
+        file: site/test/home.test.ts
+        name: gives each shipped feature of the graph a tagline of 1 or 2 sentences
+  - id: icons
+    text: "The site maps each feature id to an icon. A build test fails when a shipped feature has no icon."
+    status: verified
+    tests:
+      - type: unit
+        file: site/test/home.test.ts
+        name: has an icon for each shipped feature and none for another id

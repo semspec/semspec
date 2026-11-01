@@ -81,3 +81,4 @@ details:
   statementTitle: { condition: Acceptance condition, default: Statement }
   textSections:
     - { title: Rationale, field: rationale }
+    - { title: Tagline, field: tagline, kinds: [feature] }

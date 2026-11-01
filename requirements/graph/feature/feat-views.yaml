@@ -2,5 +2,6 @@ id: feat-views
 kind: feature
 title: Views
 statement: A user reads the graph in a tree, a Graph view, Cards, a Table and a details panel.
+tagline: "Read the graph as a tree, a Graph view, Cards or a Table. A details panel shows the fields, the conditions and the checks of the selected node."
 products:
   - prd-semspec

@@ -2,5 +2,6 @@ id: feat-model
 kind: feature
 title: Model building
 statement: Semspec builds nodes and edges from the graph and the profile.
+tagline: "The profile defines every kind, edge, field, colour and label. The tool knows no project."
 products:
   - prd-semspec
