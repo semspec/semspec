@@ -1,0 +1,42 @@
+id: req-site-deploy
+kind: requirement
+title: Deploy the site to semspec.dev
+state: draft
+priority: now
+statement: "Cloudflare Pages builds the site from each commit on master and serves it at semspec.dev. The repository holds no Cloudflare secret."
+capabilities:
+  - cap-site-generated
+area:
+  - repository
+  - site
+acceptance:
+  - id: from-master
+    text: "The Pages project connects to the repository and builds master as its production branch, with the build command and the output directory that the guide names."
+    status: open
+  - id: gated-master
+    text: "Master gets a commit only through a pull request whose checks pass, so each production build has passed the gates."
+    status: open
+  - id: node-version
+    text: "The file .node-version names the lowest Node version of the engines field, so the Pages build uses the Node version that the tests use."
+    status: verified
+    tests:
+      - type: unit
+        file: test/deploy.test.ts
+        name: "names the lowest Node version of the engines field in .node-version"
+  - id: domain
+    text: "The domain semspec.dev serves the production build of the project."
+    status: open
+  - id: no-secrets
+    text: "No workflow of the repository reads a Cloudflare secret."
+    status: verified
+    tests:
+      - type: unit
+        file: test/deploy.test.ts
+        name: "has no workflow that reads a Cloudflare secret"
+  - id: guide
+    text: "A guide for maintainers names the settings of the Pages project: the repository, the production branch, the build command, the output directory, the Node version and the custom domain."
+    status: verified
+    tests:
+      - type: unit
+        file: test/deploy.test.ts
+        name: "names each setting of the Pages project in the guide"
