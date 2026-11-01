@@ -3,7 +3,7 @@ kind: requirement
 title: Deploy the site to semspec.dev
 state: draft
 priority: now
-statement: "Cloudflare Pages builds the site from each commit on master and serves it at semspec.dev. The repository holds no Cloudflare secret."
+statement: "A Cloudflare Worker with static assets serves the site at semspec.dev. Workers Builds builds it from each commit on master. The repository holds no Cloudflare secret."
 capabilities:
   - cap-site-generated
 area:
@@ -11,13 +11,20 @@ area:
   - site
 acceptance:
   - id: from-master
-    text: "The Pages project connects to the repository and builds master as its production branch, with the build command and the output directory that the guide names."
+    text: "Workers Builds connects the Worker semspec to the repository and builds each commit on master, with the build command that the guide names, then deploys it."
     status: open
+  - id: config
+    text: "The file wrangler.jsonc names the Worker semspec, serves the folder site/dist as static assets with no script, and routes the custom domain semspec.dev to it."
+    status: verified
+    tests:
+      - type: unit
+        file: test/deploy.test.ts
+        name: "serves the folder site/dist as static assets of the Worker semspec at semspec.dev"
   - id: gated-master
     text: "Master gets a commit only through a pull request whose checks pass, so each production build has passed the gates."
     status: open
   - id: node-version
-    text: "The file .node-version names the lowest Node version of the engines field, so the Pages build uses the Node version that the tests use."
+    text: "The file .node-version names the lowest Node version of the engines field, so the build uses the Node version that the tests use."
     status: verified
     tests:
       - type: unit
@@ -34,9 +41,9 @@ acceptance:
         file: test/deploy.test.ts
         name: "has no workflow that reads a Cloudflare secret"
   - id: guide
-    text: "A guide for maintainers names the settings of the Pages project: the repository, the production branch, the build command, the output directory, the Node version and the custom domain."
+    text: "A guide for maintainers names the settings of the Worker and its build: the repository, the branch, the build command, the deploy command, the Node version and the custom domain."
     status: verified
     tests:
       - type: unit
         file: test/deploy.test.ts
-        name: "names each setting of the Pages project in the guide"
+        name: "names each setting of the Worker and its build in the guide"

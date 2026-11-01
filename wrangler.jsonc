@@ -1,0 +1,12 @@
+// The Worker that serves semspec.dev. It has no script: it serves the static files of the built site.
+// Workers Builds runs the build command of docs/guide/deploying.md on each commit on master, then `npx wrangler deploy`.
+{
+  "name": "semspec",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./site/dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  },
+  "routes": [{ "pattern": "semspec.dev", "custom_domain": true }]
+}

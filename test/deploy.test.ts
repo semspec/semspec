@@ -19,10 +19,20 @@ describe('the deploy of the site', () => {
     for (const file of readdirSync(dir)) expect(readFileSync(join(dir, file), 'utf8'), file).not.toMatch(/CLOUDFLARE|wrangler/i);
   });
 
-  it('names each setting of the Pages project in the guide', () => {
+  it('serves the folder site/dist as static assets of the Worker semspec at semspec.dev', () => {
+    // wrangler.jsonc has comments, so they are cut before the parse.
+    const config = JSON.parse(text('wrangler.jsonc').replace(/^\s*\/\/.*$/gm, ''));
+    expect(config.name).toBe('semspec');
+    expect(config.main).toBeUndefined();
+    expect(config.assets.directory).toBe('./site/dist');
+    expect(config.routes).toEqual([{ pattern: 'semspec.dev', custom_domain: true }]);
+    expect(text('site/scripts/build.mjs')).toContain('dist');
+  });
+
+  it('names each setting of the Worker and its build in the guide', () => {
     const guide = text('docs/guide/deploying.md');
     expect(guide).toMatch(/documents: \[req-site-deploy\]/);
-    for (const setting of ['`semspec/semspec`', 'Production branch | `master`', 'npm ci && npm run build && npm ci --prefix site && npm run build --prefix site', '`site/dist`', '`.node-version`', '`semspec.dev`']) {
+    for (const setting of ['`semspec/semspec`', 'Branch | `master`', 'npm run build && npm ci --prefix site && npm run build --prefix site', '`npx wrangler deploy`', '`wrangler.jsonc`', '`.node-version`', '`semspec.dev`']) {
       expect(guide).toContain(setting);
     }
   });
