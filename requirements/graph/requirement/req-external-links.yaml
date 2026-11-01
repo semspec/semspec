@@ -1,0 +1,33 @@
+id: req-external-links
+kind: requirement
+title: Open a node in an outside tool
+state: draft
+priority: now
+statement: "The profile can turn fields of a node or a check into a link to an outside tool, so a reader opens the source, the story, the scenario or the run that a node names."
+capabilities:
+  - cap-nodes
+area:
+  - profile
+  - app
+acceptance:
+  - id: template
+    text: "The profile names link templates for a kind or for a check type, for example `https://host/?path=/story/{story}`. A template fills its placeholders from fields of the node or the check, with URL encoding."
+    status: open
+  - id: missing
+    text: "A link whose template needs a field that the node does not have does not show, and the profile check reports a template that names no field."
+    status: open
+  - id: safe
+    text: "A link opens only with the protocols http and https, in a new tab, with no access to the page that opened it."
+    status: open
+  - id: details
+    text: "The details panel shows the links of a node and of each of its checks, with the label from the profile."
+    status: open
+  - id: click-through
+    text: "A check in the details panel and in a condition list is a link when it has an outside link, so a click opens the outside tool."
+    status: open
+  - id: export
+    text: "The exports carry the links: the RDF export as rdfs:seeAlso, the Markdown specs as Markdown links and the CSV as a column."
+    status: open
+  - id: mcp
+    text: "The MCP tools get and slice return the links of a node and of its checks."
+    status: open
