@@ -7,9 +7,10 @@ on:
     branches: [master]
   pull_request:
 
+# A new push to a pull request cancels its older run. A push to master is never cancelled, because its run can make a release.
 concurrency:
-  group: check-${{ github.ref }}
-  cancel-in-progress: true
+  group: check-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -43,11 +44,15 @@ jobs:
 
   # A pull request needs a changeset against its base branch. An empty changeset counts.
   # The step with scripts/check-changeset.mjs also covers the private packages, which `changeset status` ignores.
-  # The version pull request removes the changesets, so it is exempt. This job needs the history of
+  # The version pull request removes the changesets, so it is exempt. A pull request of Dependabot
+  # changes only the version of a dependency, so it is exempt too. The job is skipped, and no other job needs it
+  # except the release job, which accepts a skip. This job needs the history of
   # the base branch, but no build, so it installs without scripts.
   changeset:
     name: Changeset
-    if: github.event_name == 'pull_request' && github.head_ref != 'changeset-release/master'
+    if: >-
+      github.event_name == 'pull_request' && github.head_ref != 'changeset-release/master' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -62,3 +67,45 @@ jobs:
         run: node scripts/check-changeset.mjs origin/${{ github.base_ref }}
       - name: Check the format of the changesets
         run: npx changeset status --since=origin/${{ github.base_ref }}
+
+  # Makes the tag and the GitHub Release after the merge of the version pull request.
+  # It runs on a push to master after every gate job passed. The changeset job is skipped on a push,
+  # so a skip counts as a pass. A failed or cancelled gate stops the release.
+  # The version of package.json decides. When the tag v<version> exists, the job stops with a note.
+  # `gh release create` makes the tag on the commit of the push. The tag push of the default token
+  # starts no workflow.
+  release:
+    name: Release
+    needs: [check, changeset]
+    if: >-
+      always() && github.event_name == 'push' && github.ref == 'refs/heads/master' &&
+      needs.check.result == 'success' &&
+      (needs.changeset.result == 'success' || needs.changeset.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Decide whether the version has a release
+        id: plan
+        run: node scripts/release-plan.mjs >> "${GITHUB_OUTPUT}"
+      - name: Stop when the tag exists
+        if: steps.plan.outputs.release != 'true'
+        run: echo "The tag ${{ steps.plan.outputs.tag }} exists. No release."
+      - name: Write the release notes
+        if: steps.plan.outputs.release == 'true'
+        run: node scripts/release-notes.mjs "${TAG#v}" > "${RUNNER_TEMP}/notes.md"
+        env:
+          TAG: ${{ steps.plan.outputs.tag }}
+      - name: Make the tag and the GitHub Release
+        if: steps.plan.outputs.release == 'true'
+        run: gh release create "${TAG}" --target "${{ github.sha }}" --title "${TAG}" --notes-file "${RUNNER_TEMP}/notes.md"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.plan.outputs.tag }}

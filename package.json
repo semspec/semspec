@@ -22,7 +22,7 @@
     "README.md"
   ],
   "engines": {
-    "node": ">=22.22.2"
+    "node": ">=22.23.4"
   },
   "scripts": {
     "prepare": "npm run build",

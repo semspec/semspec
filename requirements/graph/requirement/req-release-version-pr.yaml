@@ -59,7 +59,7 @@ acceptance:
         file: test/release-flow.test.ts
         name: "has the permissions contents write and pull-requests write only"
   - id: no-push
-    text: "The workflow never pushes to master and never makes a tag."
+    text: "The version workflow never pushes to master and never makes a tag. The release job of the Check workflow makes the tag."
     status: verified
     tests:
       - type: unit
@@ -71,6 +71,9 @@ acceptance:
       - type: unit
         file: test/release-flow.test.ts
         name: "has the permissions contents write and pull-requests write only"
+      - type: unit
+        file: test/release-flow.test.ts
+        name: "is the only way to release: no workflow runs on a tag push and none makes a tag by git"
   - id: cli-compatible
     text: "The pinned Changesets action accepts the installed version of the Changesets CLI, so a push to master never fails before the version pull request."
     status: verified

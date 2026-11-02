@@ -23,6 +23,8 @@ The file `wrangler.jsonc` holds the settings of the Worker:
 - the folder `site/dist` as static assets, with no script
 - the custom domain `semspec.dev`
 
+The file has a `build` command, `npm ci --prefix site && npm run build --prefix site`. The deploy runs it itself and builds the site into `site/dist`. The site build also builds the root packages. So the deploy never fails on a missing `site/dist`, whatever the build command of the dashboard is.
+
 A change of these settings goes through a pull request like any other change.
 
 ## The build
@@ -35,7 +37,7 @@ Connect the Worker to the repository once, in the Cloudflare dashboard: Workers 
 | Project name | `semspec` |
 | Branch | `master` |
 | Builds for other branches | Off |
-| Build command | `npm run build && npm ci --prefix site && npm run build --prefix site` |
+| Build command | `npm run build` (may be empty or any command) |
 | Deploy command | `npx wrangler deploy` |
 | Root directory | the root of the repository |
 
