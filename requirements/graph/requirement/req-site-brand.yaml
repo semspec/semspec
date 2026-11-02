@@ -1,0 +1,30 @@
+id: req-site-brand
+kind: requirement
+title: Show the mark of the app on the site
+statement: "The site uses the same mark as the app: 3 connected boxes on a rounded square. Its header stays readable over the page that scrolls under it."
+capabilities:
+  - cap-site-generated
+area:
+  - site
+acceptance:
+  - id: logo
+    text: "The logo in the header of the site is the mark of the app: the Network icon of the app's icon set on a rounded square of the primary colour."
+    status: verified
+    tests:
+      - type: unit
+        file: site/test/brand.test.ts
+        name: "draws the logo with the Network icon of the app on a rounded square"
+  - id: favicon
+    text: "The favicon is the same mark, with a light and a dark version."
+    status: verified
+    tests:
+      - type: unit
+        file: site/test/brand.test.ts
+        name: "draws the favicon with the paths of the Network icon and a dark version"
+  - id: header-blur
+    text: "The header blurs the page under it in Safari, Chrome and Firefox, with fixed filter values and the property with the Safari prefix."
+    status: verified
+    tests:
+      - type: unit
+        file: site/test/brand.test.ts
+        name: "blurs the page under the header with fixed values and the Safari prefix"

@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 import type { SVGProps } from 'react';
+import { Network } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-// The logo mark: 3 connected nodes. It takes the colour of the text.
-export function LogoMark(props: SVGProps<SVGSVGElement>) {
+// The logo mark: the mark of the app, the Network icon on a rounded square of the primary colour.
+export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false" {...props}>
-      <path d="M16 7 L6 25 M16 7 L26 25 M6 25 L26 25" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="16" cy="7" r="4.5" fill="currentColor" />
-      <circle cx="6" cy="25" r="4.5" fill="currentColor" />
-      <circle cx="26" cy="25" r="4.5" fill="currentColor" />
-    </svg>
+    <span aria-hidden="true" className={cn('flex items-center justify-center rounded-md bg-primary text-primary-foreground', className)}>
+      <Network className="size-[60%]" />
+    </span>
   );
 }
 

@@ -11,11 +11,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { GITHUB_URL, NAV_LINKS } from '@/lib/links';
 
 // The sticky header: logo, nav links, GitHub link and theme switch. On a phone the nav links move into a sheet.
+// The blur has fixed values and the Safari prefix, so it does not depend on the chain of Tailwind variables.
 export function SiteHeader({ route }: { route: string }) {
   const [open, setOpen] = useState(false);
   const current = (href: string) => (href === route ? ('page' as const) : undefined);
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 border-b bg-background/70 [-webkit-backdrop-filter:blur(16px)_saturate(1.8)] [backdrop-filter:blur(16px)_saturate(1.8)]">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 sm:px-6">
         <a href="/" className="-ml-1 flex items-center gap-2 rounded-md px-1 py-1 font-semibold tracking-tight outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           <LogoMark className="size-6" />
