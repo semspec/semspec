@@ -1,16 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <!-- SPDX-License-Identifier: Apache-2.0 -->
   <!-- Copyright 2026 The Semspec Authors -->
+  <!-- The mark of the app: the Network icon of lucide (ISC) on a rounded square. -->
   <style>
-    .mark { fill: #171717; stroke: #171717; }
+    .tile { fill: #171717; }
+    .icon { stroke: #fafafa; }
     @media (prefers-color-scheme: dark) {
-      .mark { fill: #fafafa; stroke: #fafafa; }
+      .tile { fill: #fafafa; }
+      .icon { stroke: #171717; }
     }
   </style>
-  <g class="mark">
-    <path d="M16 7 L6 25 M16 7 L26 25 M6 25 L26 25" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="16" cy="7" r="4.5" stroke="none"/>
-    <circle cx="6" cy="25" r="4.5" stroke="none"/>
-    <circle cx="26" cy="25" r="4.5" stroke="none"/>
+  <rect class="tile" width="32" height="32" rx="7"/>
+  <g class="icon" transform="translate(5 5) scale(0.9167)" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="16" y="16" width="6" height="6" rx="1"/>
+    <rect x="2" y="16" width="6" height="6" rx="1"/>
+    <rect x="9" y="2" width="6" height="6" rx="1"/>
+    <path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/>
+    <path d="M12 12V8"/>
   </g>
 </svg>
