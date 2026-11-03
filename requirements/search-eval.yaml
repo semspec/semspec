@@ -39,7 +39,7 @@ questions:
   - { q: where does a node without a parent go in the tree, expect: [req-tree, req-placement] }
   - { q: switch between layered, force and grouped drawing, expect: [req-layouts] }
   - { q: write a formal specification of a condition, expect: [req-verify-models, cap-formal] }
-  - { q: test results change whether a condition is met, expect: [req-verify-conformance, cap-formal] }
+  - { q: test results change whether a condition is met, expect: [req-verify-conformance, cap-formal, cap-evidence] }
   - { q: vector similarity together with keywords, expect: [req-embed-hybrid, cap-embeddings] }
   - { q: which AI model comes with the tool, expect: [req-embed-license, req-embed-provider] }
   - { q: where a fact came from and when it was read, expect: [req-provenance] }
