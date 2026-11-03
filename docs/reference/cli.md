@@ -5,7 +5,7 @@ title: Command line
 description: The commands and options of the semspec command.
 order: 1
 related: [getting-started, yaml-folder, workspace, export, schemas, mcp, gates, meaning-search, specs]
-documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check, req-context-slice, req-deliverables, req-embed-provider, req-embed-index, req-embed-hybrid, req-spec-markers, req-spec-check, req-spec-default]
+documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check, req-context-slice, req-deliverables, req-embed-provider, req-embed-index, req-embed-hybrid, req-spec-markers, req-spec-check, req-spec-default, req-coverage-query]
 ---
 ## Commands
 
@@ -23,6 +23,8 @@ semspec index --workspace <file>
 semspec eval-search [--set <file>] [--workspace <file> | --graph <graph> --profile <profile>] [--mode keyword|hybrid|vector]
 semspec slice --graph <graph> --profile <profile> <id> [--depth <n>] [--budget <n>] [--json] [--exclude <pattern>]...
 semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
+semspec coverage --graph <graph> --profile <profile> [--scope <id>] [--kind <kind>]... [--lifecycle <state>]... [--delivery <value>]... [--status <value>]... [--marker <value>]... [--field <name>=<value>]... [--group <kind|field>] [--list <status>]... [--limit <n>] [--gate <tone>]... [--json] [--exclude <pattern>]...
+semspec coverage --workspace <file> [--in <graph>] [same options]
 semspec deliverables --graph <graph> --profile <profile> [--scope <id>] [--kind <kind>]... [--json]
 semspec deliverables --workspace <file> [--in <graph>] [--scope <id>] [--kind <kind>]... [--json]
 semspec spec --graph <graph> --profile <profile> <template.md>... [--check] [--json] [--exclude <pattern>]...
@@ -46,6 +48,7 @@ semspec version --json
 - `eval-search` prints recall at 5 and MRR of the keyword and the hybrid search. See below.
 - `slice` prints the brief for a task on 1 node. See below.
 - `deliverables` lists the nodes that miss a deliverable of the profile. See below.
+- `coverage` reports the status of the conditions in a selection. See below.
 - `spec` fills the marked sections of Markdown templates from the graph, or writes default documents. See below.
 - `schema` writes 1 JSON Schema for each kind of the profile. See [The schemas of the kinds](schemas.md).
 - `export` writes the graph for other tools. See [Export](export.md).
@@ -108,6 +111,34 @@ The command exits with 0, or with 1 and a message on stderr when the node, the g
 
 ```
 semspec slice --graph requirements/graph --profile requirements/profile.yaml req-mcp-check-tools
+```
+
+## Coverage
+
+`semspec coverage` reports the status of the conditions in a selection of nodes. A condition is a node of a kind in the `parts` of the profile. The inputs, the answer and the rules are those of the MCP tool `coverage`. See [MCP server](mcp.md#coverage).
+
+| Option | Meaning |
+| --- | --- |
+| `--in <graph>` | With `--workspace`: report 1 graph. The default is all graphs. |
+| `--scope <id>` | Keep only the node and the nodes in its scope. With several graphs, it needs `--in`. |
+| `--kind <kind>` | Filter by kind. The option can repeat. A comma separates several values. |
+| `--lifecycle <state>` | Filter by lifecycle state. Repeat or comma as above. |
+| `--delivery <value>` | Filter by delivery. Repeat or comma as above. |
+| `--status <value>` | Filter by status value. Repeat or comma as above. |
+| `--marker <value>` | Filter by provenance marker. Repeat or comma as above. |
+| `--field <name>=<value>` | Filter by a field filter of the profile, for example `--field area=core,cli`. The option can repeat for other fields. |
+| `--group <kind or field>` | Give 1 row of counts for each node of a hierarchy kind or each value of a field. |
+| `--list <value>` | List the conditions with this status value, `no-status` or `no-check`. Repeat or comma as above. |
+| `--limit <n>` | The most conditions in the list. The default is 50. |
+| `--gate <tone>` | Fail when a condition has a status with this tone: `good`, `warn` or `bad`. Repeat or comma as above. |
+| `--json` | Print the answer as 1 line of JSON in place of Markdown. |
+| `--exclude <pattern>` | As for `build`. |
+
+The command exits with 0. With `--gate`, it exits with 1 when the selection has a condition whose status has one of the tones, and it names each such condition. It exits with 2 and a message on stderr when an input or an option is not valid. See [Gates](../guide/gates.md#the-coverage-gate).
+
+```
+semspec coverage --graph requirements/graph --profile requirements/profile.yaml --group capability
+semspec coverage --graph requirements/graph --profile requirements/profile.yaml --field area=core --list open --limit 10
 ```
 
 ## Spec

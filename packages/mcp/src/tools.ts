@@ -3,7 +3,7 @@
 // The tools of the MCP server. Each tool maps its input to 1 function of the core.
 import Ajv from 'ajv/dist/2020.js';
 import { parse } from 'yaml';
-import { DEFAULT_LIMIT, QueryError, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, searchSemantic, SEARCH_MODES, slice, sliceMarkdown, DEFAULT_SLICE_BUDGET, MAX_SLICE_DEPTH, trace, validateNode, walk, MAX_WALK_DEPTH, type GraphIndex, type Graph, type SearchMode, type SearchResult, type SemanticSource, type Model, type Profile } from '@semspec/core';
+import { DEFAULT_LIMIT, QueryError, TONES, coverage, coverageMarkdown, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, searchSemantic, SEARCH_MODES, slice, sliceMarkdown, DEFAULT_SLICE_BUDGET, MAX_SLICE_DEPTH, trace, validateNode, walk, MAX_WALK_DEPTH, type GraphIndex, type Graph, type StatusTone, type SearchMode, type SearchResult, type SemanticSource, type Model, type Profile } from '@semspec/core';
 
 // A graph as the loader returns it. `graph` is the raw graph, and `profile` is the profile with its vocabulary files read.
 export interface LoadedGraph {
@@ -226,6 +226,54 @@ export const TOOLS: Tool[] = [
     description: 'List the gaps in a scope: nodes with a warn or bad status, parts with no check, facts with no source, unplaced nodes, links to missing nodes and missing deliverables (what the profile says a node of its kind must deliver). The scope is a node id, or the whole graph.',
     inputSchema: { type: 'object', properties: { scope: { type: 'string', description: 'The id of a node. The default is the whole graph.' }, graph: graphProp, limit: limitProp }, additionalProperties: false },
     run: (loaded, graphs, args) => gaps(graphs, text(args, 'graph', false), text(args, 'scope', false), whole(args, 'limit', DEFAULT_LIMIT, MAX_LIMIT)),
+  },
+  {
+    name: 'coverage',
+    description:
+      'Report the status of the conditions (the nodes of the kinds in the "parts" of the profile) in a selection of nodes. The selection takes the scope and the filters of the explorer. The answer counts the conditions for each status value of the profile, with no status and with no check, each with a percentage of the selection. With "group", the counts have 1 row for each value of a field or each node of a hierarchy kind. With "list", the answer lists the conditions of the chosen status values with owner, text and checks. With "gate", the answer names each condition whose status has one of the tones. It covers all graphs unless "graph" is set, and gives the counts of each graph and the total.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        graph: { type: 'string', description: 'The id of 1 graph. The default is all graphs.' },
+        scope: { type: 'string', description: 'The id of a node. The selection covers this node and its scope. It needs "graph" when the workspace has several graphs.' },
+        kinds: { type: 'array', items: { type: 'string' }, description: 'Keep the conditions that have one of these kinds themselves or below a node of one of these kinds.' },
+        lifecycles: { type: 'array', items: { type: 'string' }, description: 'Keep the conditions whose owner has one of these lifecycle states.' },
+        deliveries: { type: 'array', items: { type: 'string' }, description: 'Keep the conditions that have one of these deliveries themselves or below a node with one of these deliveries.' },
+        statuses: { type: 'array', items: { type: 'string' }, description: 'Keep the conditions with one of these status values. The empty text selects the conditions with no status.' },
+        markers: { type: 'array', items: { type: 'string' }, description: 'Keep the conditions that have one of these provenance markers themselves or below a node with one of them. The empty text selects the nodes with no marker.' },
+        fields: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' } }, description: 'The values of each field filter of the profile, by field. The values of 1 field are OR. The fields are AND.' },
+        group: { type: 'string', description: 'A hierarchy kind id or a field. The counts get 1 row for each node of the kind, or for each value of the field. A condition counts in each group of its owner. A node of the kind counts the conditions of all nodes below it.' },
+        list: { type: 'array', items: { type: 'string' }, description: 'Status values, "no-status" or "no-check". The answer lists the conditions that match one of them.' },
+        limit: limitProp,
+        gate: { type: 'array', items: { type: 'string', enum: TONES }, description: 'Tones. The answer has "gate" with each condition whose status has one of these tones, and "pass" is false when it finds one.' },
+        format: { type: 'string', enum: ['markdown', 'json'], description: 'markdown: text (the default). json: the structured answer.' },
+      },
+      additionalProperties: false,
+    },
+    run: (loaded, graphs, args) => {
+      const format = text(args, 'format', false) ?? 'markdown';
+      if (format !== 'markdown' && format !== 'json') throw new QueryError('The input "format" must be "markdown" or "json".');
+      const fields = args.fields;
+      if (fields !== undefined && fields !== null && (typeof fields !== 'object' || Array.isArray(fields) || Object.values(fields).some((v) => !Array.isArray(v) || v.some((x) => typeof x !== 'string')))) {
+        throw new QueryError('The input "fields" must be an object with a list of texts for each field.');
+      }
+      const gate = list(args, 'gate');
+      const found = coverage(graphs, {
+        graph: text(args, 'graph', false),
+        scope: text(args, 'scope', false),
+        kinds: list(args, 'kinds'),
+        lifecycles: list(args, 'lifecycles'),
+        deliveries: list(args, 'deliveries'),
+        statuses: list(args, 'statuses'),
+        markers: list(args, 'markers'),
+        fields: (fields as Record<string, string[]> | null | undefined) ?? undefined,
+        group: text(args, 'group', false),
+        list: list(args, 'list'),
+        limit: whole(args, 'limit', DEFAULT_LIMIT, MAX_LIMIT),
+        gate: gate as StatusTone[] | undefined,
+      });
+      return format === 'json' ? found : coverageMarkdown(found);
+    },
   },
   {
     name: 'validate',
