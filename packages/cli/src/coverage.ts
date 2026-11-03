@@ -11,7 +11,10 @@ export interface CoverageArgs {
   json: boolean;
 }
 
-// Reads the arguments after the command name. Each option takes 1 value, except --json.
+// The options that the command accepts. Each takes 1 value, except --json. This list follows the usage line of the command.
+const OPTIONS = new Set(['graph', 'profile', 'workspace', 'in', 'exclude', 'scope', 'kind', 'lifecycle', 'delivery', 'status', 'marker', 'field', 'group', 'list', 'limit', 'gate']);
+
+// Reads the arguments after the command name. It throws for an unknown option and for an option with no value.
 export function parseCoverageArgs(argv: string[]): CoverageArgs {
   const flags: Record<string, string> = {};
   const lists: Record<string, string[]> = {};
@@ -20,9 +23,13 @@ export function parseCoverageArgs(argv: string[]): CoverageArgs {
     const a = argv[i];
     if (a === '--json') json = true;
     else if (a.startsWith('--')) {
-      const value = argv[++i] ?? '';
-      flags[a.slice(2)] = value;
-      (lists[a.slice(2)] ??= []).push(value);
+      const name = a.slice(2);
+      if (!OPTIONS.has(name)) throw new Error(`Unknown option "${a}".`);
+      const value = argv[i + 1];
+      if (value === undefined || value.startsWith('--')) throw new Error(`The option ${a} needs a value.`);
+      i++;
+      flags[name] = value;
+      (lists[name] ??= []).push(value);
     } else throw new Error(`Unexpected argument "${a}".`);
   }
   return { flags, lists, json };

@@ -181,12 +181,19 @@ function select(g: GraphIndex, q: CoverageQuery): Selection {
   const passed = new Set(applyFilters(index, scopeIds, base));
   const above = new Map<string, Set<string>>();
   // A condition has no kind, delivery or marker filter value of its own, so it takes them from itself or from a node above it.
-  const nodeFilters = nonEmpty(q.kinds) || nonEmpty(q.deliveries) || nonEmpty(q.markers);
-  const holders = nodeFilters ? new Set(applyFilters(index, scopeIds, { q: '', kinds: q.kinds ?? [], lifecycles: [], deliveries: q.deliveries ?? [], modules: [], statuses: [], markers: q.markers ?? [] })) : undefined;
+  // Each of these filters matches on its own, and it can match a different node above the condition. The filters are AND.
+  const everyId = new Set(index.model.nodes.map((n) => n.id));
+  const none: Filters = { q: '', kinds: [], lifecycles: [], deliveries: [], modules: [], statuses: [], markers: [] };
+  const holders = [
+    nonEmpty(q.kinds) ? { ...none, kinds: q.kinds } : undefined,
+    nonEmpty(q.deliveries) ? { ...none, deliveries: q.deliveries } : undefined,
+    nonEmpty(q.markers) ? { ...none, markers: q.markers } : undefined,
+  ]
+    .filter((f): f is Filters => !!f)
+    .map((f) => new Set(applyFilters(index, everyId, f)));
   const conditions = index.model.nodes.filter((n) => {
     if (!kinds.has(n.kind) || !passed.has(n.id)) return false;
-    if (!holders) return true;
-    return holders.has(n.id) || [...ancestorsOf(index, n.id, above)].some((a) => holders.has(a));
+    return holders.every((h) => h.has(n.id) || [...ancestorsOf(index, n.id, above)].some((a) => h.has(a)));
   });
   return { g, conditions, scopeIds, above };
 }
@@ -215,7 +222,8 @@ function groupsOf(s: Selection, name: string, by: GroupKind): CoverageGroup[] {
     if (by === 'kind') {
       for (const a of [n.id, ...ancestorsOf(index, n.id, s.above)]) {
         const node = index.byId.get(a)!;
-        if (node.kind === name && s.scopeIds.has(a)) add(a, node.title, node.kind, n);
+        // The scope limits the conditions, not the group nodes.
+        if (node.kind === name) add(a, node.title, node.kind, n);
       }
     } else {
       for (const v of fieldValues(index, name, n.id)) add(v, v ? (filterLabels?.[v] ?? fieldLabel(index.profile, name, v)) : '(none)', undefined, n);

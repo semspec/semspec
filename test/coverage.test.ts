@@ -98,6 +98,14 @@ describe('coverage filters', () => {
     expect(ids(q({ kinds: ['story'], deliveries: ['r1', 'r2'], markers: ['verified'] }))).toEqual(['story-1#s1', 'story-1#s2', 'story-1#s3']);
     expect(q({ scope: 'epic-1', lifecycles: ['active'] }).total.conditions).toBe(0);
   });
+  it('matches each inherited filter on its own node above a condition', () => {
+    const r = coverage(graphs, { kinds: ['epic'], deliveries: ['r1'], gate: ['bad'], list: ['pass', 'partial', 'fail', 'no-status'] });
+    expect(ids(r)).toEqual(['story-1#s1', 'story-1#s2', 'story-1#s3']);
+    expect(r.gate).toMatchObject({ pass: false });
+    expect(r.gate!.failing.map((i) => i.id)).toEqual(['story-1#s2']);
+    expect(coverage(graphs, { kinds: ['product'], deliveries: ['r2'], markers: ['inferred'], list: ['partial'] }).list!.items.map((i) => i.id)).toEqual(['story-2#s4']);
+    expect(coverage(graphs, { kinds: ['epic'], deliveries: ['r9'] }).total.conditions).toBe(0);
+  });
   it('refuses an unknown field filter, an unknown graph and a scope without a graph in a workspace', () => {
     expect(() => coverage(graphs, { fields: { nope: ['x'] } })).toThrow(/Unknown field filter "nope".*teams/);
     expect(() => coverage(graphs, { graph: 'nope' })).toThrow(QueryError);
@@ -143,6 +151,11 @@ describe('coverage groups', () => {
     const priority = coverage(graphs, { group: 'release' }).graphs[0].groups!;
     expect(priority.map((g) => [g.key, g.conditions])).toEqual([['r1', 3], ['r2', 1], ['', 1]]);
     expect(priority[2].label).toBe('(none)');
+  });
+  it('gives a row to a group node above the scope', () => {
+    const groups = coverage(graphs, { group: 'epic', scope: 'story-1' }).graphs[0].groups!;
+    expect(groups.map((g) => [g.key, g.conditions])).toEqual([['epic-1', 3]]);
+    expect(coverage(graphs, { group: 'epic', scope: 'story-3' }).graphs[0].groups!.map((g) => [g.key, g.conditions])).toEqual([['epic-2', 1]]);
   });
   it('refuses a group that is no hierarchy kind and no field', () => {
     expect(() => coverage(graphs, { group: 'scenario' })).toThrow(/Unknown group "scenario"/);
@@ -230,6 +243,21 @@ describe('coverage gate', () => {
     expect(wrong.code).toBe(2);
     expect(wrong.err).toContain('Unknown tone "red"');
     expect((await cli(['--graph', graphPath])).code).toBe(2);
+  });
+});
+
+describe('coverage options', () => {
+  it('exits with 2 for an unknown option and for an option with no value', async () => {
+    const unknown = await cli([...own, '--gaet', 'bad']);
+    expect(unknown.code).toBe(2);
+    expect(unknown.err).toContain('Unknown option "--gaet"');
+    const gateThenStatus = await cli([...own, '--gate', 'bad', '--status']);
+    expect(gateThenStatus.code).toBe(2);
+    expect(gateThenStatus.err).toContain('--status needs a value');
+    const swallowed = await cli([...own, '--kind', '--json', '--gate', 'bad']);
+    expect(swallowed.code).toBe(2);
+    expect(swallowed.err).toContain('--kind needs a value');
+    expect((await cli([...own, '--scope'])).code).toBe(2);
   });
 });
 
