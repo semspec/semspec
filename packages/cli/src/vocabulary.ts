@@ -38,3 +38,15 @@ export function resolveVocabularyFiles(profile: unknown, profilePath: string): {
   }
   return { profile: { ...profile, vocabularies }, errors };
 }
+
+// The absolute paths of the vocabulary files that a profile names. A profile that cannot be read has none.
+export function vocabularyPaths(profilePath: string): string[] {
+  try {
+    const profile = readInput(profilePath, 'profile');
+    if (!isObject(profile) || !isObject(profile.vocabularies)) return [];
+    const base = dirname(resolve(profilePath));
+    return Object.values(profile.vocabularies).flatMap((v) => (isObject(v) && typeof v.file === 'string' ? [resolve(base, v.file)] : []));
+  } catch {
+    return [];
+  }
+}

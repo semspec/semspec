@@ -17,6 +17,7 @@
         "id": { "type": "string", "description": "The key of the id of a node." },
         "kind": { "type": "string", "description": "The key of the kind of a node." },
         "defaultKind": { "type": "string", "description": "The kind of a node that has no value in the kind key. It must be a kind of the profile." },
+        "origin": { "type": "string", "minLength": 1, "description": "The field of a node that holds the path of the file the node was copied from. The path is relative to the profile, or to the workspace file in a workspace. When the field has a value, the Source section shows that file." },
         "markdown": {
           "type": "object",
           "required": ["body"],
@@ -459,8 +460,9 @@
       "additionalProperties": false,
       "description": "The layout of the Graph and Cards views.",
       "properties": {
-        "default": { "enum": ["layered", "grouped", "force"], "description": "The layout that the views start with. The default is layered. The value grouped needs groupEdge." },
-        "groupEdge": { "type": "string", "description": "The name of an edge. The target of the edge is the container of its source. The grouped layout draws the source inside the target." }
+        "default": { "enum": ["layered", "grouped", "force"], "description": "The layout that the views start with. The default is layered. The value grouped needs groupEdge or groupBy." },
+        "groupEdge": { "type": "string", "description": "The name of an edge. The target of the edge is the container of its source. The grouped layout draws the source inside the target." },
+        "groupBy": { "enum": ["parents"], "description": "The value parents nests each node in the parent that the parents rule of its kind picks, as the tree does. It wins over groupEdge. It enables the grouped layout with no groupEdge." }
       }
     },
     "layout": {
@@ -468,8 +470,9 @@
       "additionalProperties": false,
       "description": "The layout of the Graph and Cards views.",
       "properties": {
-        "default": { "enum": ["layered", "grouped", "force"], "description": "The layout that the views start with. The default is layered. The value grouped needs groupEdge." },
-        "groupEdge": { "type": "string", "description": "The name of an edge. The target of the edge is the container of its source. The grouped layout draws the source inside the target." }
+        "default": { "enum": ["layered", "grouped", "force"], "description": "The layout that the views start with. The default is layered. The value grouped needs groupEdge or groupBy." },
+        "groupEdge": { "type": "string", "description": "The name of an edge. The target of the edge is the container of its source. The grouped layout draws the source inside the target." },
+        "groupBy": { "enum": ["parents"], "description": "The value parents nests each node in the parent that the parents rule of its kind picks, as the tree does. It wins over groupEdge. It enables the grouped layout with no groupEdge." }
       }
     },
     "groups": { "type": "object", "properties": { "hierarchy": { "type": "string" } }, "additionalProperties": false },

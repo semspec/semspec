@@ -151,9 +151,9 @@ export function checkInputs(args: CheckArgs): Finding[] {
     } catch (e) {
       return [{ level: 'error', subject: args.workspace, message: message(e) }];
     }
-    const problems = validateWorkspace(file);
-    if (problems.length) return problems.map((m) => ({ level: 'error', subject: args.workspace!, message: m }));
     const base = dirname(resolve(args.workspace));
+    const problems = validateWorkspace(file, undefined, base);
+    if (problems.length) return problems.map((m) => ({ level: 'error', subject: args.workspace!, message: m }));
     for (const g of (file as { graphs: { id: string; label: string; graph: string; profile: string; exclude?: string[] }[] }).graphs) {
       const profilePath = resolve(base, g.profile);
       const result = checkGraph(resolve(base, g.graph), profilePath, g.exclude ?? []);
