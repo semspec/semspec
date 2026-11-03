@@ -49,3 +49,7 @@ questions:
   - { q: reject a graph with repeated ids, expect: [req-validate-graph] }
   - { q: give my editor autocomplete for the yaml files, expect: [cap-schemas, req-schema-per-kind] }
   - { q: how does an assistant read the codes and their definitions, expect: [req-mcp-resources] }
+  - { q: how many conditions are verified in each capability, expect: [req-coverage-query, cap-coverage] }
+  - { q: build the domain model from the source code, expect: [req-code-domain-model] }
+  - { q: check a runtime trace against the model, expect: [req-runtime-conformance] }
+  - { q: which tests run the code of an aggregate, expect: [req-code-model-tests] }
