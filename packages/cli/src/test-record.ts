@@ -256,14 +256,21 @@ export function verifiedGraph(graph: Graph, profile: Profile, profilePath: strin
     const data = readSealed(record) as RecordData;
     if (!Array.isArray(data.cases) || data.cases.some((c) => !c || typeof c.class !== 'string' || !c.class || typeof c.method !== 'string' || !c.method || !['passed', 'failed', 'not-run'].includes(c.outcome))) throw new Error('Invalid test record cases.');
     if (!Array.isArray(data.locations) || !data.locations.length || data.locations.some((p) => typeof p !== 'string' || !p)) throw new Error('Invalid test record report locations.');
-    // Reparse original reports. The normalized cases must agree with them exactly.
-    for (const report of data.reports) if (hash(readFileSync(resolve(root, report.path))) !== report.hash) throw new Error('The JUnit report bytes changed.');
-    const actualCases = data.reports.flatMap((r) => parseJUnit(readFileSync(resolve(root, r.path), 'utf8')));
-    if (digest(actualCases) !== digest(data.cases)) throw new Error('The test record cases do not match the JUnit reports.');
-    if (digest(reportsAt(root, data.locations)) !== digest(data.reports)) throw new Error('The JUnit report set changed.');
-    try { stale = sourceFingerprint(profile, profilePath) !== data.fingerprint; }
-    catch { stale = true; }
-    cases = data.cases;
+    // A test run or a clean after collection changes or removes reports. That makes the evidence stale, and it is no error.
+    const changed = data.reports.filter((r) => { const path = resolve(root, r.path); return !existsSync(path) || hash(readFileSync(path)) !== r.hash; }).length;
+    let setChanged: boolean;
+    try { setChanged = digest(reportsAt(root, data.locations)) !== digest(data.reports); }
+    catch { setChanged = true; }
+    if (changed || setChanged) {
+      warnings.push(`The JUnit reports changed after collection: ${changed} of ${data.reports.length} changed or missing${setChanged ? ', and the report set changed' : ''}. Run the tests and collect again.`);
+    } else {
+      // The reports are the ones the record sealed, so the normalized cases must agree with them exactly.
+      const actualCases = data.reports.flatMap((r) => parseJUnit(readFileSync(resolve(root, r.path), 'utf8')));
+      if (digest(actualCases) !== digest(data.cases)) throw new Error('The test record cases do not match the JUnit reports.');
+      try { stale = sourceFingerprint(profile, profilePath) !== data.fingerprint; }
+      catch { stale = true; }
+      cases = data.cases;
+    }
   }
   if (stale) warnings.push('Test verification is stale or absent. Every condition is not-run.');
   return { graph: applyVerification(graph, profile, cases, stale), warnings };

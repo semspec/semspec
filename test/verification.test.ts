@@ -86,8 +86,25 @@ describe('JUnit verification', () => {
     writeFileSync(recordPath, original.replace('passed', 'failed'));
     expect(() => verifiedGraph(f.graph, f.profile, f.profilePath, f.graphPath)).toThrow(/integrity/);
     writeFileSync(recordPath, original);
+    expect(verifiedGraph(f.graph, f.profile, f.profilePath, f.graphPath).warnings).toEqual([]);
+  });
+
+  it('makes the evidence stale when a report changes or disappears after collection', () => {
+    const f = fixture();
+    beginTestRecord(f.profile, f.profilePath, ['reports']);
+    f.report();
+    collectTestRecord(f.profile, f.profilePath);
+    const outcome = (g: Graph) => JSON.stringify(g).match(/"outcome":"([a-z-]+)"/)?.[1];
+    expect(outcome(verifiedGraph(f.graph, f.profile, f.profilePath, f.graphPath).graph)).toBe('passed');
     f.report(testcase('works()', '<failure/>'));
-    expect(() => verifiedGraph(f.graph, f.profile, f.profilePath, f.graphPath)).toThrow(/bytes changed/);
+    const changed = verifiedGraph(f.graph, f.profile, f.profilePath, f.graphPath);
+    expect(changed.warnings.join(' ')).toMatch(/1 of 1 changed or missing/);
+    expect(changed.warnings).toContain('Test verification is stale or absent. Every condition is not-run.');
+    expect(outcome(changed.graph)).toBe('not-run');
+    rmSync(join(f.dir, 'reports'), { recursive: true, force: true });
+    const missing = verifiedGraph(f.graph, f.profile, f.profilePath, f.graphPath);
+    expect(missing.warnings.join(' ')).toMatch(/1 of 1 changed or missing, and the report set changed/);
+    expect(outcome(missing.graph)).toBe('not-run');
   });
 
   it('preserves sources and evidence when output preflight fails', () => {

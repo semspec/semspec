@@ -16,9 +16,13 @@ acceptance:
     tests:
       - {type: unit, file: test/verification.test.ts, name: rejects stale sources and old reports}
   - id: integrity
-    text: Record validation rejects malformed data and changed report bytes. XML import rejects malformed XML and entity declarations.
+    text: Record validation rejects malformed data and a record whose own integrity digest fails. XML import rejects malformed XML and entity declarations.
     tests:
       - {type: unit, file: test/verification.test.ts, name: validates report and record integrity}
+  - id: changed-reports
+    text: A report that changes, disappears or is added after collection makes the evidence stale. Every condition is not-run, a warning names the number of changed or missing reports, and the check, the build and the MCP server keep working. A test run or a clean of the build output does this, so it is no error.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: makes the evidence stale when a report changes or disappears after collection}
   - id: shared
     text: CLI, MCP and explorer loads derive condition status from the same record. No condition status is written to graph files. Profiles without verification keep their current behavior.
     tests:
