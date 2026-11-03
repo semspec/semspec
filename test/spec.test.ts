@@ -446,11 +446,12 @@ describe('options', () => {
     expect(t).toBe(['| State of work | Step id | Id | Runs |', '| --- | --- | --- | --- |', '| <a id="item-b"></a>Done | `s1` | `item-b` | Runs the only step |'].join('\n'));
     expect(errorsOf(mini, template('shape=traceability columns=colour'))[0].message).toContain('The names are: requirement, id, condition, key, status, tests.');
   });
-  it('cuts a long cell with an ellipsis, in 1 line, and escapes pipes and Markdown', () => {
+  it('shows the full text of a long cell in 1 line, and escapes pipes and Markdown', () => {
     const t = body(mini, 'shape=table ids=item-c columns=id,title');
     expect(t.split('\n')).toHaveLength(3);
     const long = body(mini, 'shape=traceability ids=item-c').split('\n')[2];
-    expect(long).toMatch(/word… \| Partly done \| No run\. \|$/);
+    expect(long).not.toContain('…');
+    expect(long).toMatch(/ \| Partly done \| No run\. \|$/);
     const a = body(mini, 'shape=table ids=item-a columns=statement');
     expect(a.split('\n')[2]).toBe('| <a id="item-a"></a>Does \\*a\\* \\| b &lt;!-- semspec:end --&gt; now. Second paragraph. |');
   });

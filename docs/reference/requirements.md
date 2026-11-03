@@ -73,7 +73,7 @@ The options of a section marker select the nodes and set the shape, the detail a
 - <a id="req-spec-options#labels"></a>`labels` (Verified): Coded values show their vocabulary labels, and kinds and edges show their labels from the profile.
 - <a id="req-spec-options#anchors"></a>`anchors` (Verified): Each node heading has an anchor equal to the node id, and links between nodes in the same document use these anchors.
 - <a id="req-spec-options#cross-links"></a>`cross-links` (Verified): A link to a node of another graph or another document is a relative Markdown link when that node has a generated document, else plain text with the id.
-- <a id="req-spec-options#columns"></a>`columns` (Verified): For shape table and shape traceability, the option columns names the columns and their order. A cell shows a short value in 1 line, and a long text is cut with an ellipsis.
+- <a id="req-spec-options#columns"></a>`columns` (Verified): For shape table and shape traceability, the option columns names the columns and their order. A cell shows the full text in 1 line, and never cuts it.
 - <a id="req-spec-options#conditions-form"></a>`conditions-form` (Verified): The option conditions takes list or table and sets how the acceptance conditions of each node show, apart from the shape of the section.
 - <a id="req-spec-options#filter-labels"></a>`filter-labels` (Verified): A field filter value matches by code or by the label that the profile gives it, in \`fieldFilters\` values or in a vocabulary.
 - <a id="req-spec-options#status-case"></a>`status-case` (Verified): A status value matches its exact code or its label without regard to case, and an error never names the value it refused as the allowed value.
@@ -125,7 +125,7 @@ The profile defines named section presets, and a marker uses a preset by name an
 | Select and shape the content of a section | `labels` | Verified | Shows vocabulary labels for coded values and the labels of kinds and edges |
 | Select and shape the content of a section | `anchors` | Verified | Puts an anchor with the node id in each heading and links to it inside the document |
 | Select and shape the content of a section | `cross-links` | Verified | Links to the generated document of another graph and writes plain text otherwise |
-| Select and shape the content of a section | `columns` | Verified | Sets the columns of a table and of a traceability table; Cuts a long cell with an ellipsis in 1 line and escapes pipes and Markdown; Escapes Markdown characters and table pipes in values |
+| Select and shape the content of a section | `columns` | Verified | Sets the columns of a table and of a traceability table; Shows the full text of a long cell in 1 line and escapes pipes and Markdown; Escapes Markdown characters and table pipes in values |
 | Select and shape the content of a section | `conditions-form` | Verified | Shows the acceptance conditions as a list or as a table |
 | Select and shape the content of a section | `filter-labels` | Verified | Matches a field filter value by the label of field filters values without a vocabulary |
 | Select and shape the content of a section | `status-case` | Verified | Matches a status by its exact code or by its label without regard to case |
