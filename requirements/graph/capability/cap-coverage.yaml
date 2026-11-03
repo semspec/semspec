@@ -1,0 +1,8 @@
+id: cap-coverage
+kind: capability
+title: Coverage report
+state: draft
+priority: now
+statement: An agent and a person get the verification status of the conditions in any selection of the graph, with no script of their own.
+features:
+  - feat-harness

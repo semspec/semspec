@@ -1,0 +1,37 @@
+id: req-runtime-conformance
+kind: requirement
+title: Check a runtime trace against the model
+state: draft
+priority: later
+statement: "Semspec reads an event trace of a run and checks each step against the domain model. It shows the result on each node and each edge, and it names the step of each violation."
+rationale: "A test can pass while the system takes a path that the model does not allow. A trace of an end to end test or of the UX playground shows the paths that the system took."
+capabilities:
+  - cap-evidence
+area:
+  - core
+  - app
+acceptance:
+  - id: format
+    text: "Semspec declares a JSON format of a trace: a run id, and steps with the time, the aggregate type and id, the command, the event and the saga. A JSON Schema of the format ships with Semspec."
+    status: open
+  - id: emitter
+    text: "A step that applies an event on an aggregate that the model does not link to the event by the emits relation is a violation."
+    status: open
+  - id: state-machine
+    text: "A state machine is a node of the graph with states and transitions, linked to its aggregate. A step that makes a transition that the state machine does not allow is a violation, for example achieved while archived."
+    status: open
+  - id: code-subset
+    text: "The state machine is a declaration, and Semspec never derives it from the code. The check reports a transition in the code of the aggregate that the state machine does not declare."
+    status: open
+  - id: saga
+    text: "A saga step that issues a command after an event is a violation when the model has no pair of reacts-to and issues for that event and command."
+    status: open
+  - id: edges
+    text: "The view of a run draws the edges that the run used in full, dims the edges that it did not use, and marks the nodes and edges of each violation."
+    status: open
+  - id: violations
+    text: "Each violation names the run, the step and the rule it breaks. A violation gives the bad tone to the derived status of its node and its edge."
+    status: open
+  - id: provenance
+    text: "Each trace is a run with provenance, as the run history keeps it."
+    status: open
