@@ -320,6 +320,8 @@ export interface Profile {
   // The links to outside tools. See `ExternalLinkSpec`.
   externalLinks?: ExternalLinkSpec[];
   status?: StatusSpec;
+  // Local JUnit evidence. Paths are relative to the profile; inputs are relative to root.
+  verification?: { record: string; root: string; inputs: string[]; exclude?: string[]; classField: string; methodField: string };
   fieldFilters?: FieldFilterSpec[];
   // Vocabularies by scheme id. The command line tool reads the ones that name a file.
   vocabularies?: Record<string, Vocabulary>;

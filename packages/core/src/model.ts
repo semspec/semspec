@@ -147,13 +147,14 @@ export function buildModel(graph: Graph, input: ProfileInput): Model {
             setup: part.setup ? a[part.setup] : undefined,
             scope: part.scope ? a[part.scope] : undefined,
             checks: list,
+            ...(P.verification ? { verification: a.verification } : {}),
             ...(P.status ? { [P.status.field]: a[P.status.field] } : {}),
             ...(P.status?.detail ? { [P.status.detail.field]: a[P.status.detail.field] } : {}),
           },
           status: statusValue(a),
         });
         addEdge(cid, n[idKey], part.edge);
-        if (list.length) verified++;
+        if (P.verification ? a.verification?.outcome === 'passed' && !a.verification?.stale : list.length) verified++;
         list.forEach((v) => addCheck(v, cid, n[idKey]));
       });
       const owner = byId.get(n[idKey]);

@@ -31,3 +31,4 @@ export * from './slice.js';
 export * from './spec.js';
 export * from './embed.js';
 export * from './semantic.js';
+export * from './verification.js';

@@ -43,6 +43,7 @@ import { coverageInputs, formatCoverage, parseCoverageArgs } from './coverage';
 import { deliverablesInputs, formatDeliverables, parseDeliverablesArgs } from './deliverables';
 import { loadInputs, loadProfile } from './inputs';
 import { mcpLoader } from './mcp';
+import { beginTestRecord, collectTestRecord } from './test-record';
 import { renderPage } from './page';
 import { parseSliceArgs, sliceInputs } from './slice';
 import { formatSpec, parseSpecArgs, specInputs } from './spec';
@@ -76,6 +77,8 @@ Usage:
   semspec spec --workspace <file> --out <dir> [--roots <kind,...>] [--glossary <graph>] [--check] [--json]
   semspec check --graph <file> --profile <file> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
   semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
+  semspec test-record --profile <file> --phase begin --junit <report-path> [--junit <report-path>]...
+  semspec test-record --profile <file> --phase collect
   semspec schema --profile <file> --out <dir>
   semspec --version | -v
   semspec version --json
@@ -84,6 +87,7 @@ Usage:
 
 The graph is a JSON file, a YAML file or a folder of YAML files. The profile is a JSON or YAML file.
 --exclude skips the folders and files of a graph folder that match a pattern. The option can repeat.
+The test-record command snapshots source inputs before tests and collects fresh JUnit reports after tests. See docs/guide/test-records.md.
 A pattern matches a path relative to the graph folder. It supports *, ** and ?.
 --workspace reads a workspace file that lists several graphs. It cannot combine with --graph, --profile or --exclude.
 The mcp command serves the graph or the workspace to an AI agent over the Model Context Protocol on stdio. See docs/reference/mcp.md.
@@ -204,6 +208,24 @@ export async function run(rawArgv: string[]): Promise<number> {
   if (!command || command === '--help' || command === 'help') {
     console.log(USAGE);
     return command ? 0 : 1;
+  }
+  if (command === 'test-record') {
+    try {
+      if (!flags.profile || !['begin', 'collect'].includes(flags.phase)) throw new Error('Use test-record --profile <file> --phase begin|collect. Begin also requires --junit <path> (repeatable, relative to verification.root).');
+      const profile = loadProfile(flags.profile);
+      if (flags.phase === 'begin') {
+        beginTestRecord(profile, flags.profile, lists.junit ?? []);
+        console.log('Test source snapshot saved. Run the tests, then collect.');
+      } else {
+        if (lists.junit?.length) throw new Error('Collect uses the report paths saved by begin.');
+        const record = collectTestRecord(profile, flags.profile);
+        console.log(JSON.stringify({ cases: record.cases.length, reports: record.reports.length, fingerprint: record.fingerprint }));
+      }
+      return 0;
+    } catch (e) {
+      console.error((e as Error).message);
+      return 1;
+    }
   }
   if (command === 'check') {
     try {

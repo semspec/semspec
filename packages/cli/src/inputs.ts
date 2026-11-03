@@ -7,6 +7,7 @@ import { readInput } from './input';
 import { validateGraph, validateProfile } from './validate';
 import { resolveVocabularyFiles } from './vocabulary';
 import { readGraphFolder } from './yaml';
+import { verifiedGraph } from './test-record';
 
 // Reads and checks the profile. It throws on an error.
 export function loadProfile(profilePath: string): Profile {
@@ -34,7 +35,8 @@ export function loadInputs(graphPath: string, profilePath: string, exclude: stri
   }
   const checked = validateGraph(graph, profile, labels);
   if (checked.errors.length) throw new Error(`The graph "${graphPath}" is not valid:\n  ${checked.errors.slice(0, 20).join('\n  ')}`);
-  return { graph, profile, warnings: [...extra, ...checked.warnings] };
+  const verified = verifiedGraph(graph, profile, profilePath, graphPath);
+  return { graph: verified.graph, profile, warnings: [...extra, ...checked.warnings, ...verified.warnings] };
 }
 
 function isDirectory(path: string): boolean {

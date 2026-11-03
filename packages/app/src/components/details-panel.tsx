@@ -430,6 +430,7 @@ export function DetailsPanel({ v }: { v: Viewer }) {
         <>
           <Divider />
           <Section title={P.checks?.sectionTitle ?? 'Checks'} count={(d.checks ?? []).length}>
+            {P.verification && <Text>{d.verification?.outcome ?? 'not-run'}{d.verification?.stale ? ' (stale)' : ''}</Text>}
             {d.setup && <Text className="text-muted-foreground">Setup: {d.setup}</Text>}
             {(d.checks ?? []).length ? <CheckList list={d.checks} /> : <Text className="text-warn">{P.checks?.noneText ?? 'No check.'}</Text>}
           </Section>

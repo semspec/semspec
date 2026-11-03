@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The Semspec Authors
+id: req-test-record
+kind: requirement
+title: Derive verification from JUnit records
+statement: Semspec derives condition verification from fresh JUnit evidence and the current source contents.
+capabilities: [cap-status]
+area: [core, cli]
+acceptance:
+  - id: outcomes
+    text: Every named class and method must have at least one passing case. A failure wins over a pass. A missing or skipped case prevents a pass. Repeated cases count together. An ambiguous simple class name cannot pass.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: aggregates named tests conservatively}
+  - id: source
+    text: A native command snapshots declared source, test, contract, build, configuration and graph inputs before execution. Collection rejects changed inputs and unchanged old reports. Reading a record derives stale evidence as not-run when input contents change.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: rejects stale sources and old reports}
+  - id: integrity
+    text: Record validation rejects malformed data and changed report bytes. XML import rejects malformed XML and entity declarations.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: validates report and record integrity}
+  - id: shared
+    text: CLI, MCP and explorer loads derive condition status from the same record. No condition status is written to graph files. Profiles without verification keep their current behavior.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: derives model status without editing the graph}
+  - id: outputs
+    text: Collection outputs cannot overwrite source inputs, profiles or reports. Unsafe output links and unmanaged file collisions are rejected before mutation. A failed begin preserves valid prior evidence.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: preserves sources and evidence when output preflight fails}
+  - id: exclusions
+    text: The profile can exclude generated output paths from source fingerprints with glob patterns. Output-only changes preserve freshness. Source additions, changes and deletions change the fingerprint. Exclusions cannot hide the profile. Selecting a report path never excludes authored inputs. Fingerprint inputs do not follow symlinks.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: excludes generated outputs while retaining source changes}
+      - {type: unit, file: test/verification.test.ts, name: rejects report paths that contain authored inputs}

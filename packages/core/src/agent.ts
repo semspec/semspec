@@ -166,6 +166,7 @@ export function nodeDetail(graphs: GraphIndex[], graphId: string | undefined, id
     title: n.title,
     ...(n.statement ? { statement: n.statement } : {}),
     lifecycle: n.lifecycle,
+    ...(p.verification && n.d.verification ? { verification: n.d.verification } : {}),
     ...(p.status && status.total ? { status: { value: status.value, label: statusLabel(status.value), tone: status.tone, own: n.status !== undefined, counts: status.counts } } : {}),
     ...linksField(nodeLinks(p, n)),
     fields: plainFields(p, n),
