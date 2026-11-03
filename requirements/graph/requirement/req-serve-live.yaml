@@ -1,0 +1,75 @@
+id: req-serve-live
+kind: requirement
+title: Reload the page when a file changes
+state: draft
+priority: now
+statement: "The serve command watches the files of the graph and pushes a reload to each open page. The page reads the new data and keeps its view, scope, selection, layout and filters."
+rationale: "A person edits draft nodes while the page is open. A manual reload on each save breaks the work."
+capabilities:
+  - cap-html
+area:
+  - cli
+  - app
+acceptance:
+  - id: watch
+    text: "serve watches the graph folders and files, the profiles, the vocabulary files and the workspace file. A change of 1 of them sends 1 event to each open page."
+    status: verified
+    tests:
+      - type: unit
+        file: test/live.test.ts
+        name: sends 1 event to each open page when a file of the graph folder or the profile changes
+      - type: unit
+        file: test/live.test.ts
+        name: "sends an event when the workspace file, a graph, a profile or a vocabulary of a workspace changes"
+      - type: unit
+        file: test/live.test.ts
+        name: serves the new data on the request after the event
+  - id: burst
+    text: "Several changes within a short time give 1 reload."
+    status: verified
+    tests:
+      - type: unit
+        file: test/live.test.ts
+        name: gives 1 reload for several changes within a short time
+  - id: keep-state
+    text: "After a reload, the page shows the same view, scope, selection, layout and filters. A selected node that no longer exists is dropped."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/live.test.tsx
+        name: "keeps the view, the scope, the selection, the layout and the filters after a reload with changed data"
+      - type: unit
+        file: test/app/live.test.tsx
+        name: drops a selected node that no longer exists after a reload
+  - id: error
+    text: "When the new files are not valid, the page keeps the last valid graph and shows the error with the file. The next valid save clears the error."
+    status: verified
+    tests:
+      - type: unit
+        file: test/live.test.ts
+        name: "keeps the last valid page and sends the error with the file, and the next valid save clears it"
+      - type: unit
+        file: test/live.test.ts
+        name: shows the error of a workspace that is not valid and recovers on the next valid save
+      - type: unit
+        file: test/app/live.test.tsx
+        name: shows the error with the file and removes it on the next reload event
+  - id: built-page
+    text: "A page that build writes has no reload channel and makes no network request."
+    status: verified
+    tests:
+      - type: unit
+        file: test/live.test.ts
+        name: writes no live marker into a built page
+      - type: unit
+        file: test/live.test.ts
+        name: gives the page that serve sends the live marker
+      - type: unit
+        file: test/app/live.test.tsx
+        name: opens no event channel and makes no network request when the page has no live marker
+      - type: unit
+        file: test/app/live.test.tsx
+        name: opens the event channel of serve when the page has the live marker
+      - type: unit
+        file: test/app/live.test.tsx
+        name: asks for no source text on a page that has no live marker and no embedded texts

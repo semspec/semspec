@@ -1,0 +1,123 @@
+id: req-workspace-views
+kind: requirement
+title: Declare the views of a project
+state: draft
+priority: now
+statement: "A workspace file lists views in the order of the project. A view shows 1 graph with its own profile, tree, layout and filters. The header of the page shows a menu of the views."
+rationale: "A project can need a Vocabulary view next to a Domain model view. Both show the same graph of terms, with a different tree and a different grouping. A fixed switch between graphs cannot show 2 views of 1 graph."
+capabilities:
+  - cap-workspace
+area:
+  - cli
+  - app
+acceptance:
+  - id: list
+    text: "The workspace file has an optional list views. Each view has an id, a label and the id of a graph of the workspace. The menu shows the views in the order of the list."
+    status: verified
+    tests:
+      - type: unit
+        file: test/views.test.ts
+        name: loads the views in the order of the list with their graph ids
+      - type: unit
+        file: test/views.test.ts
+        name: writes the views into the page
+      - type: unit
+        file: test/app/views.test.tsx
+        name: shows a menu of the views in the order of the list
+      - type: unit
+        file: test/app/views.test.tsx
+        name: switches the view with the menu and shows its label in the header
+  - id: default-views
+    text: "A workspace file with no views gives 1 view for each graph, in the order of the graphs, so a workspace without views shows as before."
+    status: verified
+    tests:
+      - type: unit
+        file: test/views.test.ts
+        name: gives 1 view for each graph in the order of the graphs when the file has no views
+      - type: unit
+        file: test/app/views.test.tsx
+        name: shows the menu of a workspace with no views with 1 item for each graph
+      - type: unit
+        file: test/app/views.test.tsx
+        name: shows no menu when the workspace has 1 view
+  - id: profile
+    text: "A view can name its own profile file for its graph. Without it, the view uses the profile of the graph."
+    status: verified
+    tests:
+      - type: unit
+        file: test/views.test.ts
+        name: builds the model of a view from the profile file of the view
+      - type: unit
+        file: test/views.test.ts
+        name: uses the model of the graph for a view with no profile, parents rule or layout
+  - id: tree
+    text: "A view can replace the parents rule of a kind, so the tree of the view places the nodes under other parents. 2 views of 1 graph can show 2 different trees."
+    status: verified
+    tests:
+      - type: unit
+        file: test/views.test.ts
+        name: places the nodes of 2 views of 1 graph under different parents
+      - type: unit
+        file: test/views.test.ts
+        name: keeps the rule of a kind that the view does not name
+  - id: layout
+    text: "A view can set the default layout and the layout settings of the Graph and Cards views."
+    status: verified
+    tests:
+      - type: unit
+        file: test/views.test.ts
+        name: sets the layout keys of a view over the keys of the profile
+      - type: unit
+        file: test/app/views.test.tsx
+        name: enables the grouped layout and nests by the parents rule when the profile has groupBy and no groupEdge
+  - id: filters
+    text: "A view can set default filters. The page applies them when a person opens the view for the first time, and a person can change them."
+    status: verified
+    tests:
+      - type: unit
+        file: test/views.test.ts
+        name: carries the default filters of a view into the page data
+      - type: unit
+        file: test/app/views.test.tsx
+        name: applies the default filters of a view when a person opens it first, and keeps a change
+  - id: identity
+    text: "2 views of 1 graph show the same nodes with the same ids. A cross link names the graph, and it opens in the first view of that graph. Each view keeps its own state of the page."
+    status: verified
+    tests:
+      - type: unit
+        file: test/views.test.ts
+        name: shows the same node ids in 2 views of 1 graph
+      - type: unit
+        file: test/app/views.test.tsx
+        name: keeps the state of each view of 1 graph
+      - type: unit
+        file: test/app/views.test.tsx
+        name: writes the id of the view into the hash and keeps the hash of a view with the id of its graph
+      - type: unit
+        file: test/app/views.test.tsx
+        name: opens a hash that names a graph in the first view of the graph
+      - type: unit
+        file: test/app/views.test.tsx
+        name: opens a cross link in the first view of the target graph
+  - id: check
+    text: "The check of the workspace refuses a view id that appears twice, a view that names an unknown graph and a view profile that is not valid. The message names the view id."
+    status: verified
+    tests:
+      - type: unit
+        file: test/views.test.ts
+        name: refuses a view id that appears twice and names the view
+      - type: unit
+        file: test/views.test.ts
+        name: refuses a view that names an unknown graph and names the view
+      - type: unit
+        file: test/views.test.ts
+        name: refuses a view profile that is not valid and names the view
+      - type: unit
+        file: test/views.test.ts
+        name: refuses a parents rule that names an unknown kind and names the view
+      - type: unit
+        file: test/views.test.ts
+        name: refuses a parents rule that names an edge the profile lacks and names the view
+      - type: unit
+        file: test/views.test.ts
+        name: fails the check command for a view that names an unknown graph
