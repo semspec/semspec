@@ -8,6 +8,7 @@ import { applyVerification, buildIndex, buildModel, conditionOutcome, nodeDetail
 import { beginTestRecord, collectTestRecord, parseJUnit, sourceFingerprint, verifiedGraph } from '../packages/cli/src/test-record';
 import { loadInputs } from '../packages/cli/src/inputs';
 import { run } from '../packages/cli/src/index';
+import { mcpLoader } from '../packages/cli/src/mcp';
 
 const dirs: string[] = [];
 afterEach(() => { dirs.splice(0).forEach((dir) => rmSync(dir, { recursive: true, force: true })); });
@@ -87,6 +88,19 @@ describe('JUnit verification', () => {
     expect(() => verifiedGraph(f.graph, f.profile, f.profilePath, f.graphPath)).toThrow(/integrity/);
     writeFileSync(recordPath, original);
     expect(verifiedGraph(f.graph, f.profile, f.profilePath, f.graphPath).warnings).toEqual([]);
+  });
+
+  it('starts the MCP server with a warning when the test evidence cannot load', async () => {
+    const f = fixture();
+    beginTestRecord(f.profile, f.profilePath, ['reports']);
+    f.report();
+    collectTestRecord(f.profile, f.profilePath);
+    const recordPath = join(f.dir, 'evidence', 'record.json');
+    writeFileSync(recordPath, readFileSync(recordPath, 'utf8').replace('passed', 'failed'));
+    const loaded = mcpLoader({ graph: f.graphPath, profile: f.profilePath })();
+    expect(loaded.warnings.join(' ')).toMatch(/The test evidence cannot load: .*integrity.* Every condition is not-run\./);
+    expect(JSON.stringify(loaded.graphs[0].graph)).toContain('"outcome":"not-run"');
+    expect(await run(['check', '--graph', f.graphPath, '--profile', f.profilePath])).not.toBe(0);
   });
 
   it('makes the evidence stale when a report changes or disappears after collection', () => {
