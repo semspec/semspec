@@ -134,11 +134,24 @@ describe('Evidence port', () => {
     const sets = [{ spec, results: [result({ file: 'a.test.ts', name: 'x' })] }];
     expect(checkOutcome({ file: 'a.test.ts', name: 'x' }, 'unit', sets)).toBe('passed');
     expect(checkOutcome({ file: 'a.test.ts', name: 'x' }, 'e2e', sets)).toBe('not-run');
-    expect(conditionResult([{ type: 'unit', file: 'a.test.ts', name: 'x' }, { type: 'e2e', name: 'y' }], 'type', sets)).toBe('not-run');
     // 2 adapters for 1 type: a failure wins, and a pass needs no other vote.
     const other = { spec: { adapter: 'junit', key: { rule: 'class-method' as const } }, results: [result({ class: 'k', method: 'm' }, 'failed')] };
     expect(checkOutcome({ file: 'a.test.ts', name: 'x', class: 'k', method: 'm' }, 'unit', [...sets, other])).toBe('failed');
     expect(checkOutcome({ file: 'a.test.ts', name: 'x', class: 'z', method: 'm' }, 'unit', [...sets, other])).toBe('passed');
+  });
+
+  it('ignores a check of a type that no adapter answers, and keeps a condition with no answered check not-run', () => {
+    const spec = { adapter: 'vitest-json', checkTypes: ['unit'], key: { rule: 'file-name' as const } };
+    const sets = [{ spec, results: [result({ file: 'a.test.ts', name: 'x' }), result({ file: 'b.test.ts', name: 'z' }, 'failed')] }];
+    const unit = { type: 'unit', file: 'a.test.ts', name: 'x' };
+    const gate = { type: 'gate', command: 'node check.mjs' };
+    expect(conditionResult([unit, gate], 'type', sets)).toBe('passed');
+    expect(conditionResult([gate], 'type', sets)).toBe('not-run');
+    expect(conditionResult([], 'type', sets)).toBe('not-run');
+    // A failed answered check still fails the condition.
+    expect(conditionResult([unit, gate, { type: 'unit', file: 'b.test.ts', name: 'z' }], 'type', sets)).toBe('failed');
+    // An adapter with no check types answers every type.
+    expect(conditionResult([gate], 'type', [{ spec: { ...spec, checkTypes: undefined }, results: [] }])).toBe('not-run');
   });
 
   it('joins a check with each of the 3 key rules', () => {
@@ -370,7 +383,7 @@ describe('Evidence port', () => {
     expect(joinCheck({ type: 'unit', file: 'test/core.test.ts', name: 'derives a sentence from an id' }, cut.results, spec.adapters[0].key)).toBe('passed');
     // A report that lists every test of the graph joins every condition that has a test. One failed test fails its conditions.
     const raw = buildModel(loadInputs(graphPath, profilePath).graph, profile);
-    const checks = raw.nodes.filter((n) => n.kind === profile.checks!.kind);
+    const checks = raw.nodes.filter((n) => n.kind === profile.checks!.kind && n.d.type === 'unit');
     expect(checks.length).toBeGreaterThan(50);
     const failing = checks[0].d.name as string;
     const report = { startTime: 1, testResults: [...new Set(checks.map((c) => c.d.file as string))].map((file) => ({ name: join(repo, file), status: 'passed', assertionResults: checks.filter((c) => c.d.file === file).map((c) => ({ ancestorTitles: ['group'], title: c.d.name, status: c.d.name === failing ? 'failed' : 'passed' })) })) };

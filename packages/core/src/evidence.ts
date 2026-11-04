@@ -123,10 +123,15 @@ export function checkOutcome(check: unknown, type: unknown, sets: AdapterSet[]):
   return real.length && real.every((v) => v === 'passed') ? 'passed' : 'not-run';
 }
 
-// The outcome of the checks of 1 condition.
+const answered = (type: unknown, sets: AdapterSet[]): boolean => sets.some((s) => !s.spec.checkTypes || (typeof type === 'string' && s.spec.checkTypes.includes(type)));
+
+// The outcome of the checks of 1 condition. A check of a type that no adapter answers gives no vote.
+// A condition with no check that an adapter answers is not-run.
 export function conditionResult(checks: unknown, typeField: string, sets: AdapterSet[]): EvidenceOutcome {
-  if (!Array.isArray(checks) || !checks.length) return 'not-run';
-  return aggregate(checks.map((c) => checkOutcome(c, getPath(c, typeField), sets)));
+  if (!Array.isArray(checks)) return 'not-run';
+  const voting = checks.filter((c) => answered(getPath(c, typeField), sets));
+  if (!voting.length) return 'not-run';
+  return aggregate(voting.map((c) => checkOutcome(c, getPath(c, typeField), sets)));
 }
 
 // Adds the derived status to a copy of the graph. The authored status stays in its field.

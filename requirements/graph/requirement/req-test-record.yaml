@@ -76,3 +76,10 @@ acceptance:
     status: verified
     tests:
       - {type: unit, file: test/evidence.test.ts, name: derives the status of the conditions of Semspec from its own Vitest report}
+  - id: unanswered-type
+    text: A check of a type that no adapter answers gives no vote. It does not hold its condition at not-run. A condition with no check that an adapter answers is not-run.
+    status: verified
+    tests:
+      - type: unit
+        file: test/evidence.test.ts
+        name: ignores a check of a type that no adapter answers, and keeps a condition with no answered check not-run
