@@ -42,22 +42,36 @@ acceptance:
       - {type: unit, file: test/verification.test.ts, name: rejects report paths that contain authored inputs}
   - id: authored-derived
     text: The model keeps the authored status of a condition in its status field, and the derived status in its own field, with the outcome, the stale flag and the run. With evidence, the roll-up, the gates and the default display use the derived status. Without evidence, nothing changes.
-    status: open
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: keeps the authored status next to the derived status}
   - id: port
     text: The core library holds the types of the evidence port, with no I/O. A result has a key, an outcome and a run. An adapter reads 1 report format and gives results. The rule that joins results to checks and the aggregation of repeated cases are in the core library.
-    status: open
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: joins results to checks in the core without reading any file}
   - id: keys
     text: The profile sets the key rule of each check type. The rules are class and method, file and name, and file and title path. A title path joins the titles of the groups and of the test with a separator that the profile can set.
-    status: open
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: joins a check with each of the 3 key rules}
   - id: alias
     text: The profile key verification stays valid as the JUnit adapter with the key rule class and method. A record of version 1 still loads. A record of an unknown version makes the evidence stale with a warning and is no error.
-    status: open
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: loads a record of version 1 and makes a record of an unknown version stale}
   - id: junit-keys
     text: The JUnit adapter matches cases with each key rule, so it reads the reports of JUnit, of node test with the JUnit reporter, of cargo nextest and of the JUnit reporter of Playwright or Vitest.
-    status: open
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: reads the reports of node test and cargo nextest and Playwright with each key rule}
   - id: vitest
     text: An adapter reads the JSON report of Vitest. The key of a test is its file and its title path. The fixture of the adapter is a cut copy of a real report.
-    status: open
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: reads a Vitest JSON report with the title array in the key}
   - id: self
     text: The Semspec repository derives the status of its own conditions from a Vitest JSON report of its own tests. The coverage report names the conditions whose derived status differs from the authored status.
-    status: open
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: derives the status of the conditions of Semspec from its own Vitest report}

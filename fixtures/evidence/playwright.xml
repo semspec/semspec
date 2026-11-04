@@ -1,0 +1,15 @@
+<testsuites id="" name="" tests="3" failures="1" skipped="1" errors="0" time="1.250">
+<testsuite name="cart.spec.ts" timestamp="2026-11-03T10:00:00.000Z" hostname="chromium" tests="3" failures="1" skipped="1" time="1.100" errors="0">
+<testcase name="Cart › adds an item" classname="[chromium] › cart.spec.ts" time="0.500">
+</testcase>
+<testcase name="Cart › with a coupon › rejects an old coupon" classname="[chromium] › cart.spec.ts" time="0.600">
+<failure message="cart.spec.ts:12:5 rejects an old coupon" type="FAILURE">
+<![CDATA[expected 1 to be 2]]>
+</failure>
+</testcase>
+<testcase name="Cart › keeps a skipped case" classname="[chromium] › cart.spec.ts" time="0.000">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

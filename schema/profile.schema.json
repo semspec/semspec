@@ -147,6 +147,7 @@
     },
     "verification": {
       "type": "object",
+      "description": "The alias of evidence with 1 JUnit adapter and the key rule class and method. A profile has verification or evidence, not both.",
       "additionalProperties": false,
       "required": ["record", "root", "inputs", "classField", "methodField"],
       "properties": {
@@ -156,6 +157,46 @@
         "exclude": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
         "classField": { "type": "string", "minLength": 1 },
         "methodField": { "type": "string", "minLength": 1 }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "description": "Derives the status of the conditions from test reports. The record, root, inputs and exclude settings are shared by all adapters. Each adapter reads 1 report format and joins its results to the checks with a key rule.",
+      "additionalProperties": false,
+      "required": ["record", "root", "inputs", "adapters"],
+      "properties": {
+        "record": { "type": "string", "minLength": 1, "description": "The sealed record file, relative to the profile file. It must be inside root." },
+        "root": { "type": "string", "minLength": 1, "description": "The base of the inputs and the report paths, relative to the profile file." },
+        "inputs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 }, "description": "The files and folders, relative to root, that the fingerprint covers." },
+        "exclude": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 }, "description": "Patterns of paths that the fingerprint skips." },
+        "fallback": { "enum": ["not-run", "authored"], "description": "What a load gives when the evidence is stale or absent. not-run (the default): every condition is not-run. authored: the load keeps the authored status and writes a warning." },
+        "adapters": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["adapter", "key"],
+            "properties": {
+              "adapter": { "enum": ["junit", "vitest-json"], "description": "The report format." },
+              "reports": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 }, "description": "The report files or folders that the adapter reads, relative to root." },
+              "checkTypes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 }, "description": "The check types that the adapter answers. Without it, the adapter answers every check type." },
+              "key": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["rule"],
+                "properties": {
+                  "rule": { "enum": ["class-method", "file-name", "file-titlepath"], "description": "How a check joins a result." },
+                  "class": { "type": "string", "minLength": 1, "description": "The check field with the class. The default is class." },
+                  "method": { "type": "string", "minLength": 1, "description": "The check field with the method. The default is method." },
+                  "file": { "type": "string", "minLength": 1, "description": "The check field with the file path. The default is file." },
+                  "name": { "type": "string", "minLength": 1, "description": "The check field with the test name, or with the title path for the rule file-titlepath. The default is name." },
+                  "separator": { "type": "string", "minLength": 1, "description": "Joins the titles of a title path. The default is \" > \"." }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "checks": {

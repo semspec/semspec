@@ -32,3 +32,4 @@ export * from './spec.js';
 export * from './embed.js';
 export * from './semantic.js';
 export * from './verification.js';
+export * from './evidence.js';

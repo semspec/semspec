@@ -4,24 +4,35 @@
 import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
-import { applyVerification, type Graph, type Profile, type TestCase } from '@semspec/core';
+import { parseJUnit } from './evidence-junit';
+import { DEFAULT_SEPARATOR, applyEvidence, evidenceOf, type AdapterSet, type EvidenceOutcome, type EvidenceResult, type EvidenceRun, type Graph, type Profile, type TestCase } from '@semspec/core';
 import { excludeMatcher } from './yaml';
+import { adapterFor } from './evidence-adapters';
+export { parseJUnit } from './evidence-junit';
 
 const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 const digest = (value: unknown) => hash(JSON.stringify(value));
-interface Report { path: string; hash: string }
-interface Snapshot { version: 1; fingerprint: string; started: number; reports: Report[]; locations: string[] }
-interface RecordData { version: 1; fingerprint: string; started: number; reports: Report[]; locations: string[]; cases: TestCase[] }
+// A record of version 1 holds JUnit cases. A record of version 2 holds the results of each adapter.
+// A report of version 1 has no adapter, and the JUnit adapter reads it.
+interface Report { path: string; hash: string; adapter?: number }
+interface Snapshot { version: 2; fingerprint: string; started: number; reports: Report[]; locations: string[]; sources: string[][] }
+interface RecordV1 { version: 1; fingerprint: string; started: number; reports: Report[]; locations: string[]; cases: TestCase[] }
+interface RecordV2 { version: 2; fingerprint: string; started: number; reports: Report[]; locations: string[]; sources: string[][]; results: EvidenceResult[][]; runs: EvidenceRun[] }
+type RecordData = RecordV1 | RecordV2;
 type Sealed<T> = T & { integrity: string };
+const VERSIONS = [1, 2];
+
+// The record has a version that this release does not know. The evidence is stale, and it is no error.
+class UnknownVersion extends Error {}
 
 function locations(profile: Profile, profilePath: string) {
-  if (!profile.verification) throw new Error('The profile has no verification setting.');
-  const spec = profile.verification;
+  const spec = evidenceOf(profile);
+  if (!spec) throw new Error('The profile has no evidence setting.');
   const declaredRoot = resolve(dirname(profilePath), spec.root);
   const root = realpathSync(declaredRoot);
   const declaredRecord = resolve(dirname(profilePath), spec.record);
   const inside = relative(declaredRoot, declaredRecord);
-  if (!inside || inside === '..' || inside.startsWith('../') || isAbsolute(inside)) throw new Error('The test record must be inside verification.root.');
+  if (!inside || inside === '..' || inside.startsWith('../') || isAbsolute(inside)) throw new Error('The test record must be inside the evidence root.');
   const record = resolve(root, inside);
   return { spec, root, record, pending: `${record}.pending` };
 }
@@ -63,8 +74,17 @@ function inputPath(root: string, input: string): string {
   return path;
 }
 
-function reportsAt(root: string, paths: string[]): Report[] {
-  return [...new Set(paths.flatMap((p) => files(resolve(root, p), true)).filter((p) => p.endsWith('.xml')))].sort().map((p) => ({ path: relative(root, p), hash: hash(readFileSync(p)) }));
+// The report paths of each adapter. The paths of --junit at begin go to the first JUnit adapter.
+function sourcesOf(spec: NonNullable<ReturnType<typeof evidenceOf>>, extra: string[]): string[][] {
+  const firstJunit = spec.adapters.findIndex((a) => a.adapter === 'junit');
+  return spec.adapters.map((a, i) => [...new Set([...(a.reports ?? []), ...(i === firstJunit ? extra : [])])]);
+}
+
+function reportsAt(root: string, spec: NonNullable<ReturnType<typeof evidenceOf>>, sources: string[][], versioned = true): Report[] {
+  return spec.adapters.flatMap((a, adapter) => {
+    const extension = adapterFor(a.adapter).extension;
+    return [...new Set(sources[adapter].flatMap((p) => files(resolve(root, p), true)).filter((p) => p.endsWith(extension)))].sort().map((p) => ({ path: relative(root, p), hash: hash(readFileSync(p)), ...(versioned ? { adapter } : {}) }));
+  });
 }
 
 export function sourceFingerprint(profile: Profile, profilePath: string): string {
@@ -88,7 +108,8 @@ function readSealed(path: string): any {
   const value = JSON.parse(readFileSync(path, 'utf8'));
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid test record.');
   const { integrity, ...body } = value;
-  if (body.version !== 1 || typeof body.fingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(body.fingerprint) || !Number.isFinite(body.started) || body.started <= 0 || integrity !== digest(body)) throw new Error('Invalid test record integrity.');
+  if (Number.isInteger(body.version) && !VERSIONS.includes(body.version)) throw new UnknownVersion(`The test record has the unknown version ${body.version}.`);
+  if (!VERSIONS.includes(body.version) || typeof body.fingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(body.fingerprint) || !Number.isFinite(body.started) || body.started <= 0 || integrity !== digest(body)) throw new Error('Invalid test record integrity.');
   if (!Array.isArray(body.reports) || body.reports.some((r: any) => !r || typeof r.path !== 'string' || !r.path || typeof r.hash !== 'string' || !/^[a-f0-9]{64}$/.test(r.hash))) throw new Error('Invalid test record reports.');
   return body;
 }
@@ -116,14 +137,14 @@ function preflightOutputs(profile: Profile, profilePath: string, junitPaths: str
   const excluded = exclusions(profile, profilePath);
   const authored = inputs.flatMap((input) => files(input, false, excluded));
   for (const report of junitPaths.map((path) => resolve(root, path))) {
-    if (contains(report, profileFile) || authored.some((input) => contains(report, input))) throw new Error(`The JUnit report path overlaps authored inputs: ${report}`);
+    if (contains(report, profileFile) || authored.some((input) => contains(report, input))) throw new Error(`The report path overlaps authored inputs: ${report}`);
   }
   for (const output of [record, pending]) {
     plainOutput(root, output);
     if (overlaps(output, profileFile) || inputs.some((input) => input === output || contains(output, input) || contains(input, output) && !excluded(output)) || junitPaths.some((p) => overlaps(resolve(root, p), output))) throw new Error(`Test record output overlaps an input: ${output}`);
     if (existsSync(output)) {
       const owned = readSealed(output);
-      if (!Array.isArray(owned.locations) || !owned.locations.length || owned.locations.some((p: unknown) => typeof p !== 'string' || !p) || (output === record ? !Array.isArray(owned.cases) : owned.cases !== undefined)) throw new Error(`Unmanaged test record output: ${output}`);
+      if (!Array.isArray(owned.locations) || !owned.locations.length || owned.locations.some((p: unknown) => typeof p !== 'string' || !p) || (output === record ? !Array.isArray(owned.cases) && !Array.isArray(owned.results) : owned.cases !== undefined || owned.results !== undefined)) throw new Error(`Unmanaged test record output: ${output}`);
     }
   }
 }
@@ -138,103 +159,50 @@ function writeEvidence(path: string, value: unknown): void {
   } finally { rmSync(temp, { recursive: true, force: true }); }
 }
 
-// A small strict XML reader for JUnit reports. DTDs and custom entities are forbidden.
-export function parseJUnit(xml: string): TestCase[] {
-  if (/<!DOCTYPE|<!ENTITY/i.test(xml)) throw new Error('JUnit entity declarations are forbidden.');
-  const cases: TestCase[] = [];
-  const stack: string[] = [];
-  const suites: { start: number; attrs: Record<string, string> }[] = [];
-  let current: TestCase | undefined;
-  let roots = 0;
-  const decode = (s: string) => s.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (_, entity: string) => {
-    const named: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
-    if (entity in named) return named[entity];
-    const code = entity.startsWith('#x') ? parseInt(entity.slice(2), 16) : Number(entity.slice(1));
-    if (code < 1 || code > 0x10ffff || code >= 0xd800 && code <= 0xdfff) throw new Error('Invalid XML character.');
-    return String.fromCodePoint(code);
-  });
-  const tokens = /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<\?[\s\S]*?\?>|<\/?[A-Za-z_][\w:.-]*(?:\s+[A-Za-z_][\w:.-]*\s*=\s*(?:"[^"<]*"|'[^'<]*'))*\s*\/?>|[^<]+/g;
-  const finishSuite = () => {
-    const suite = suites.pop()!;
-    const members = cases.slice(suite.start);
-    for (const key of ['tests', 'failures', 'errors', 'skipped']) if (suite.attrs[key] !== undefined && !/^\d+$/.test(suite.attrs[key])) throw new Error('Invalid JUnit suite count.');
-    if (suite.attrs.tests !== undefined && Number(suite.attrs.tests) !== members.length) throw new Error('JUnit testcase count does not match its suite.');
-    if ((suite.attrs.failures !== undefined || suite.attrs.errors !== undefined) && Number(suite.attrs.failures ?? 0) + Number(suite.attrs.errors ?? 0) !== members.filter((c) => c.outcome === 'failed').length) throw new Error('JUnit failure count does not match its cases.');
-    if (suite.attrs.skipped !== undefined && Number(suite.attrs.skipped) !== members.filter((c) => c.outcome === 'not-run').length) throw new Error('JUnit skip count does not match its cases.');
-  };
-  let end = 0;
-  for (const match of xml.matchAll(tokens)) {
-    if (match.index !== end) throw new Error('Malformed JUnit XML.');
-    end = match.index + match[0].length;
-    const token = match[0];
-    if (token.startsWith('<!--') || token.startsWith('<?')) continue;
-    if (!token.startsWith('<') || token.startsWith('<![CDATA[')) {
-      if (!stack.length && token.trim()) throw new Error('Text outside the XML root.');
-      if (!token.startsWith('<![CDATA[') && /&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-f]+);)/i.test(token)) throw new Error('Unknown XML entity.');
-      continue;
-    }
-    const name = /^<\/?([\w:.-]+)/.exec(token)![1];
-    if (token.startsWith('</')) {
-      if (!/^<\/[\w:.-]+\s*>$/.test(token) || stack.pop() !== name) throw new Error('Unbalanced JUnit XML.');
-      if (name === 'testcase') { cases.push(current!); current = undefined; }
-      if (name === 'testsuite' || name === 'testsuites') finishSuite();
-      continue;
-    }
-    const attrs: Record<string, string> = {};
-    for (const a of token.matchAll(/([\w:.-]+)\s*=\s*(?:"([^"<]*)"|'([^'<]*)')/g)) {
-      if (a[1] in attrs) throw new Error('Duplicate XML attribute.');
-      const raw = a[2] ?? a[3];
-      if (/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-f]+);)/i.test(raw)) throw new Error('Unknown XML entity.');
-      attrs[a[1]] = decode(raw);
-    }
-    if (!stack.length) {
-      roots++;
-      if (roots !== 1 || !['testsuite', 'testsuites'].includes(name)) throw new Error('Invalid JUnit root.');
-    }
-    if (name === 'testcase') {
-      if (current || stack.at(-1) !== 'testsuite' || !attrs.classname || !attrs.name) throw new Error('Invalid JUnit testcase.');
-      current = { class: attrs.classname, method: attrs.name, outcome: 'passed' };
-      if (['status', 'disabled', 'skipped', 'result'].some((key) => attrs[key] !== undefined)) throw new Error('JUnit testcase status attributes are not supported.');
-    }
-    if (name === 'testsuite' || name === 'testsuites') {
-      if (attrs.disabled !== undefined && attrs.disabled !== '0') throw new Error('JUnit disabled cases are not supported.');
-      suites.push({ start: cases.length, attrs });
-    }
-    if (!current && ['failure', 'error', 'skipped'].includes(name)) throw new Error('JUnit outcome has no testcase.');
-    if (current && ['failure', 'error'].includes(name)) current.outcome = 'failed';
-    if (current && name === 'skipped' && current.outcome !== 'failed') current.outcome = 'not-run';
-    if (token.endsWith('/>')) {
-      if (name === 'testcase') { cases.push(current!); current = undefined; }
-      if (name === 'testsuite' || name === 'testsuites') finishSuite();
-    } else stack.push(name);
-  }
-  if (end !== xml.length || stack.length || roots !== 1) throw new Error('Incomplete JUnit XML.');
-  return cases;
-}
-
-export function beginTestRecord(profile: Profile, profilePath: string, junitPaths: string[]): void {
-  if (!junitPaths.length) throw new Error('At least one --junit report path is required at begin.');
-  const { root, record, pending } = locations(profile, profilePath);
-  preflightOutputs(profile, profilePath, junitPaths);
-  const snapshot: Snapshot = { version: 1, fingerprint: sourceFingerprint(profile, profilePath), started: Date.now(), reports: reportsAt(root, junitPaths), locations: junitPaths };
+export function beginTestRecord(profile: Profile, profilePath: string, extraPaths: string[] = []): void {
+  const { root, record, pending, spec } = locations(profile, profilePath);
+  const sources = sourcesOf(spec, extraPaths);
+  const paths = [...new Set(sources.flat())];
+  if (!paths.length) throw new Error('At least one report path is required at begin. Set reports on an evidence adapter, or pass --junit.');
+  preflightOutputs(profile, profilePath, paths);
+  const snapshot: Snapshot = { version: 2, fingerprint: sourceFingerprint(profile, profilePath), started: Date.now(), reports: reportsAt(root, spec, sources), locations: paths, sources };
   writeEvidence(pending, seal(snapshot));
   // Invalidate prior evidence only after the complete new snapshot is safe on disk.
   if (existsSync(record)) unlinkSync(record);
 }
 
-export function collectTestRecord(profile: Profile, profilePath: string): RecordData {
-  const { root, record, pending } = locations(profile, profilePath);
+// Reads every report with the adapter of its group. The results are in the order of the adapters.
+function readReports(root: string, spec: NonNullable<ReturnType<typeof evidenceOf>>, reports: Report[]): { results: EvidenceResult[][]; runs: EvidenceRun[]; warnings: string[] } {
+  const results: EvidenceResult[][] = spec.adapters.map(() => []);
+  const runs: EvidenceRun[] = [];
+  const warnings: string[] = [];
+  for (const r of reports) {
+    const index = r.adapter ?? 0;
+    const entry = spec.adapters[index];
+    if (!entry) throw new Error(`The report ${r.path} names an adapter that the profile does not have.`);
+    const read = adapterFor(entry.adapter).adapter.read(readFileSync(resolve(root, r.path), 'utf8'), { root, separator: entry.key.separator ?? DEFAULT_SEPARATOR, source: r.path });
+    results[index].push(...read.results);
+    runs.push(read.run);
+    warnings.push(...read.warnings);
+  }
+  return { results, runs, warnings };
+}
+
+export function collectTestRecord(profile: Profile, profilePath: string): RecordV2 {
+  const { root, record, pending, spec } = locations(profile, profilePath);
   plainOutput(root, pending);
   const snapshot = readSealed(pending) as Snapshot;
+  if (snapshot.version !== 2 || !Array.isArray(snapshot.sources) || snapshot.sources.length !== spec.adapters.length || snapshot.sources.some((s) => !Array.isArray(s) || s.some((p) => typeof p !== 'string' || !p))) throw new Error('Invalid snapshot report locations.');
   if (!Array.isArray(snapshot.locations) || !snapshot.locations.length || snapshot.locations.some((p) => typeof p !== 'string' || !p)) throw new Error('Invalid snapshot report locations.');
   preflightOutputs(profile, profilePath, snapshot.locations);
   if (sourceFingerprint(profile, profilePath) !== snapshot.fingerprint) throw new Error('The source changed during the test run.');
-  const reports = reportsAt(root, snapshot.locations);
-  if (!reports.length) throw new Error('No JUnit reports found.');
+  const reports = reportsAt(root, spec, snapshot.sources);
+  if (!reports.length) throw new Error('No test reports found.');
   for (const report of reports) {
-    if (snapshot.reports.some((old) => old.path === report.path && old.hash === report.hash) || statSync(resolve(root, report.path)).mtimeMs < snapshot.started) throw new Error(`The JUnit report was not refreshed: ${report.path}`);
+    if (snapshot.reports.some((old) => old.path === report.path && old.hash === report.hash && old.adapter === report.adapter) || statSync(resolve(root, report.path)).mtimeMs < snapshot.started) throw new Error(`The test report was not refreshed: ${report.path}`);
   }
-  const data: RecordData = { version: 1, fingerprint: snapshot.fingerprint, started: snapshot.started, reports, locations: snapshot.locations, cases: reports.flatMap((r) => parseJUnit(readFileSync(resolve(root, r.path), 'utf8'))) };
+  const read = readReports(root, spec, reports);
+  const data: RecordV2 = { version: 2, fingerprint: snapshot.fingerprint, started: snapshot.started, reports, locations: snapshot.locations, sources: snapshot.sources, results: read.results, runs: read.runs };
   if (sourceFingerprint(profile, profilePath) !== snapshot.fingerprint) throw new Error('The source changed during collection.');
   preflightOutputs(profile, profilePath, snapshot.locations);
   writeEvidence(record, seal(data));
@@ -242,36 +210,59 @@ export function collectTestRecord(profile: Profile, profilePath: string): Record
   return data;
 }
 
+const OUTCOMES = ['passed', 'failed', 'not-run'];
+const validResult = (r: any) => r && typeof r === 'object' && r.key && typeof r.key === 'object' && !Array.isArray(r.key) && Object.values(r.key).every((v) => typeof v === 'string') && OUTCOMES.includes(r.outcome) && (r.invocations === undefined || Number.isInteger(r.invocations) && r.invocations > 0);
+
+// The adapters with their results, for the join of the core.
+function setsOf(profile: Profile, results: EvidenceResult[][]): AdapterSet[] {
+  return evidenceOf(profile)!.adapters.map((spec, i) => ({ spec, results: results[i] ?? [], normalise: adapterFor(spec.adapter).adapter.normalise }));
+}
+
+// The graph with stale evidence: every condition is not-run.
+export function staleGraph(graph: Graph, profile: Profile): Graph {
+  return applyEvidence(graph, profile, setsOf(profile, []), true);
+}
+
 export function verifiedGraph(graph: Graph, profile: Profile, profilePath: string, graphPath: string): { graph: Graph; warnings: string[] } {
-  if (!profile.verification) return { graph, warnings: [] };
+  if (!evidenceOf(profile)) return { graph, warnings: [] };
   const { root, record, spec } = locations(profile, profilePath);
   const absoluteGraph = realpathSync(graphPath);
   const excluded = exclusions(profile, profilePath);
   if (excluded(absoluteGraph) || files(absoluteGraph).some(excluded)) throw new Error('Fingerprint exclusions cannot hide graph inputs.');
   if (!spec.inputs.some((p) => { const path = resolve(root, p); if (!existsSync(path)) return false; const input = realpathSync(path); return input === absoluteGraph || statSync(input).isDirectory() && !relative(input, absoluteGraph).startsWith('..') && !isAbsolute(relative(input, absoluteGraph)); })) throw new Error('The fingerprint inputs must include the graph.');
-  let cases: TestCase[] = [];
+  let results: EvidenceResult[][] = [];
   let stale = true;
   const warnings: string[] = [];
   if (existsSync(record)) {
-    const data = readSealed(record) as RecordData;
-    if (!Array.isArray(data.cases) || data.cases.some((c) => !c || typeof c.class !== 'string' || !c.class || typeof c.method !== 'string' || !c.method || !['passed', 'failed', 'not-run'].includes(c.outcome))) throw new Error('Invalid test record cases.');
-    if (!Array.isArray(data.locations) || !data.locations.length || data.locations.some((p) => typeof p !== 'string' || !p)) throw new Error('Invalid test record report locations.');
-    // A test run or a clean after collection changes or removes reports. That makes the evidence stale, and it is no error.
-    const changed = data.reports.filter((r) => { const path = resolve(root, r.path); return !existsSync(path) || hash(readFileSync(path)) !== r.hash; }).length;
-    let setChanged: boolean;
-    try { setChanged = digest(reportsAt(root, data.locations)) !== digest(data.reports); }
-    catch { setChanged = true; }
-    if (changed || setChanged) {
-      warnings.push(`The JUnit reports changed after collection: ${changed} of ${data.reports.length} changed or missing${setChanged ? ', and the report set changed' : ''}. Run the tests and collect again.`);
-    } else {
-      // The reports are the ones the record sealed, so the normalized cases must agree with them exactly.
-      const actualCases = data.reports.flatMap((r) => parseJUnit(readFileSync(resolve(root, r.path), 'utf8')));
-      if (digest(actualCases) !== digest(data.cases)) throw new Error('The test record cases do not match the JUnit reports.');
-      try { stale = sourceFingerprint(profile, profilePath) !== data.fingerprint; }
-      catch { stale = true; }
-      cases = data.cases;
+    let data: RecordData | undefined;
+    try { data = readSealed(record) as RecordData; }
+    catch (e) { if (!(e instanceof UnknownVersion)) throw e; warnings.push(`${e.message} Run the tests and collect again.`); }
+    if (data) {
+      if (data.version === 1 ? !Array.isArray(data.cases) || data.cases.some((c) => !c || typeof c.class !== 'string' || !c.class || typeof c.method !== 'string' || !c.method || !OUTCOMES.includes(c.outcome)) : !Array.isArray(data.results) || data.results.some((set) => !Array.isArray(set) || !set.every(validResult)) || !Array.isArray(data.runs) || !Array.isArray(data.sources)) throw new Error(data.version === 1 ? 'Invalid test record cases.' : 'Invalid test record results.');
+      if (!Array.isArray(data.locations) || !data.locations.length || data.locations.some((p) => typeof p !== 'string' || !p)) throw new Error('Invalid test record report locations.');
+      // A test run or a clean after collection changes or removes reports. That makes the evidence stale, and it is no error.
+      const changed = data.reports.filter((r) => { const path = resolve(root, r.path); return !existsSync(path) || hash(readFileSync(path)) !== r.hash; }).length;
+      const sources = data.version === 1 ? [data.locations, ...spec.adapters.slice(1).map(() => [] as string[])] : data.sources;
+      let setChanged: boolean;
+      try { setChanged = sources.length !== spec.adapters.length || digest(reportsAt(root, spec, sources, data.version !== 1)) !== digest(data.reports); }
+      catch { setChanged = true; }
+      if (changed || setChanged) {
+        warnings.push(`The test reports changed after collection: ${changed} of ${data.reports.length} changed or missing${setChanged ? ', and the report set changed' : ''}. Run the tests and collect again.`);
+      } else {
+        // The reports are the ones the record sealed, so the results must agree with them exactly.
+        const actual = readReports(root, spec, data.reports);
+        if (data.version === 1) {
+          const cases = data.reports.flatMap((r) => parseJUnit(readFileSync(resolve(root, r.path), 'utf8'))).map((c) => ({ class: c.class, method: c.method, outcome: c.outcome as EvidenceOutcome }));
+          if (digest(cases) !== digest(data.cases)) throw new Error('The test record cases do not match the JUnit reports.');
+        } else if (digest(actual.results) !== digest(data.results)) throw new Error('The test record results do not match the reports.');
+        try { stale = sourceFingerprint(profile, profilePath) !== data.fingerprint; }
+        catch { stale = true; }
+        results = actual.results;
+        warnings.push(...actual.warnings);
+      }
     }
   }
+  if (stale && spec.fallback === 'authored') return { graph, warnings: [...warnings, 'Test evidence is stale or absent. The statuses stay authored.'] };
   if (stale) warnings.push('Test verification is stale or absent. Every condition is not-run.');
-  return { graph: applyVerification(graph, profile, cases, stale), warnings };
+  return { graph: applyEvidence(graph, profile, setsOf(profile, stale ? [] : results), stale), warnings };
 }

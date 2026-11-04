@@ -305,7 +305,8 @@ Reports the status of the conditions in a selection of nodes. A condition is a n
 | `markers` | Optional. Keep the conditions that have one of these provenance markers, or that are below a node with one of them. |
 | `fields` | Optional. An object with the values of each field filter of the profile, for example `{"area": ["core", "cli"]}`. |
 | `group` | Optional. A hierarchy kind id or a field. The counts get 1 row for each node of the kind or each value of the field. |
-| `list` | Optional. Status values, `no-status` or `no-check`. The answer lists the conditions that match one of them. |
+| `list` | Optional. Status values, `no-status`, `no-check`, `differ` or `stale`. The answer lists the conditions that match one of them. |
+| `statusSource` | Optional. `authored` or `derived`. The status that the filters, the groups, the counts and the gate use. The default is the derived status when the profile derives a status from evidence. |
 | `limit` | Optional. The most conditions in the list. The default is 50. |
 | `gate` | Optional. A list of tones: `good`, `warn` or `bad`. |
 | `format` | `markdown` (the default) or `json`. |
@@ -317,6 +318,7 @@ The answer has these parts:
 - `total`: the counts of the selection. `conditions` is the number of conditions. `statuses` has 1 entry for each status value of the profile, with `count` and `percent`. `noStatus` and `noCheck` have `count` and `percent`. The percent is the share of the conditions in the selection.
 - `graphs`: the same counts for each graph. With `group`, each graph has `groups`, a row for each group with the same counts. The percent in a group row is the share of the conditions in that group.
 - `list`: with `list`. It has `statuses`, `limit`, `total` and `items`. An item has `graph`, `id`, `owner`, `status`, `tone`, `text` and `checks`. When the list is longer than `limit`, `truncated.list` says how many items the answer cuts.
+- `evidence`: only when the profile derives a status from evidence. It has `conditions`, `authored` and `derived` (each with `statuses` and `noStatus`), `differ` (the conditions where the derived status differs from the authored status) and `stale` (the conditions with stale evidence). Each has `count` and `percent`. An item of `list` also has `authoredStatus`, `derivedStatus` and `stale`. `statusSource` is in the answer when the input sets it.
 - `gate`: with `gate`. It has `tones`, `pass` and `failing`. `failing` has an item for each condition whose status has one of the tones. It is never cut.
 
 A group by a hierarchy kind has a row for each node of the kind that has a condition in the selection. A condition counts in each group of its owner, and a node counts the conditions of all nodes below it. A condition counts once in the total. With several graphs, the total adds the counts of a status value that the profiles share. A graph with no such group kind or field has no group rows.

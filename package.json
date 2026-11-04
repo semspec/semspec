@@ -32,6 +32,7 @@
     "build": "npm run build:core && npm run build:app && npm run build:cli",
     "typecheck": "tsc --noEmit && npm run typecheck -w @semspec/core",
     "test": "vitest run",
+    "test:evidence": "node bin/semspec.js test-record --profile requirements/profile.yaml --phase begin && vitest run --reporter=json --outputFile=dist/vitest.json && node bin/semspec.js test-record --profile requirements/profile.yaml --phase collect",
     "test:time": "node scripts/test-time.mjs",
     "licences": "node scripts/check-licences.mjs",
     "eval:search": "node bin/semspec.js eval-search",

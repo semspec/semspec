@@ -16,7 +16,7 @@
 //   semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
 //   semspec deliverables --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--json]
 //   semspec deliverables --workspace <file> [--in <graph>] [--scope <id>] [--kind <kind>]... [--json]
-//   semspec coverage --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--lifecycle <state>]... [--delivery <value>]... [--status <value>]... [--marker <value>]... [--field <name>=<value>]... [--group <kind|field>] [--list <status>]... [--limit <n>] [--gate <tone>]... [--json]
+//   semspec coverage --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--lifecycle <state>]... [--delivery <value>]... [--status <value>]... [--marker <value>]... [--field <name>=<value>]... [--group <kind|field>] [--list <status|no-status|no-check|differ|stale>]... [--status-source authored|derived] [--limit <n>] [--gate <tone>]... [--json]
 //   semspec coverage --workspace <file> [--in <graph>] [same options]
 //   semspec spec --graph <file> --profile <file> <template.md>... [--check] [--json]
 //   semspec spec --workspace <file> --out <dir> [--roots <kind,...>] [--glossary <graph>] [--check] [--json]
@@ -71,13 +71,13 @@ Usage:
   semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
   semspec deliverables --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--json]
   semspec deliverables --workspace <file> [--in <graph>] [--scope <id>] [--kind <kind>]... [--json]
-  semspec coverage --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--lifecycle <state>]... [--delivery <value>]... [--status <value>]... [--marker <value>]... [--field <name>=<value>]... [--group <kind|field>] [--list <status>]... [--limit <n>] [--gate <tone>]... [--json]
+  semspec coverage --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--lifecycle <state>]... [--delivery <value>]... [--status <value>]... [--marker <value>]... [--field <name>=<value>]... [--group <kind|field>] [--list <status|no-status|no-check|differ|stale>]... [--status-source authored|derived] [--limit <n>] [--gate <tone>]... [--json]
   semspec coverage --workspace <file> [--in <graph>] [same options]
   semspec spec --graph <file> --profile <file> <template.md>... [--check] [--json]
   semspec spec --workspace <file> --out <dir> [--roots <kind,...>] [--glossary <graph>] [--check] [--json]
   semspec check --graph <file> --profile <file> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
   semspec check --workspace <file> [--changed <file>...] [--json] [--strict]
-  semspec test-record --profile <file> --phase begin --junit <report-path> [--junit <report-path>]...
+  semspec test-record --profile <file> --phase begin [--junit <report-path>]...
   semspec test-record --profile <file> --phase collect
   semspec schema --profile <file> --out <dir>
   semspec --version | -v
@@ -211,7 +211,7 @@ export async function run(rawArgv: string[]): Promise<number> {
   }
   if (command === 'test-record') {
     try {
-      if (!flags.profile || !['begin', 'collect'].includes(flags.phase)) throw new Error('Use test-record --profile <file> --phase begin|collect. Begin also requires --junit <path> (repeatable, relative to verification.root).');
+      if (!flags.profile || !['begin', 'collect'].includes(flags.phase)) throw new Error('Use test-record --profile <file> --phase begin|collect. Begin reads the report paths of the evidence adapters. It also takes --junit <path> (repeatable, relative to the evidence root).');
       const profile = loadProfile(flags.profile);
       if (flags.phase === 'begin') {
         beginTestRecord(profile, flags.profile, lists.junit ?? []);
@@ -219,7 +219,7 @@ export async function run(rawArgv: string[]): Promise<number> {
       } else {
         if (lists.junit?.length) throw new Error('Collect uses the report paths saved by begin.');
         const record = collectTestRecord(profile, flags.profile);
-        console.log(JSON.stringify({ cases: record.cases.length, reports: record.reports.length, fingerprint: record.fingerprint }));
+        console.log(JSON.stringify({ results: record.results.flat().length, reports: record.reports.length, fingerprint: record.fingerprint }));
       }
       return 0;
     } catch (e) {

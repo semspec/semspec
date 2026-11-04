@@ -181,12 +181,12 @@ describe('the gaps and the slice', () => {
 });
 
 describe('the command semspec deliverables', () => {
-  async function deliverables(args: string[]): Promise<{ code: number; out: string }> {
+  async function deliverables(args: string[]): Promise<{ code: number; stdout: string; out: string }> {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
       const code = await run(['deliverables', ...args]);
-      return { code, out: log.mock.calls.map((c) => c.join(' ')).join('\n') + error.mock.calls.map((c) => c.join(' ')).join('\n') };
+      return { code, stdout: log.mock.calls.map((c) => c.join(' ')).join('\n'), out: log.mock.calls.map((c) => c.join(' ')).join('\n') + error.mock.calls.map((c) => c.join(' ')).join('\n') };
     } finally {
       log.mockRestore();
       error.mockRestore();
@@ -197,7 +197,7 @@ describe('the command semspec deliverables', () => {
     const args = ['--graph', `${repo}requirements/graph`, '--profile', `${repo}requirements/profile.yaml`];
     const json = await deliverables([...args, '--json']);
     expect(json.code).toBe(0);
-    const report = JSON.parse(json.out) as { nodes: number; findings: { node: string; deliverable: string }[] };
+    const report = JSON.parse(json.stdout) as { nodes: number; findings: { node: string; deliverable: string }[] };
     expect(report.nodes).toBeGreaterThan(0);
     const one = await deliverables([...args, '--kind', 'requirement', '--scope', 'cap-deliverables']);
     expect(one.out).toMatch(/No missing deliverable in \d+ node\(s\)\.|missing deliverable\(s\) in/);

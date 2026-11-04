@@ -7,8 +7,7 @@ import { readInput } from './input';
 import { validateGraph, validateProfile } from './validate';
 import { resolveVocabularyFiles } from './vocabulary';
 import { readGraphFolder } from './yaml';
-import { applyVerification } from '@semspec/core';
-import { verifiedGraph } from './test-record';
+import { staleGraph, verifiedGraph } from './test-record';
 
 // Reads and checks the profile. It throws on an error.
 export function loadProfile(profilePath: string): Profile {
@@ -45,7 +44,7 @@ function evidenceOrWarning(graph: Graph, profile: Profile, profilePath: string, 
   try {
     return verifiedGraph(graph, profile, profilePath, graphPath);
   } catch (e) {
-    return { graph: applyVerification(graph, profile, [], true), warnings: [`The test evidence cannot load: ${(e as Error).message} Every condition is not-run.`] };
+    return { graph: staleGraph(graph, profile), warnings: [`The test evidence cannot load: ${(e as Error).message} Every condition is not-run.`] };
   }
 }
 
