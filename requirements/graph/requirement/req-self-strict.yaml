@@ -1,34 +1,27 @@
 id: req-self-strict
 kind: requirement
-title: Fail CI on a self-check finding
+title: Gate each change with the self-check
 state: draft
 priority: now
-statement: Once the backlog is clear, a finding of the self-check fails CI and the hook.
+statement: The self-check is a gate of CI and of the pre-push hook. A finding that is not in the baseline fails the gate. The baseline holds the backlog of findings, and it only shrinks.
+rationale: "Features were built before their requirements, and no gate stopped it. A gate with a baseline stops each new gap at once, and the old backlog blocks nothing."
 capabilities:
   - cap-self-check
 area:
   - repository
 acceptance:
+  - id: baseline
+    text: "A baseline file lists the findings of the backlog by check and by a stable key. A command writes it from the current findings."
+    status: open
   - id: ci
-    text: "When the backlog of findings is clear, a finding fails the CI workflow."
+    text: "CI runs the self-check as a gate against the baseline. A finding that is not in the baseline fails the CI workflow, and the message names it."
     status: open
-    tests:
-      - type: unit
-        file: test/self-check.test.ts
-        name: runs the self-check in report mode in the CI workflow, after the test evidence
-      - type: unit
-        file: test/self-check.test.ts
-        name: exits 1 with --strict when there is a finding, and 0 without --strict
-      - type: unit
-        file: test/self-check.test.ts
-        name: exits 0 with --strict when there is no finding
   - id: hook
-    text: "When the backlog of findings is clear, a finding fails the pre-push hook."
+    text: "The pre-push hook runs the same gate, and a finding that is not in the baseline blocks the push."
     status: open
-    tests:
-      - type: unit
-        file: test/prepush.test.ts
-        name: runs the self-check in report mode, with no --strict
-      - type: unit
-        file: test/self-check.test.ts
-        name: exits 1 with --strict when there is a finding, and 0 without --strict
+  - id: shrink
+    text: "A baseline entry that is no longer a finding is reported as fixed. The gate fails when a change adds an entry to the baseline, so the baseline only shrinks."
+    status: open
+  - id: gate-check
+    text: "Each condition of the self-check requirements links the gate as a check of the type gate, with the command that runs it, next to the unit tests of the script."
+    status: open

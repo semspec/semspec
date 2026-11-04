@@ -27,3 +27,6 @@ acceptance:
   - id: signed
     text: "Every commit of a pull request is signed and has a DCO sign-off, and a check fails a commit without them."
     status: open
+  - id: requirement-change
+    text: "A gate of CI fails a pull request that changes a shipped file (packages/, bin/, package.json) and changes no file of requirements/graph, unless the body names an exemption with a reason. The message names the changed files."
+    status: open
