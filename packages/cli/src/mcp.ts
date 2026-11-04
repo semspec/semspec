@@ -21,7 +21,7 @@ export function loadWithTargets(flags: Record<string, string>, exclude: string[]
   const targets = new Map<string, EmbeddingTarget>();
   if (flags.workspace !== undefined) {
     const path = flags.workspace;
-    const { data, warnings, sources, embeddings } = loadWorkspace(path);
+    const { data, warnings, sources, embeddings } = loadWorkspace(path, { evidenceErrors: 'warn' });
     const dir = dirname(resolve(path));
     const graphs = data.graphs.map((g) => {
       const s = sources.get(g.id)!;

@@ -265,7 +265,9 @@ function groupsOf(s: Selection, name: string, by: GroupKind): CoverageGroup[] {
         if (node.kind === name) add(a, node.title, node.kind, n);
       }
     } else {
-      for (const v of fieldValues(index, name, n.id)) add(v, v ? (filterLabels?.[v] ?? fieldLabel(index.profile, name, v)) : '(none)', undefined, n);
+      // A group by the status field reads the status that the query selects, as the counts do.
+      const values = name === index.profile.status?.field ? [statusFor(index, n, s.source) ?? ''] : fieldValues(index, name, n.id);
+      for (const v of values) add(v, v ? (filterLabels?.[v] ?? fieldLabel(index.profile, name, v)) : '(none)', undefined, n);
     }
   }
   const keys = [...members.keys()];

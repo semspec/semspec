@@ -41,7 +41,7 @@ export interface WorkspaceSource {
   profilePath: string;
 }
 
-export function loadWorkspace(path: string): { data: WorkspaceData; warnings: string[]; sources: Map<string, WorkspaceSource>; embeddings?: unknown } {
+export function loadWorkspace(path: string, options: { evidenceErrors?: 'throw' | 'warn' } = {}): { data: WorkspaceData; warnings: string[]; sources: Map<string, WorkspaceSource>; embeddings?: unknown } {
   const file = readInput(path, 'workspace');
   const problems = validateWorkspace(file);
   if (problems.length) throw new Error(`The workspace "${path}" is not valid:\n  ${problems.join('\n  ')}`);
@@ -55,7 +55,7 @@ export function loadWorkspace(path: string): { data: WorkspaceData; warnings: st
     try {
       const graphPath = resolve(base, g.graph);
       const profilePath = resolve(base, g.profile);
-      const inputs = loadInputs(graphPath, profilePath, g.exclude ?? []);
+      const inputs = loadInputs(graphPath, profilePath, g.exclude ?? [], options);
       warnings.push(...inputs.warnings.map((w) => `Graph "${g.id}": ${w}`));
       loaded.push({ id: g.id, label: g.label, model: buildModel(inputs.graph, inputs.profile) });
       sources.set(g.id, { graph: inputs.graph, profile: inputs.profile, graphPath, profilePath });

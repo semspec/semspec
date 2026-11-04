@@ -27,6 +27,7 @@ acceptance:
     text: When the test evidence cannot load, for any reason, the MCP server still starts. It writes a warning with the error, and every condition is not-run. The check command still reports the error, so a gate fails.
     tests:
       - {type: unit, file: test/verification.test.ts, name: starts the MCP server with a warning when the test evidence cannot load}
+      - {type: unit, file: test/evidence.test.ts, name: starts a workspace in the MCP server with a warning when the test evidence cannot load}
   - id: shared
     text: CLI, MCP and explorer loads derive condition status from the same record. No condition status is written to graph files. Profiles without verification keep their current behavior.
     tests:

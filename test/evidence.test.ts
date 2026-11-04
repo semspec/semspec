@@ -305,6 +305,18 @@ describe('Evidence port', () => {
     expect(coverage(plain, { statusSource: 'authored' }).total.statuses.find((s) => s.value === 'verified')!.count).toBe(3);
   });
 
+  it('starts a workspace in the MCP server with a warning when the test evidence cannot load', () => {
+    const f = project();
+    f.collect();
+    const recordPath = join(f.dir, 'evidence', 'record.json');
+    writeFileSync(recordPath, readFileSync(recordPath, 'utf8').replace('passed', 'failed'));
+    const workspace = join(f.dir, 'workspace.json');
+    writeFileSync(workspace, JSON.stringify({ title: 'Cart', graphs: [{ id: 'cart', label: 'Cart', graph: 'graph.json', profile: 'profile.json' }] }));
+    const loaded = mcpLoader({ workspace })();
+    expect(loaded.warnings.join(' ')).toMatch(/The test evidence cannot load/);
+    expect(loaded.graphs.map((g) => g.id)).toEqual(['cart']);
+  });
+
   it('selects the status source for the filters and the groups and the gate', async () => {
     const f = project();
     f.collect();
@@ -317,7 +329,11 @@ describe('Evidence port', () => {
     expect(verified({ statuses: ['verified'], statusSource: 'authored' }).total.conditions).toBe(3);
     expect(verified({ statuses: ['verified'], statusSource: 'derived' }).list!.items.map((i) => i.id)).toEqual(['r1#passes', 'r1#top']);
     expect(verified({ statuses: ['verified'], statusSource: 'authored' }).list!.items.map((i) => i.id)).toEqual(['r1#passes', 'r1#fails', 'r1#skips']);
-    expect(verified({ statusSource: 'authored', group: 'status' }).graphs[0].groups).toBeDefined();
+    // A group by the status field reads the selected status, as the counts do.
+    const groupOf = (source: 'authored' | 'derived', key: string) => verified({ statusSource: source, group: 'status' }).graphs[0].groups!.find((g) => g.key === key);
+    expect(groupOf('authored', 'verified')!.conditions).toBe(3);
+    expect(groupOf('derived', 'verified')!.conditions).toBe(2);
+    expect(groupOf('derived', 'verified')!.statuses.find((s) => s.value === 'verified')!.count).toBe(2);
     expect(coverage(graphs, { gate: ['bad'], statusSource: 'authored' }).gate!.pass).toBe(true);
     expect(coverage(graphs, { gate: ['bad'], statusSource: 'derived' }).gate!.failing.map((i) => i.id)).toEqual(['r1#fails']);
     expect(coverage(graphs, { gate: ['bad'] }).gate!.pass).toBe(false);
