@@ -58,12 +58,21 @@ describe('the pre-push hook', () => {
       'node bin/semspec.js check --graph requirements/graph --profile requirements/profile.yaml',
       'node bin/semspec.js spec --graph requirements/graph --profile requirements/profile.yaml docs/reference/requirements.md --check',
       'npm run licences',
-      'node scripts/self-check.mjs',
+      'node scripts/self-check.mjs --baseline requirements/self-check-baseline.json',
     ]);
   });
 
-  it('runs the self-check in report mode, with no --strict', () => {
-    expect(readFileSync(hookPath, 'utf8')).not.toMatch(/--strict/);
+  it('runs the self-check as a gate against the baseline, not in report mode', () => {
+    const hook = readFileSync(hookPath, 'utf8');
+    expect(hook).toMatch(/^step node scripts\/self-check\.mjs --baseline requirements\/self-check-baseline\.json$/m);
+    expect(hook).not.toMatch(/report mode|--strict/);
+  });
+
+  it('blocks the push when the self-check finds a finding that is not in the baseline', () => {
+    const r = runHook('self-check.mjs');
+    expect(r.status).toBe(1);
+    expect(r.calls.at(-1)).toContain('self-check.mjs');
+    expect(r.stderr).toMatch(/blocked.*self-check/);
   });
 
   it('blocks the push and stops at the first failed step', () => {

@@ -19,5 +19,5 @@ step npm run test:evidence
 step node bin/semspec.js check --graph requirements/graph --profile requirements/profile.yaml
 step node bin/semspec.js spec --graph requirements/graph --profile requirements/profile.yaml docs/reference/requirements.md --check
 step npm run licences
-# The self-check runs in report mode: its findings show, and they do not block the push.
-step node scripts/self-check.mjs
+# The self-check is a gate: a finding that is not in the baseline blocks the push.
+step node scripts/self-check.mjs --baseline requirements/self-check-baseline.json

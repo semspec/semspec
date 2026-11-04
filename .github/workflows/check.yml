@@ -40,14 +40,16 @@ jobs:
         run: node bin/semspec.js check --graph requirements/graph --profile requirements/profile.yaml
       - name: Check the spec document of the requirements
         run: node bin/semspec.js spec --graph requirements/graph --profile requirements/profile.yaml docs/reference/requirements.md --check
-      # The self-check runs in report mode, so a finding shows and does not fail the job.
-      # Add --strict when the backlog of findings is clear.
-      - name: Report the findings of the self-check
-        run: node scripts/self-check.mjs
+      # The self-check is a gate. A finding that is not in the baseline fails the job, and the message names it.
+      - name: Gate the findings of the self-check against the baseline
+        run: node scripts/self-check.mjs --baseline requirements/self-check-baseline.json
       - run: npm ci --prefix site
       - run: npm test --prefix site
 
   # A pull request needs a changeset against its base branch. An empty changeset counts.
+  # The same job holds the rules of a pull request about the baseline of the self-check and the requirement graph.
+  # The baseline only shrinks (scripts/check-baseline.mjs). A change of a shipped file needs a change of the
+  # requirement graph or a line "Requirement exemption: <reason>" in the body (scripts/check-requirement-change.mjs).
   # The step with scripts/check-changeset.mjs also covers the private packages, which `changeset status` ignores.
   # The version pull request removes the changesets, so it is exempt. A pull request of Dependabot
   # changes only the version of a dependency, so it is exempt too. The job is skipped, and no other job needs it
@@ -72,6 +74,12 @@ jobs:
         run: node scripts/check-changeset.mjs origin/${{ github.base_ref }}
       - name: Check the format of the changesets
         run: npx changeset status --since=origin/${{ github.base_ref }}
+      - name: Check that the baseline of the self-check adds no key
+        run: node scripts/check-baseline.mjs origin/${{ github.base_ref }}
+      - name: Check that a change of a shipped file changes the requirements
+        run: node scripts/check-requirement-change.mjs origin/${{ github.base_ref }}
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
 
   # Makes the tag and the GitHub Release after the merge of the version pull request.
   # It runs on a push to master after every gate job passed. The changeset job is skipped on a push,

@@ -20,6 +20,8 @@ acceptance:
       - type: unit
         file: test/self-check.test.ts
         name: reports a condition authored partial that has no note, and accepts one with a note
+      - type: gate
+        command: node scripts/self-check.mjs --only conditions
   - id: draft-verified
     text: "A requirement with state draft has at least 1 condition that is not verified."
     status: verified
@@ -27,6 +29,8 @@ acceptance:
       - type: unit
         file: test/self-check.test.ts
         name: reports a draft requirement whose conditions are all verified, and accepts one with an open condition
+      - type: gate
+        command: node scripts/self-check.mjs --only conditions
   - id: stale-priority
     text: "A capability or requirement whose conditions are all verified has no priority."
     status: verified
@@ -34,3 +38,5 @@ acceptance:
       - type: unit
         file: test/self-check.test.ts
         name: reports a requirement and a capability whose conditions are all verified and that still have a priority
+      - type: gate
+        command: node scripts/self-check.mjs --only conditions

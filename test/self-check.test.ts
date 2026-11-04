@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 // Tests of scripts/self-check.mjs on small invented fixtures: a tiny graph, a tiny profile and a tiny Vitest report.
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { parse } from 'yaml';
 // @ts-expect-error The script is a plain ES module without types.
-import { main } from '../scripts/self-check.mjs';
+import { CHECKS, main } from '../scripts/self-check.mjs';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
 const temps: string[] = [];
@@ -94,12 +94,13 @@ async function check(args: string[]): Promise<{ status: number; stdout: string; 
     log.mockRestore();
   }
 }
-interface Result { evidence: string; total: number; checks: { id: string; findings: string[] }[] }
+interface Finding { key: string; message: string }
+interface Result { evidence: string; total: number; checks: { id: string; findings: Finding[] }[]; gate?: { new: Finding[]; fixed: string[] } }
 async function findings(args: string[]): Promise<Record<string, string[]>> {
   const r = await check([...args, '--json']);
   expect(r.status, r.stderr).toBe(0);
   const out = JSON.parse(r.stdout) as Result;
-  return Object.fromEntries(out.checks.map((c) => [c.id, c.findings]));
+  return Object.fromEntries(out.checks.map((c) => [c.id, c.findings.map((f) => f.message)]));
 }
 
 const ok = (id: string, extra: Partial<Condition> = {}): Condition => ({ id, status: 'verified', derivedStatus: 'verified', ...extra });
@@ -165,7 +166,7 @@ describe('the check conditions of the self-check', () => {
     const args = base([{ id: 'c1', status: 'verified' }], { state: 'draft' });
     const out = JSON.parse((await check([...args, '--json'])).stdout) as Result;
     expect(out.evidence).toBe('stale or absent');
-    expect(out.checks.find((c) => c.id === 'conditions')!.findings).toEqual(['The requirement req-1 has state draft and all its conditions are verified.']);
+    expect(out.checks.find((c) => c.id === 'conditions')!.findings.map((f) => f.message)).toEqual(['The requirement req-1 has state draft and all its conditions are verified.']);
     expect((await check(args)).stdout).toMatch(/Evidence: stale or absent\./);
   });
 
@@ -218,14 +219,156 @@ describe('the strict mode of the self-check', () => {
   });
 });
 
-describe('the CI wiring of the self-check', () => {
-  const steps = (parse(readFileSync(join(repo, '.github/workflows/check.yml'), 'utf8')) as { jobs: Record<string, { steps: { run?: string }[] }> }).jobs.check.steps;
+describe('the stable keys of the self-check', () => {
+  const keys = async (args: string[]) => {
+    const out = JSON.parse((await check([...args, '--json'])).stdout) as Result;
+    return out.checks.flatMap((c) => c.findings.map((f) => f.key));
+  };
 
-  it('runs the self-check in report mode in the CI workflow, after the test evidence', async () => {
+  it('gives each finding a stable key of its check and its subject', async () => {
+    const args = fixture({
+      requirements: [{ id: 'req-1', state: 'draft', conditions: [ok('c1', { tests: [{ file: 'test/gone.test.ts', name: 'a test' }] }), { id: 'c2', status: 'partial', derivedStatus: 'partial' }] }],
+      tests: [['test/a.test.ts', 'loose test']],
+      exemptions: { exemptions: [{ file: 'test/a.test.ts', name: 'loose test' }] },
+    });
+    expect(await keys(args)).toEqual([
+      'tests:exemption-no-reason:test/a.test.ts:loose test',
+      'tests:test/a.test.ts:loose test',
+      'tests:link-no-file:req-1#c1:test/gone.test.ts',
+      'conditions:req-1#c2:partial-no-note',
+    ]);
+  });
+
+  it('keeps the keys when an unrelated part of the repository changes', async () => {
+    const make = (extra: [string, string][]) =>
+      fixture({ requirements: [{ id: 'req-1', conditions: [{ id: 'c1', status: 'partial', derivedStatus: 'partial' }] }], tests: [['test/a.test.ts', 'loose test'], ...extra] });
+    const before = await keys(make([]));
+    const after = await keys(make([['test/b.test.ts', 'other test']]));
+    expect(after.filter((k) => !k.includes('other test'))).toEqual(before);
+    for (const key of after) expect(key).not.toMatch(/\d+ (tests|findings|conditions)|:\d+$/);
+  });
+
+  it('gives each finding of the surface check a key of its kind and its name', () => {
+    const found = (CHECKS as { id: string; run: (ctx: unknown) => Finding[] }[]).find((c) => c.id === 'surface')!.run({ root: repo });
+    expect(found.length).toBeGreaterThan(0);
+    for (const f of found) expect(f.key).toMatch(/^surface:[a-z-]+:\S.*/);
+    expect(new Set(found.map((f) => f.key)).size).toBe(found.length);
+  });
+});
+
+describe('the baseline of the self-check', () => {
+  const loose = () => fixture({ requirements: [{ id: 'req-1', conditions: [ok('c1')] }], tests: [['test/a.test.ts', 'loose test'], ['test/a.test.ts', 'second loose test']] });
+  const withBaseline = (args: string[], baseline: unknown) => {
+    const file = join(args[1], 'baseline.json');
+    writeFileSync(file, JSON.stringify(baseline));
+    return [...args, '--baseline', file];
+  };
+  const both = { tests: ['tests:test/a.test.ts:loose test', 'tests:test/a.test.ts:second loose test'], conditions: [] };
+
+  it('writes the baseline with the sorted keys of the findings by check, and prints the size of each check', async () => {
+    const args = loose();
+    const file = join(args[1], 'written.json');
+    const r = await check([...args, '--write-baseline', '--baseline', file]);
+    expect(r.status, r.stderr).toBe(0);
+    expect(r.stdout).toMatch(/tests 2, conditions 0/);
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ tests: [...both.tests].sort(), conditions: [] });
+  });
+
+  it('writes the baseline to the default file of the root', async () => {
+    const args = loose();
+    expect((await check([...args, '--write-baseline'])).status).toBe(0);
+    expect(existsSync(join(args[1], 'requirements/self-check-baseline.json'))).toBe(true);
+  });
+
+  it('keeps the keys of the checks that did not run when it writes the baseline with --only', async () => {
+    const args = loose();
+    const file = join(args[1], 'written.json');
+    writeFileSync(file, JSON.stringify({ tests: ['tests:test/old.test.ts:old'], surface: ['surface:cli-flag:--kept'] }));
+    expect((await check([...args, '--write-baseline', '--baseline', file])).status).toBe(0);
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ tests: [...both.tests].sort(), surface: ['surface:cli-flag:--kept'], conditions: [] });
+  });
+
+  it('exits 1 for a finding that is not in the baseline, and names it and its key', async () => {
+    const args = withBaseline(loose(), { tests: [both.tests[0]], conditions: [] });
+    const r = await check(args);
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain('New finding, not in the baseline: The test has no link and no exemption: test/a.test.ts: second loose test (tests:test/a.test.ts:second loose test)');
+    const json = JSON.parse((await check([...args, '--json'])).stdout) as Result;
+    expect(json.gate!.new.map((f) => f.key)).toEqual(['tests:test/a.test.ts:second loose test']);
+  });
+
+  it('exits 0 when every finding is in the baseline', async () => {
+    const r = await check(withBaseline(loose(), both));
+    expect(r.status, r.stdout).toBe(0);
+    expect(r.stdout).toMatch(/Gate: 0 new, 0 fixed/);
+  });
+
+  it('reports a baseline key that is no longer a finding as fixed, and exits 0', async () => {
+    const r = await check(withBaseline(loose(), { tests: [...both.tests, 'tests:test/a.test.ts:gone test'], conditions: ['conditions:req-9#c1:partial-no-note'] }));
+    expect(r.status, r.stdout).toBe(0);
+    expect(r.stdout).toContain('Fixed, no longer a finding: tests:test/a.test.ts:gone test');
+    expect(r.stdout).toContain('Fixed, no longer a finding: conditions:req-9#c1:partial-no-note');
+    expect(r.stdout).toMatch(/Gate: 0 new, 2 fixed/);
+  });
+
+  it('does not report the keys of a check that did not run as fixed', async () => {
+    const r = await check([...withBaseline(loose(), { ...both, surface: ['surface:cli-flag:--gone'] }), '--json']);
+    expect((JSON.parse(r.stdout) as Result).gate!.fixed).toEqual([]);
+  });
+
+  it('exits 2 for an unreadable baseline or a baseline that is not an object of lists of keys', async () => {
+    const args = loose();
+    expect((await check([...args, '--baseline', join(args[1], 'missing.json')])).status).toBe(2);
+    expect((await check(withBaseline(args, ['a']))).status).toBe(2);
+    expect((await check(withBaseline(loose(), { tests: [1] }))).status).toBe(2);
+  });
+
+  it('gates on the default baseline file of the root when it exists, and runs in report mode when it does not', async () => {
+    const args = loose();
+    expect((await check(args)).status).toBe(0);
+    mkdirSync(join(args[1], 'requirements'));
+    writeFileSync(join(args[1], 'requirements/self-check-baseline.json'), JSON.stringify({ tests: [], conditions: [] }));
+    expect((await check(args)).status).toBe(1);
+  });
+});
+
+describe('the CI wiring of the self-check', () => {
+  const workflow = readFileSync(join(repo, '.github/workflows/check.yml'), 'utf8');
+  const steps = (parse(workflow) as { jobs: Record<string, { steps: { run?: string }[] }> }).jobs.check.steps;
+
+  it('runs the self-check as a gate against the baseline in the CI workflow, after the test evidence', () => {
     const runs = steps.map((s) => s.run ?? '');
-    const at = runs.findIndex((r) => r.trim() === 'node scripts/self-check.mjs');
+    const at = runs.findIndex((r) => r.trim() === 'node scripts/self-check.mjs --baseline requirements/self-check-baseline.json');
     expect(at).toBeGreaterThan(-1);
     expect(runs.slice(0, at).some((r) => r.trim() === 'npm run test:evidence')).toBe(true);
     expect(runs.join('\n')).not.toMatch(/self-check\.mjs.*--strict/);
+    expect(workflow).not.toMatch(/report mode|Add --strict/);
+  });
+
+  it('fails the gate of the CI step with exit code 1 for a finding that is not in the baseline', async () => {
+    const args = fixture({ requirements: [{ id: 'req-1', conditions: [ok('c1')] }], tests: [['test/a.test.ts', 'loose test']] });
+    const file = join(args[1], 'baseline.json');
+    writeFileSync(file, JSON.stringify({ tests: [], conditions: [] }));
+    const r = await check([...args, '--baseline', file]);
+    expect(r.status).toBe(1);
+    expect(r.stdout).toMatch(/New finding, not in the baseline: .*loose test/);
+  });
+});
+
+describe('the gate checks of the self-check requirements', () => {
+  const graph = join(repo, 'requirements/graph/requirement');
+  const ids = ['req-self-tests', 'req-self-conditions', 'req-self-surface', 'req-self-strict', 'req-self-prepush'];
+
+  it('links a check of the type gate with a command to each condition of the self-check requirements, next to its unit tests', () => {
+    for (const id of ids) {
+      const node = parse(readFileSync(join(graph, `${id}.yaml`), 'utf8')) as { acceptance: { id: string; tests?: { type: string; command?: string }[] }[] };
+      for (const c of node.acceptance) {
+        const types = (c.tests ?? []).map((t) => t.type);
+        expect(types, `${id}#${c.id}`).toContain('unit');
+        const gates = (c.tests ?? []).filter((t) => t.type === 'gate');
+        expect(gates.length, `${id}#${c.id}`).toBeGreaterThan(0);
+        for (const g of gates) expect(g.command, `${id}#${c.id}`).toMatch(/^(node|sh) \S+/);
+      }
+    }
   });
 });

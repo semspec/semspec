@@ -38,6 +38,7 @@ checks:
   typeField: type
   types:
     unit: { key: [file, name], title: [name] }
+    gate: { key: [command], title: [command] }
   sectionTitle: Tests
   noneText: No test.
 status:

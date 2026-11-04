@@ -88,6 +88,12 @@ Each dependency that this pull request adds, removes or changes, with its exact 
 
 What a profile author, a graph author or a user of the CLI, the MCP server or `@semspec/core` must change. Write "None." if nothing breaks.
 
+## Requirement exemption
+
+Optional. A change of `packages/`, `bin/` or `package.json` also changes a file of `requirements/graph`. When it does not, write 1 line "Requirement exemption: <reason>" below, with a reason. Otherwise delete this section.
+
+<!-- Requirement exemption: <reason> -->
+
 ## Release
 
 The changeset file and its bump, for example `.changeset/short-name.md`: `@semspec/core` minor. Or "empty changeset: <reason>" when the change has nothing for a user. A user-facing change in `app`, `cli` or `mcp` puts its bump on `@semspec/core`, because that package carries the version of both public packages. Run `npx changeset` to add the file.

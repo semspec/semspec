@@ -3,14 +3,21 @@
 // The self-check of the Semspec repository. It loads the requirement graph with its test evidence,
 // runs the checks of CHECKS and prints the findings grouped by check, as Markdown or as JSON (--json).
 // The exit code is 0, except with --strict: then it is 1 when there is a finding. A wrong use or an unreadable input gives 2.
-// Usage: node scripts/self-check.mjs [--strict] [--json] [--all]
-//   [--graph <folder>] [--profile <file>] [--report <vitest.json>] [--exemptions <file>] [--root <folder>]
-// To add a check, add 1 entry to CHECKS. A check is `{ id, title, run(context) }`, and `run` returns a list of finding texts.
+// With a baseline, the command is a gate: the exit code is 1 when a finding has a key that the baseline does not list.
+// The baseline is --baseline <file>, or requirements/self-check-baseline.json when that file exists.
+// A baseline key that is no longer a finding is reported as fixed. `--write-baseline` writes the baseline from the findings.
+// With --only, it replaces the keys of the checks that ran and keeps the others.
+// Usage: node scripts/self-check.mjs [--strict] [--json] [--all] [--write-baseline] [--baseline <file>]
+//   [--graph <folder>] [--profile <file>] [--report <vitest.json>] [--exemptions <file>] [--root <folder>] [--only <ids>]
+// To add a check, add 1 entry to CHECKS. A check is `{ id, title, run(context) }`.
+// `run` returns a list of findings. A finding is `{ key, message }`. The key is stable: it names the finding
+// and holds no count, no line number and no text that changes when an unrelated part changes.
 // The context has the fields that `loadContext` builds.
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse } from 'yaml';
+import { BASELINE_FILE, baselineKeys } from './check-baseline.mjs';
 import { surfaceFindings } from './surface-inventory.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -23,6 +30,7 @@ const SHOWN_BY_DEFAULT = 20;
 const isObject = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const testKey = (file, name) => `${file}\u0000${name}`;
 const label = (file, name) => `${file}: ${name}`;
+const finding = (key, message) => ({ key, message });
 
 // ---------- context ----------
 
@@ -144,7 +152,7 @@ function linksOf(ctx) {
 // Check tests (req-self-tests): every test has a link or an exemption with a reason, and every link has a test.
 // A link has no test when its file is in the report and its name is not, or when its file is gone.
 function testsCheck(ctx) {
-  if (!ctx.tests) return [`The Vitest report "${ctx.reportPath}" does not exist. Run \`npm run test:evidence\`.`];
+  if (!ctx.tests) return [finding('tests:no-report', `The Vitest report "${ctx.reportPath}" does not exist. Run \`npm run test:evidence\`.`)];
   const findings = [];
   const links = linksOf(ctx);
   const linked = new Set(links.map((l) => testKey(l.file, l.name)));
@@ -154,16 +162,17 @@ function testsCheck(ctx) {
   const exempt = (t) => reasoned.some((e) => e.file === t.file && (e.name === undefined || e.name === t.name));
   for (const [i, e] of ctx.exemptions.entries()) {
     const what = typeof e.file === 'string' ? label(e.file, e.name ?? '(every test)') : `entry ${i + 1}`;
-    if (typeof e.file !== 'string' || !e.file) findings.push(`The exemption ${what} of "${ctx.exemptionsPath}" has no file.`);
-    else if (!(typeof e.reason === 'string' && e.reason.trim())) findings.push(`The exemption ${what} of "${ctx.exemptionsPath}" has no reason.`);
-    else if (e.name === undefined ? !presentFiles.has(e.file) : !present.has(testKey(e.file, e.name))) findings.push(`The exemption ${what} of "${ctx.exemptionsPath}" matches no test of the report.`);
+    const id = typeof e.file === 'string' ? `${e.file}:${e.name ?? '*'}` : `entry-${i + 1}`;
+    if (typeof e.file !== 'string' || !e.file) findings.push(finding(`tests:exemption-no-file:${id}`, `The exemption ${what} of "${ctx.exemptionsPath}" has no file.`));
+    else if (!(typeof e.reason === 'string' && e.reason.trim())) findings.push(finding(`tests:exemption-no-reason:${id}`, `The exemption ${what} of "${ctx.exemptionsPath}" has no reason.`));
+    else if (e.name === undefined ? !presentFiles.has(e.file) : !present.has(testKey(e.file, e.name))) findings.push(finding(`tests:exemption-no-test:${id}`, `The exemption ${what} of "${ctx.exemptionsPath}" matches no test of the report.`));
   }
   const seen = new Set();
   for (const t of ctx.tests) {
     const key = testKey(t.file, t.name);
     if (seen.has(key)) continue;
     seen.add(key);
-    if (!linked.has(key) && !exempt(t)) findings.push(`The test has no link and no exemption: ${label(t.file, t.name)}`);
+    if (!linked.has(key) && !exempt(t)) findings.push(finding(`tests:${t.file}:${t.name}`, `The test has no link and no exemption: ${label(t.file, t.name)}`));
   }
   const dangling = new Set();
   for (const l of links) {
@@ -172,7 +181,11 @@ function testsCheck(ctx) {
     // A file that is not in the report can belong to another test suite, for example the site. Only a file that is gone is a finding.
     if (!presentFiles.has(l.file) && existsSync(resolve(ctx.root, l.file))) continue;
     dangling.add(`${l.owner}${key}`);
-    findings.push(presentFiles.has(l.file) ? `The link of ${l.owner} has no test in the report: ${label(l.file, l.name)}` : `The link of ${l.owner} names a test file that does not exist: ${l.file}`);
+    findings.push(
+      presentFiles.has(l.file)
+        ? finding(`tests:link-no-test:${l.owner}:${l.file}:${l.name}`, `The link of ${l.owner} has no test in the report: ${label(l.file, l.name)}`)
+        : finding(`tests:link-no-file:${l.owner}:${l.file}`, `The link of ${l.owner} names a test file that does not exist: ${l.file}`),
+    );
   }
   return findings;
 }
@@ -182,11 +195,11 @@ function conditionsCheck(ctx) {
   const findings = [];
   if (ctx.evidence === 'fresh') {
     for (const c of ctx.conditions) {
-      if ((c.authored ?? null) !== (c.derived ?? null)) findings.push(`The condition ${c.id} is authored ${c.authored ?? 'with no status'} and derived ${c.derived ?? 'with no status'}.`);
+      if ((c.authored ?? null) !== (c.derived ?? null)) findings.push(finding(`conditions:${c.id}:status-differs`, `The condition ${c.id} is authored ${c.authored ?? 'with no status'} and derived ${c.derived ?? 'with no status'}.`));
     }
   }
   for (const c of ctx.conditions) {
-    if (c.authored === ctx.warn && !(typeof c.note === 'string' && c.note.trim())) findings.push(`The condition ${c.id} is authored ${ctx.warn} and has no ${NOTE}.`);
+    if (c.authored === ctx.warn && !(typeof c.note === 'string' && c.note.trim())) findings.push(finding(`conditions:${c.id}:partial-no-note`, `The condition ${c.id} is authored ${ctx.warn} and has no ${NOTE}.`));
   }
   const idKey = ctx.profile.source.id;
   const kindKey = ctx.profile.source.kind;
@@ -196,14 +209,14 @@ function conditionsCheck(ctx) {
   for (const n of ctx.nodes) {
     if (n[kindKey] !== 'requirement') continue;
     const own = byOwner.get(n[idKey]) ?? [];
-    if (n[ctx.lifecycleField] === DRAFT && allGood(own)) findings.push(`The requirement ${n[idKey]} has state ${DRAFT} and all its conditions are ${ctx.good}.`);
-    if (allGood(own) && n[PRIORITY] !== undefined) findings.push(`The requirement ${n[idKey]} has all conditions ${ctx.good} and still has a ${PRIORITY}.`);
+    if (n[ctx.lifecycleField] === DRAFT && allGood(own)) findings.push(finding(`conditions:${n[idKey]}:draft-all-good`, `The requirement ${n[idKey]} has state ${DRAFT} and all its conditions are ${ctx.good}.`));
+    if (allGood(own) && n[PRIORITY] !== undefined) findings.push(finding(`conditions:${n[idKey]}:good-priority`, `The requirement ${n[idKey]} has all conditions ${ctx.good} and still has a ${PRIORITY}.`));
   }
   for (const n of ctx.nodes) {
     if (n[kindKey] !== 'capability') continue;
     const below = ctx.nodes.filter((r) => r[kindKey] === 'requirement' && (r.capabilities ?? []).includes(n[idKey]));
     const list = below.flatMap((r) => byOwner.get(r[idKey]) ?? []);
-    if (allGood(list) && n[PRIORITY] !== undefined) findings.push(`The capability ${n[idKey]} has all conditions ${ctx.good} and still has a ${PRIORITY}.`);
+    if (allGood(list) && n[PRIORITY] !== undefined) findings.push(finding(`conditions:${n[idKey]}:good-priority`, `The capability ${n[idKey]} has all conditions ${ctx.good} and still has a ${PRIORITY}.`));
   }
   return findings;
 }
@@ -212,8 +225,36 @@ function conditionsCheck(ctx) {
 export const CHECKS = [
   { id: 'tests', title: 'Tests with no link to a condition', run: testsCheck },
   { id: 'conditions', title: 'Status of conditions, requirements and capabilities', run: conditionsCheck },
-  { id: 'surface', title: 'User-visible items with no requirement', run: (ctx) => surfaceFindings(ctx.root).findings.map((f) => f.message) },
+  { id: 'surface', title: 'User-visible items with no requirement', run: (ctx) => surfaceFindings(ctx.root).findings.map((f) => finding(`surface:${f.item.replace(' ', ':')}`, f.message)) },
 ];
+
+// ---------- baseline ----------
+
+// The baseline lists the keys of the findings of the backlog by check: `{ <check id>: [sorted keys] }`.
+export function baselineOf(results) {
+  return Object.fromEntries(results.map((r) => [r.id, [...new Set(r.findings.map((f) => f.key))].sort()]));
+}
+
+export function readBaseline(path) {
+  let data;
+  try {
+    data = JSON.parse(readFileSync(path, 'utf8'));
+  } catch (e) {
+    throw new Error(`Cannot read the baseline "${path}": ${e.message}`);
+  }
+  return new Set(baselineKeys(data, path));
+}
+
+// Compares the findings with the baseline. `fresh` holds the findings with a key that the baseline does not list.
+// `fixed` holds the baseline keys of the checks that ran that are no longer a finding.
+export function gateOf(results, baseline) {
+  const keys = new Set(results.flatMap((r) => r.findings.map((f) => f.key)));
+  const ran = new Set(results.map((r) => r.id));
+  return {
+    fresh: results.flatMap((r) => r.findings.filter((f) => !baseline.has(f.key))),
+    fixed: [...baseline].filter((k) => ran.has(k.split(':')[0]) && !keys.has(k)).sort(),
+  };
+}
 
 // ---------- report ----------
 
@@ -221,15 +262,22 @@ export function runChecks(ctx, checks = CHECKS) {
   return checks.map((c) => ({ id: c.id, title: c.title, findings: c.run(ctx) }));
 }
 
-export function markdown(results, evidence, all = false) {
+export function markdown(results, evidence, all = false, gate = null) {
   const total = results.reduce((n, r) => n + r.findings.length, 0);
   const note = evidence === 'fresh' ? '' : ' The checks use the authored status, and the derived status is not compared.';
   const lines = ['# Self-check', '', `Evidence: ${evidence}.${note} Findings: ${total}.`, ''];
   for (const r of results) {
     lines.push(`## ${r.id}: ${r.title} (${r.findings.length})`, '');
     if (!r.findings.length) lines.push('No finding.');
-    for (const f of all ? r.findings : r.findings.slice(0, SHOWN_BY_DEFAULT)) lines.push(`- ${f}`);
+    for (const f of all ? r.findings : r.findings.slice(0, SHOWN_BY_DEFAULT)) lines.push(`- ${f.message}`);
     if (!all && r.findings.length > SHOWN_BY_DEFAULT) lines.push(`- ${r.findings.length - SHOWN_BY_DEFAULT} more. Use --all to list them.`);
+    lines.push('');
+  }
+  if (gate) {
+    lines.push(`## Gate: ${gate.fresh.length} new, ${gate.fixed.length} fixed`, '');
+    for (const f of gate.fresh) lines.push(`- New finding, not in the baseline: ${f.message} (${f.key})`);
+    for (const k of gate.fixed) lines.push(`- Fixed, no longer a finding: ${k}`);
+    if (gate.fixed.length) lines.push('', 'Run `node scripts/self-check.mjs --write-baseline` to remove the fixed keys from the baseline.');
     lines.push('');
   }
   return lines.join('\n');
@@ -237,8 +285,8 @@ export function markdown(results, evidence, all = false) {
 
 // ---------- command ----------
 
-const VALUES = ['graph', 'profile', 'report', 'exemptions', 'root', 'only'];
-const FLAGS = ['json', 'strict', 'all'];
+const VALUES = ['graph', 'profile', 'report', 'exemptions', 'root', 'only', 'baseline'];
+const FLAGS = ['json', 'strict', 'all', 'write-baseline'];
 
 export function parseArgs(argv) {
   const args = {};
@@ -268,9 +316,23 @@ export async function main(argv) {
   const unknown = (args.only ?? []).filter((id) => !CHECKS.some((c) => c.id === id));
   if (unknown.length) throw new Error(`Unknown check "${unknown[0]}". The checks are: ${CHECKS.map((c) => c.id).join(', ')}.`);
   const results = runChecks(ctx, args.only ? CHECKS.filter((c) => args.only.includes(c.id)) : CHECKS);
+  const baselinePath = args.baseline ?? resolve(root, BASELINE_FILE);
+  if (args['write-baseline']) {
+    mkdirSync(dirname(baselinePath), { recursive: true });
+    // With --only, the checks that did not run keep their keys.
+    const kept = args.only && existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, 'utf8')) : {};
+    const baseline = { ...kept, ...baselineOf(results) };
+    writeFileSync(baselinePath, `${JSON.stringify(baseline, null, 2)}\n`);
+    const sizes = Object.entries(baseline).map(([id, keys]) => `${id} ${keys.length}`).join(', ');
+    console.log(`Baseline written to ${relative(root, baselinePath) || baselinePath}: ${sizes}.`);
+    return 0;
+  }
+  const gate = args.baseline || existsSync(baselinePath) ? gateOf(results, readBaseline(baselinePath)) : null;
   const total = results.reduce((n, r) => n + r.findings.length, 0);
-  console.log(args.json ? JSON.stringify({ evidence: ctx.evidence, total, checks: results }, null, 2) : markdown(results, ctx.evidence, args.all));
-  return args.strict && total > 0 ? 1 : 0;
+  if (args.json) console.log(JSON.stringify({ evidence: ctx.evidence, total, checks: results, ...(gate ? { gate: { new: gate.fresh, fixed: gate.fixed } } : {}) }, null, 2));
+  else console.log(markdown(results, ctx.evidence, args.all, gate));
+  if (gate?.fresh.length) console.error(`The gate fails: ${gate.fresh.length} finding${gate.fresh.length === 1 ? '' : 's'} not in the baseline.`);
+  return (args.strict && total > 0) || gate?.fresh.length ? 1 : 0;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

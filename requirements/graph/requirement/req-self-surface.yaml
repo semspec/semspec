@@ -19,6 +19,8 @@ acceptance:
       - type: unit
         file: test/surface.test.ts
         name: skips a control with a name that the code builds at run time and lists it as skipped
+      - type: gate
+        command: node scripts/self-check.mjs --only surface
   - id: coverage
     text: "For each listed item, the inventory names the requirement that covers it."
     status: verified
@@ -29,6 +31,8 @@ acceptance:
       - type: unit
         file: test/surface.test.ts
         name: maps only to requirements that exist in the graph of this repository
+      - type: gate
+        command: node scripts/self-check.mjs --only surface
   - id: finding
     text: "An item with no covering requirement is a finding."
     status: verified
@@ -42,3 +46,5 @@ acceptance:
       - type: unit
         file: test/surface.test.ts
         name: returns the check name surface and a list of findings with an item and a message
+      - type: gate
+        command: node scripts/self-check.mjs --only surface
