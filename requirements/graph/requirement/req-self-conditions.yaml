@@ -1,8 +1,6 @@
 id: req-self-conditions
 kind: requirement
 title: Keep the status of the conditions honest
-state: draft
-priority: now
 statement: The status of each condition, requirement and capability matches the work that is done.
 capabilities:
   - cap-self-check
@@ -11,10 +9,28 @@ area:
 acceptance:
   - id: status
     text: "Every condition is verified, or partial with a note."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports a condition whose authored status differs from its derived status, and names both
+      - type: unit
+        file: test/self-check.test.ts
+        name: does not compare the derived status when the evidence is stale or absent, and uses the authored status
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports a condition authored partial that has no note, and accepts one with a note
   - id: draft-verified
     text: "A requirement with state draft has at least 1 condition that is not verified."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports a draft requirement whose conditions are all verified, and accepts one with an open condition
   - id: stale-priority
     text: "A capability or requirement whose conditions are all verified has no priority."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports a requirement and a capability whose conditions are all verified and that still have a priority

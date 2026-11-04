@@ -34,11 +34,16 @@ jobs:
       - run: npm run licences
       - run: npm run typecheck
       - run: npm run build
-      - run: npm test
+      # The test run also writes the test report and the evidence record that the self-check reads.
+      - run: npm run test:evidence
       - name: Check the requirements of Semspec
         run: node bin/semspec.js check --graph requirements/graph --profile requirements/profile.yaml
       - name: Check the spec document of the requirements
         run: node bin/semspec.js spec --graph requirements/graph --profile requirements/profile.yaml docs/reference/requirements.md --check
+      # The self-check runs in report mode, so a finding shows and does not fail the job.
+      # Add --strict when the backlog of findings is clear.
+      - name: Report the findings of the self-check
+        run: node scripts/self-check.mjs
       - run: npm ci --prefix site
       - run: npm test --prefix site
 

@@ -1,0 +1,23 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The Semspec Authors
+# Runs the checks of the repository before a push. The first failure blocks the push.
+# Install it once with `npm run hooks:install`.
+cd "$(dirname "$0")/.." || exit 1
+
+step() {
+  echo "pre-push: $*"
+  "$@" || {
+    echo "pre-push: blocked, because this step failed: $*" >&2
+    exit 1
+  }
+}
+
+step npm run typecheck
+# The test run also writes the report and the record that the self-check reads.
+step npm run test:evidence
+step node bin/semspec.js check --graph requirements/graph --profile requirements/profile.yaml
+step node bin/semspec.js spec --graph requirements/graph --profile requirements/profile.yaml docs/reference/requirements.md --check
+step npm run licences
+# The self-check runs in report mode: its findings show, and they do not block the push.
+step node scripts/self-check.mjs

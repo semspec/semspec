@@ -12,6 +12,23 @@ acceptance:
   - id: ci
     text: "When the backlog of findings is clear, a finding fails the CI workflow."
     status: open
+    tests:
+      - type: unit
+        file: test/self-check.test.ts
+        name: runs the self-check in report mode in the CI workflow, after the test evidence
+      - type: unit
+        file: test/self-check.test.ts
+        name: exits 1 with --strict when there is a finding, and 0 without --strict
+      - type: unit
+        file: test/self-check.test.ts
+        name: exits 0 with --strict when there is no finding
   - id: hook
     text: "When the backlog of findings is clear, a finding fails the pre-push hook."
     status: open
+    tests:
+      - type: unit
+        file: test/prepush.test.ts
+        name: runs the self-check in report mode, with no --strict
+      - type: unit
+        file: test/self-check.test.ts
+        name: exits 1 with --strict when there is a finding, and 0 without --strict

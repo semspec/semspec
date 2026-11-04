@@ -1,8 +1,6 @@
 id: req-self-prepush
 kind: requirement
 title: Block a push that fails the checks
-state: draft
-priority: now
 statement: A pre-push git hook runs the checks of the repository and blocks the push on a failure.
 capabilities:
   - cap-self-check
@@ -11,13 +9,32 @@ area:
 acceptance:
   - id: checks
     text: "The hook runs the typecheck, the tests, semspec check on the requirements, semspec spec --check on the docs and npm run licences."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/prepush.test.ts
+        name: is an executable POSIX shell script
+      - type: unit
+        file: test/prepush.test.ts
+        name: runs the typecheck, the tests, semspec check, semspec spec --check and the licence check, then the self-check
   - id: block
     text: "The hook blocks the push when 1 of these checks fails."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/prepush.test.ts
+        name: blocks the push and stops at the first failed step
   - id: install
     text: "A contributor installs the hook once with 1 npm script."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/prepush.test.ts
+        name: installs the hook with 1 npm script that sets the hooks path
   - id: dependency
     text: "An install of Semspec as a dependency never installs a hook."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/prepush.test.ts
+        name: keeps the hook out of every lifecycle script and out of the published files
