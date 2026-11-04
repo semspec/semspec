@@ -11,6 +11,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse } from 'yaml';
+import { surfaceFindings } from './surface-inventory.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // The words of the repository profile that the checks read.
@@ -211,6 +212,7 @@ function conditionsCheck(ctx) {
 export const CHECKS = [
   { id: 'tests', title: 'Tests with no link to a condition', run: testsCheck },
   { id: 'conditions', title: 'Status of conditions, requirements and capabilities', run: conditionsCheck },
+  { id: 'surface', title: 'User-visible items with no requirement', run: (ctx) => surfaceFindings(ctx.root).findings.map((f) => f.message) },
 ];
 
 // ---------- report ----------
@@ -235,7 +237,7 @@ export function markdown(results, evidence, all = false) {
 
 // ---------- command ----------
 
-const VALUES = ['graph', 'profile', 'report', 'exemptions', 'root'];
+const VALUES = ['graph', 'profile', 'report', 'exemptions', 'root', 'only'];
 const FLAGS = ['json', 'strict', 'all'];
 
 export function parseArgs(argv) {
@@ -246,7 +248,7 @@ export function parseArgs(argv) {
     else if (VALUES.includes(name)) {
       const value = argv[++i];
       if (value === undefined || value.startsWith('--')) throw new Error(`The option --${name} needs a value.`);
-      args[name] = resolve(value);
+      args[name] = name === 'only' ? value.split(',') : resolve(value);
     } else throw new Error(`Unknown argument "${argv[i]}".`);
   }
   return args;
@@ -262,7 +264,10 @@ export async function main(argv) {
     exemptions: args.exemptions ?? resolve(root, 'requirements/test-exemptions.yaml'),
     root,
   });
-  const results = runChecks(ctx);
+  // --only <ids> runs some of the checks, for example on a repository that has no app or command line sources.
+  const unknown = (args.only ?? []).filter((id) => !CHECKS.some((c) => c.id === id));
+  if (unknown.length) throw new Error(`Unknown check "${unknown[0]}". The checks are: ${CHECKS.map((c) => c.id).join(', ')}.`);
+  const results = runChecks(ctx, args.only ? CHECKS.filter((c) => args.only.includes(c.id)) : CHECKS);
   const total = results.reduce((n, r) => n + r.findings.length, 0);
   console.log(args.json ? JSON.stringify({ evidence: ctx.evidence, total, checks: results }, null, 2) : markdown(results, ctx.evidence, args.all));
   return args.strict && total > 0 ? 1 : 0;

@@ -79,7 +79,7 @@ function fixture(f: Fixture): string[] {
   const report = { testResults: [...new Set((f.tests ?? []).map(([file]) => file))].map((file) => ({ name: join(dir, file), assertionResults: (f.tests ?? []).filter(([x]) => x === file).map(([, title]) => ({ title, ancestorTitles: [], status: 'passed' })) })) };
   if (!f.noReport) writeFileSync(join(dir, 'vitest.json'), JSON.stringify(report));
   if (f.exemptions !== undefined) writeFileSync(join(dir, 'exemptions.yaml'), typeof f.exemptions === 'string' ? f.exemptions : JSON.stringify(f.exemptions));
-  return ['--root', dir, '--graph', join(dir, 'graph'), '--profile', join(dir, 'profile.yaml'), '--report', join(dir, 'vitest.json'), '--exemptions', join(dir, 'exemptions.yaml')];
+  return ['--root', dir, '--graph', join(dir, 'graph'), '--profile', join(dir, 'profile.yaml'), '--report', join(dir, 'vitest.json'), '--exemptions', join(dir, 'exemptions.yaml'), '--only', 'tests,conditions'];
 }
 
 // Runs the command in this process, so the tests stay fast. A shell runs the same code.
