@@ -12,7 +12,7 @@ export interface CoverageArgs {
 }
 
 // The options that the command accepts. Each takes 1 value, except --json. This list follows the usage line of the command.
-const OPTIONS = new Set(['graph', 'profile', 'workspace', 'in', 'exclude', 'scope', 'kind', 'lifecycle', 'delivery', 'status', 'marker', 'field', 'group', 'list', 'limit', 'gate']);
+const OPTIONS = new Set(['graph', 'profile', 'workspace', 'in', 'exclude', 'scope', 'kind', 'lifecycle', 'delivery', 'status', 'marker', 'field', 'group', 'list', 'limit', 'gate', 'status-source']);
 
 // Reads the arguments after the command name. It throws for an unknown option and for an option with no value.
 export function parseCoverageArgs(argv: string[]): CoverageArgs {
