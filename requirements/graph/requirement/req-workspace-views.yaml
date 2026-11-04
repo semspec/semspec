@@ -100,7 +100,7 @@ acceptance:
         file: test/app/views.test.tsx
         name: opens a cross link in the first view of the target graph
   - id: check
-    text: "The check of the workspace refuses a view id that appears twice, a view that names an unknown graph and a view profile that is not valid. The message names the view id."
+    text: "The check of the workspace refuses a view id that appears twice, a view that names an unknown graph, a view profile that is not valid, a graph that does not fit the profile of its view, and a views list with no view for a graph that a cross link names. The message names the view id or the graph id. check and build accept and refuse the same workspaces."
     status: verified
     tests:
       - type: unit
@@ -121,3 +121,9 @@ acceptance:
       - type: unit
         file: test/views.test.ts
         name: fails the check command for a view that names an unknown graph
+      - type: unit
+        file: test/views.test.ts
+        name: refuses a views list with no view for a graph that a cross link names and names the graph
+      - type: unit
+        file: test/views.test.ts
+        name: refuses a graph that does not fit the profile of its view in the same way in check and in build

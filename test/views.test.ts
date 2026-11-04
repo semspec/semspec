@@ -164,4 +164,18 @@ describe('req-workspace-views: check', () => {
     expect(await run(['check', '--workspace', file])).toBe(1);
     expect(await run(['check', '--workspace', viewsPath])).toBe(0);
   });
+  it('refuses a views list with no view for a graph that a cross link names and names the graph', async () => {
+    const file = copyViews((ws) => (ws.views = ws.views.filter((v: { graph: string }) => v.graph !== 'req')));
+    expect(messageOf(file)).toMatch(/graph "req"/);
+    expect(await run(['check', '--workspace', file])).toBe(1);
+  });
+  it('refuses a graph that does not fit the profile of its view in the same way in check and in build', async () => {
+    const file = copyViews((ws) => (ws.views[1].profile = 'domain/profile-ownership.yaml'));
+    const strict = join(dirname(file), 'domain', 'profile-ownership.yaml');
+    writeFileSync(strict, readFileSync(strict, 'utf8').replace('since: { type: date, required: true }', 'since: { type: date, required: true }\n      rating: { type: number, required: true }'));
+    expect(messageOf(file)).toMatch(/View "market": The graph is not valid for the profile/);
+    expect(await run(['check', '--workspace', file])).toBe(1);
+    const out = join(dirname(file), 'page.html');
+    expect(await run(['build', '--workspace', file, '--out', out])).toBe(1);
+  });
 });

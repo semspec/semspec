@@ -12,12 +12,15 @@ area:
   - app
 acceptance:
   - id: watch
-    text: "serve watches the graph folders and files, the profiles, the vocabulary files and the workspace file. A change of 1 of them sends 1 event to each open page."
+    text: "serve watches the graph folders and files, the profiles, the vocabulary files and the workspace file. A change of 1 of them sends 1 event to each open page. serve also watches the origin file of each node, and when a node names another origin file, serve watches the new file from the next valid load."
     status: verified
     tests:
       - type: unit
         file: test/live.test.ts
         name: sends 1 event to each open page when a file of the graph folder or the profile changes
+      - type: unit
+        file: test/live.test.ts
+        name: watches the new origin file of a node after the origin changes to another file outside the graph folder
       - type: unit
         file: test/live.test.ts
         name: "sends an event when the workspace file, a graph, a profile or a vocabulary of a workspace changes"

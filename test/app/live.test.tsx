@@ -227,4 +227,21 @@ describe('req-node-source: on-demand', () => {
     expect(screen.queryByRole('button', { name: 'Show the text' })).toBeNull();
     expect(screen.queryByTestId('source-text')).toBeNull();
   });
+
+  it('shows the path only for a node whose text the page lacks, and not the text of the node before', async () => {
+    setSourceHost({ live: false, texts: { product: { 'docs/save-card.yaml': 'embedded text\n' } } });
+    const data = withFiles();
+    data.graphs[0].model.files!['story-pay-by-card'] = 'docs/pay-by-card.yaml';
+    renderWorkspace(data);
+    await selectSaveCard();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Show the text' }));
+    await wait(10);
+    expect(screen.getByTestId('source-text').textContent).toBe('embedded text\n');
+    act(() => patchGraph(PRODUCT, { selected: 'story-pay-by-card' }));
+    await settle();
+    await wait(10);
+    expect(screen.getByTestId('source-path').textContent).toBe('docs/pay-by-card.yaml');
+    expect(screen.queryByTestId('source-text')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Show the text' })).toBeNull();
+  });
 });

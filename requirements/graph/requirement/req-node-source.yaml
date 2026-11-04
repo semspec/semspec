@@ -60,7 +60,7 @@ acceptance:
         file: test/live.test.ts
         name: leaves out of --sources a file outside the source root
   - id: on-demand
-    text: "serve gives the text when the section opens, so the page data does not grow. A page that build writes shows the path only, unless the option --sources puts the texts into the page."
+    text: "serve gives the text when the section opens, so the page data does not grow. A page that build writes shows the path only, unless the option --sources puts the texts into the page. A node whose text the page does not have shows the path only, and never the text of a node selected before."
     status: verified
     tests:
       - type: unit
@@ -78,3 +78,6 @@ acceptance:
       - type: unit
         file: test/app/live.test.tsx
         name: shows the embedded text of a built page and no button when the build had no texts
+      - type: unit
+        file: test/app/live.test.tsx
+        name: shows the path only for a node whose text the page lacks, and not the text of the node before

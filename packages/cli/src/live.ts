@@ -47,7 +47,8 @@ const keyOf = (t: Target) => {
 
 // Watches the paths that `paths` returns, and calls `onChange` once after a burst of changes.
 // After a change, the function reads the list again, so a folder that a restage replaced is watched again.
-export function watchFiles(paths: () => string[], onChange: () => void, delay = DEBOUNCE_MS): { close: () => void } {
+// `rewatch` reads the list on demand.
+export function watchFiles(paths: () => string[], onChange: () => void, delay = DEBOUNCE_MS): { rewatch: () => void; close: () => void } {
   let watchers: FSWatcher[] = [];
   let signature = '';
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -94,6 +95,10 @@ export function watchFiles(paths: () => string[], onChange: () => void, delay = 
 
   rebuild();
   return {
+    // Reads the list again. The caller uses it when the list changes with no file event.
+    rewatch: () => {
+      if (!closed) rebuild();
+    },
     close: () => {
       closed = true;
       clearTimeout(timer);

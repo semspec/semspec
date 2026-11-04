@@ -12,7 +12,7 @@ import { validateGraph, validateProfile } from './validate';
 
 const schemaPath = new URL('../../../schema/workspace.schema.json', import.meta.url);
 
-interface ViewFile {
+export interface ViewFile {
   id: string;
   label: string;
   graph: string;
@@ -60,6 +60,36 @@ function viewProblems(file: WorkspaceFile, base: string | undefined): string[] {
     if (unknown.length || (!v.parents && !v.layout)) continue;
     validateProfile(viewProfile(profile, v)).forEach((m) => errors.push(`View "${v.id}": ${m}`));
   }
+  if (base !== undefined && file.views?.length) errors.push(...crossLinkViewProblems(file, base));
+  return errors;
+}
+
+// A cross link opens in a view of the graph that it names. A views list with no view for such a graph
+// leaves the link without a target. The profiles of the graphs and of the views are the ones to read.
+function crossLinkViewProblems(file: WorkspaceFile, base: string): string[] {
+  const shown = new Set((file.views ?? []).map((v) => v.graph));
+  const known = new Set(file.graphs.map((g) => g.id));
+  const owners: { owner: string; profile: string }[] = [
+    ...file.graphs.map((g) => ({ owner: `graph "${g.id}"`, profile: g.profile })),
+    ...(file.views ?? []).flatMap((v) => (v.profile === undefined ? [] : [{ owner: `view "${v.id}"`, profile: v.profile }])),
+  ];
+  const errors: string[] = [];
+  const named = new Set<string>();
+  for (const { owner, profile } of owners) {
+    let read: Profile;
+    try {
+      read = loadProfile(resolve(base, profile));
+    } catch {
+      // The profile has its own message from the check of the graph or of the view.
+      continue;
+    }
+    for (const c of read.crossLinks ?? []) {
+      // An unknown graph has its own message from the check of the cross links.
+      if (!known.has(c.graph) || shown.has(c.graph) || named.has(c.graph)) continue;
+      named.add(c.graph);
+      errors.push(`The views list has no view for the graph "${c.graph}", and the cross link "${c.field}" of the ${owner} names it`);
+    }
+  }
   return errors;
 }
 
@@ -93,14 +123,21 @@ export interface WorkspaceSource {
 
 // The page data of a view. The graph is loaded once. A view with its own profile, parents rule or
 // layout gets its own model from the same graph. Any other view shares the model of its graph.
+// The message for a graph that does not fit the profile file of a view, or undefined when it fits.
+// The build and the check of the workspace both use it.
+export function viewGraphProblem(v: ViewFile, graph: Graph, base: string): string | undefined {
+  if (v.profile === undefined) return undefined;
+  const checked = validateGraph(graph, viewProfile(loadProfile(resolve(base, v.profile)), v));
+  if (!checked.errors.length) return undefined;
+  return `The graph is not valid for the profile "${v.profile}":\n  ${checked.errors.slice(0, 20).join('\n  ')}`;
+}
+
 function loadView(v: ViewFile, source: WorkspaceSource, base: string): WorkspaceView {
   const out: WorkspaceView = { id: v.id, label: v.label, graph: v.graph, ...(v.filters ? { filters: v.filters } : {}) };
   if (v.profile === undefined && !v.parents && !v.layout) return out;
   const profile = viewProfile(v.profile === undefined ? source.profile : loadProfile(resolve(base, v.profile)), v);
-  if (v.profile !== undefined) {
-    const checked = validateGraph(source.graph, profile);
-    if (checked.errors.length) throw new Error(`The graph is not valid for the profile "${v.profile}":\n  ${checked.errors.slice(0, 20).join('\n  ')}`);
-  }
+  const problem = viewGraphProblem(v, source.graph, base);
+  if (problem !== undefined) throw new Error(problem);
   return { ...out, model: buildModel(source.graph, profile) };
 }
 

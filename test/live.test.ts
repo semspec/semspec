@@ -42,12 +42,17 @@ function stageWorkspace(edit?: (ws: Record<string, unknown>) => void) {
 }
 
 // An open page: a client of the event channel. `names` lists the events in the order of their arrival.
+// On macOS, fs.watch uses FSEvents, and its stream starts a moment after watch() returns. A write in that
+// moment gives no event, and Node has no signal for a started stream. So a test waits this long after the
+// page connects, before its first write.
+const WATCH_START_MS = 300;
+
 function openEvents(url: string) {
   const names: string[] = [];
   const data: string[] = [];
   let res: IncomingMessage | undefined;
   let buffer = '';
-  const ready = new Promise<void>((ok) => {
+  const connected = new Promise<void>((ok) => {
     get(new URL('/events', url), (r) => {
       res = r;
       r.setEncoding('utf8');
@@ -70,6 +75,7 @@ function openEvents(url: string) {
     for (let waited = 0; names.length < count && waited < ms; waited += 20) await sleep(20);
     return names.length >= count;
   };
+  const ready = connected.then(() => sleep(WATCH_START_MS));
   return { ready, names, data, until, close: () => res?.destroy() };
 }
 
@@ -149,6 +155,29 @@ describe('req-serve-live: watch', () => {
       writeFileSync(join(s.graph, 'article', 'art-new.yaml'), stringify({ id: 'art-new', kind: 'article', name: 'New', text: 'A new article.', how: 'reported', source: 'src-authority-bulletin', retrieved: '2026-01-15', agent: 'analyst-a' }));
       expect(await page.until(1)).toBe(true);
       expect(await nodeCount(server.url)).toBe(before + 1);
+    } finally {
+      page.close();
+      await server.close();
+    }
+  });
+});
+
+describe('req-serve-live: origin watch', () => {
+  it('watches the new origin file of a node after the origin changes to another file outside the graph folder', async () => {
+    const s = stageOrigin();
+    const next = join(s.dir, 'domain/docs/next.md');
+    writeFileSync(next, '# The next file\n');
+    const server = await startServer(s.graph, s.profile, 0, '127.0.0.1');
+    const page = openEvents(server.url);
+    try {
+      await page.ready;
+      const node = parse(readFileSync(s.keep, 'utf8'));
+      node.origin = 'docs/next.md';
+      writeFileSync(s.keep, stringify(node));
+      expect(await page.until(1)).toBe(true);
+      await sleep(300);
+      writeFileSync(next, '# The next file, edited\n');
+      expect(await page.until(2)).toBe(true);
     } finally {
       page.close();
       await server.close();

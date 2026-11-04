@@ -200,6 +200,8 @@ async function serve(render: Render, paths: () => string[], port: number, host: 
     queue = queue.then(async () => {
       try {
         last = await render();
+        // The origin files of the nodes can differ in the new data.
+        watcher.rewatch();
         channel.reload();
       } catch (e) {
         // The page keeps the last valid data and shows the error.
@@ -227,6 +229,7 @@ async function serve(render: Render, paths: () => string[], port: number, host: 
     }
     try {
       last = await render();
+      watcher.rewatch();
     } catch (e) {
       // The last valid page is the answer. The open pages show the error.
       channel.invalid((e as Error).message);

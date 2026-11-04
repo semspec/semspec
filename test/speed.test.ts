@@ -27,7 +27,7 @@ const WAITS = [/\bsetTimeout\s*\(/, /\bsetInterval\s*\(/, /\bsleep\s*\(/, /Atomi
 const ALLOWED: { file: string; text: string; reason: string }[] = [
   { file: 'test/embeddings.test.ts', text: 'slow.mjs', reason: 'The text is the script of a child process that never answers. The test does not wait for it, because the timeout of the embedder is 100 ms and it kills the child.' },
   { file: 'test/live.test.ts', text: 'setTimeout(ok, ms)', reason: 'The helper waits on the real clock. The file system watcher of serve reports a change on the real clock, and a fake clock cannot move it.' },
-  { file: 'test/live.test.ts', text: 'sleep(', reason: 'A test polls for an event in steps of 20 ms, or waits past the debounce time of 100 ms to see that no second event comes. The file system gives the events on the real clock.' },
+  { file: 'test/live.test.ts', text: 'sleep(', reason: 'A test polls for an event in steps of 20 ms, waits past the debounce time of 100 ms to see that no second event comes, or waits once for the start of the file system watcher. The file system gives the events on the real clock.' },
 ];
 
 function realWaits(): string[] {

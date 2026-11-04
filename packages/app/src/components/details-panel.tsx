@@ -643,20 +643,23 @@ function SourceBlock({ node }: { node: string }) {
   const graph = ws.views.find((x) => x.id === ws.activeId)?.graph ?? '';
   const path = ws.graphs.find((g) => g.id === graph)?.model.files?.[node];
   const [open, setOpen] = useState(storedOpen);
-  const [loaded, setLoaded] = useState<{ text?: string; error?: string }>({});
+  // The text belongs to the source that it came from. The section never shows the text of another source.
+  const [state, setState] = useState<{ id: string; text?: string; error?: string }>({ id: '' });
   const canLoad = path !== undefined && hasSourceText(graph, path);
+  const id = canLoad ? [graph, node, path].join('|') : '';
+  const loaded = state.id === id ? state : { id };
   useEffect(() => {
     if (!open || !canLoad) return;
     let stale = false;
-    setLoaded({});
+    setState({ id });
     loadSourceText(graph, node, path).then(
-      (text) => !stale && setLoaded({ text }),
-      (e: Error) => !stale && setLoaded({ error: e.message }),
+      (text) => !stale && setState({ id, text }),
+      (e: Error) => !stale && setState({ id, error: e.message }),
     );
     return () => {
       stale = true;
     };
-  }, [open, canLoad, graph, node, path]);
+  }, [open, canLoad, id, graph, node, path]);
   if (path === undefined) return null;
   const toggle = () => {
     setOpen(!open);
