@@ -29,8 +29,17 @@ acceptance:
       - type: unit
         file: test/tagged.test.ts
         name: falls back to the tag and the key as written when a label is missing
+  - id: link-key
+    text: "The option linkKey names an inner key whose value is a URL. That value becomes the link of the line of its entry, and it gives no line of its own."
+    status: open
+  - id: nested
+    text: "An inner value that is an object with exactly 1 key is a nested tag. The entry gives 1 line: the label of <tag>.<nested tag>, then the values of the inner keys of the nested tag, apart from the link key, and the link of the link key."
+    status: open
+  - id: string-value
+    text: "An inner value that is a text gives 1 line: the label of the tag, then the text. When a node of any graph of the workspace has the text as its id, the line shows the title of that node and links to it."
+    status: open
   - id: nothing-hidden
-    text: An entry that is not an object with exactly 1 key shows as compact JSON.
+    text: An entry that is not an object with exactly 1 key, and an inner value of another shape, shows as compact JSON.
     status: verified
     tests:
       - type: unit
