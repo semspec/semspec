@@ -23,3 +23,9 @@ acceptance:
   - id: isolation
     text: "A module that throws or returns results that are not valid gives an error in check and a warning in serve and in the MCP server, and the other adapters still give their results."
     status: open
+  - id: other-repository
+    text: "A run record can come from another repository that tests part of the graph. The record names that repository, its commit and the graph version it tested against, and the graph reads it as evidence for the checks it covers, through a path that the profile names outside the evidence root."
+    status: open
+  - id: unanswered
+    text: "A condition whose checks no adapter answers has the outcome unanswered, apart from not-run, and the coverage report counts it apart, so a project sees which conditions wait for evidence from elsewhere."
+    status: open
