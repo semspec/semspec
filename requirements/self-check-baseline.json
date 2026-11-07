@@ -314,7 +314,6 @@
     "conditions:req-self-pr-template#graph-diagram:status-differs",
     "conditions:req-self-pr-template#sections:status-differs",
     "conditions:req-self-pull-requests#branch:status-differs",
-    "conditions:req-self-pull-requests#codex-review:status-differs",
     "conditions:req-self-pull-requests#gates:status-differs",
     "conditions:req-self-pull-requests#review:status-differs",
     "conditions:req-self-pull-requests#signed:status-differs",

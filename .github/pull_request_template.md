@@ -18,7 +18,7 @@ Example of a decisions table:
 
 ## Requirement graph
 
-The affected part of `requirements/graph` only: the nodes this pull request adds, changes or removes, and their direct neighbours. Not the whole graph. Every change of behaviour starts with its requirement nodes (see `CLAUDE.md` and `CONTRIBUTING.md`). A pull request that changes no node writes "None." here, with no diagram, and says why below.
+The affected part of `requirements/graph` only: the nodes this pull request adds, changes or removes, and their direct neighbours. Not the whole graph. Every change of behaviour starts with its requirement nodes (see `CONTRIBUTING.md`). A pull request that changes no node writes "None." here, with no diagram, and says why below.
 
 Conventions:
 1. The diagram shows graph nodes only: features, capabilities, requirements and decisions. A condition and a test are never boxes. They go in the Acceptance conditions table below. No file and no path is a box or a label.
@@ -110,6 +110,6 @@ Each gate line reads "<gate>: <result> at <head sha>", with the head sha of the 
 - licences: <result> at <head sha>
 - site tests: <result> at <head sha>
 - browser check: none, or what was checked, in which browser, at which width
-- codex review: <number> findings, all fixed or answered at <head sha>
+- review: <number> findings, all fixed or answered at <head sha>
 
 Each commit carries a DCO `Signed-off-by` line (`git commit -s`).
