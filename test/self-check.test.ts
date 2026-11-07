@@ -153,6 +153,44 @@ describe('the check tests of the self-check', () => {
   });
 });
 
+describe('the reports of every test suite in the check tests', () => {
+  const second = (args: string[], tests: [string, string][]) => {
+    const dir = args[args.indexOf('--root') + 1];
+    const file = join(dir, 'vitest-site.json');
+    writeFileSync(file, JSON.stringify({ testResults: [...new Set(tests.map(([f]) => f))].map((f) => ({ name: join(dir, f), assertionResults: tests.filter(([x]) => x === f).map(([, title]) => ({ title, ancestorTitles: [], status: 'passed' })) })) }));
+    return file;
+  };
+
+  it('reads a test of a second report, with its file relative to the root, and reports it when it has no link', async () => {
+    const args = fixture({ requirements: [{ id: 'req-1', conditions: [ok('c1', { tests: [{ file: 'test/a.test.ts', name: 'root test' }] })] }], tests: [['test/a.test.ts', 'root test']] });
+    const file = second(args, [['site/test/b.test.ts', 'site test']]);
+    expect((await findings([...args, '--report', file])).tests).toEqual(['The test has no link and no exemption: site/test/b.test.ts: site test']);
+  });
+
+  it('accepts a link to a test of a second report and reports a link to a missing test of it', async () => {
+    const args = fixture({
+      requirements: [{ id: 'req-1', conditions: [ok('c1', { tests: [{ file: 'test/a.test.ts', name: 'root test' }, { file: 'site/test/b.test.ts', name: 'site test' }, { file: 'site/test/b.test.ts', name: 'gone site test' }] })] }],
+      tests: [['test/a.test.ts', 'root test']],
+    });
+    const file = second(args, [['site/test/b.test.ts', 'site test']]);
+    expect((await findings([...args, '--report', file])).tests).toEqual(['The link of req-1#c1 has no test in the report: site/test/b.test.ts: gone site test']);
+  });
+
+  it('reports a missing report of the list and names its path', async () => {
+    const args = fixture({ requirements: [{ id: 'req-1', conditions: [ok('c1')] }], tests: [['test/a.test.ts', 'one']] });
+    const found = (await findings([...args, '--report', join(args[1], 'dist/vitest-site.json')])).tests;
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(/"dist\/vitest-site\.json" does not exist\. Run `npm run test:evidence`/);
+  });
+
+  it('runs the site suite in the test evidence and reads both reports by default', () => {
+    expect(readFileSync(join(repo, 'scripts/test-evidence.mjs'), 'utf8')).toContain("['test', '--prefix', 'site']");
+    expect(readFileSync(join(repo, 'scripts/self-check.mjs'), 'utf8')).toContain("[resolve(root, 'dist/vitest.json'), resolve(root, 'dist/vitest-site.json')]");
+    expect(readFileSync(join(repo, 'site/vite.config.ts'), 'utf8')).toContain("json: '../dist/vitest-site.json'");
+    expect(parse(readFileSync(join(repo, 'requirements/profile.yaml'), 'utf8')).evidence.adapters[0].reports).toEqual(['dist/vitest.json', 'dist/vitest-site.json']);
+  });
+});
+
 describe('the check conditions of the self-check', () => {
   const base = (conditions: Condition[], extra: Partial<Requirement> = {}, capability: { id: string; priority?: string } = { id: 'cap-a' }) =>
     fixture({ requirements: [{ id: 'req-1', conditions, ...extra }], capabilities: [capability], tests: [] });

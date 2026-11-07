@@ -25,22 +25,28 @@ function sandbox(): { hook: string; log: string; stubs: string } {
   copyFileSync(hookPath, join(dir, '.githooks/pre-push'));
   chmodSync(join(dir, '.githooks/pre-push'), 0o755);
   for (const name of ['npm', 'node']) {
-    writeFileSync(join(dir, 'stubs', name), `#!/bin/sh\necho "${name} $*" >> "$STUB_LOG"\nif [ -n "$STUB_FAIL" ]; then case "$*" in *"$STUB_FAIL"*) exit 1 ;; esac; fi\nexit 0\n`);
+    writeFileSync(join(dir, 'stubs', name), `#!/bin/sh\necho "${name} $*" >> "$STUB_LOG"\necho "${name} \${GIT_DIR-unset} \${GIT_INDEX_FILE-unset} \${GIT_WORK_TREE-unset} \${GIT_PREFIX-unset} \${GIT_COMMON_DIR-unset}" >> "$STUB_LOG.vars"\nif [ -n "$STUB_FAIL" ]; then case "$*" in *"$STUB_FAIL"*) exit 1 ;; esac; fi\nexit 0\n`);
     chmodSync(join(dir, 'stubs', name), 0o755);
   }
   return { hook: join(dir, '.githooks/pre-push'), log: join(dir, 'log'), stubs: join(dir, 'stubs') };
 }
 
-function runHook(fail = '') {
+function runHook(fail = '', extra: Record<string, string> = {}) {
   const s = sandbox();
-  const r = spawnSync('/bin/sh', [s.hook], { encoding: 'utf8', env: { ...process.env, PATH: `${s.stubs}:${process.env.PATH}`, STUB_LOG: s.log, STUB_FAIL: fail } });
+  const r = spawnSync('/bin/sh', [s.hook], { encoding: 'utf8', env: { ...process.env, ...extra, PATH: `${s.stubs}:${process.env.PATH}`, STUB_LOG: s.log, STUB_FAIL: fail } });
   let calls: string[] = [];
   try {
     calls = readFileSync(s.log, 'utf8').trim().split('\n');
   } catch {
     // The hook ran no command.
   }
-  return { status: r.status, calls, stderr: r.stderr };
+  let vars: string[] = [];
+  try {
+    vars = readFileSync(`${s.log}.vars`, 'utf8').trim().split('\n');
+  } catch {
+    // The hook ran no command.
+  }
+  return { status: r.status, calls, vars, stderr: r.stderr };
 }
 
 describe('the pre-push hook', () => {
@@ -73,6 +79,20 @@ describe('the pre-push hook', () => {
     expect(r.status).toBe(1);
     expect(r.calls.at(-1)).toContain('self-check.mjs');
     expect(r.stderr).toMatch(/blocked.*self-check/);
+  });
+
+  it('clears the repository variables of git before it runs a step', () => {
+    const hook = readFileSync(hookPath, 'utf8');
+    expect(hook).toContain('git rev-parse --local-env-vars');
+    expect(hook).toMatch(/unset "\$variable"/);
+    expect(hook.indexOf('--local-env-vars')).toBeLessThan(hook.indexOf('step npm run typecheck'));
+  });
+
+  it('runs every step without GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE, GIT_PREFIX and GIT_COMMON_DIR', () => {
+    const r = runHook('', { GIT_DIR: '/decoy/.git', GIT_INDEX_FILE: '/decoy/index', GIT_WORK_TREE: '/decoy', GIT_PREFIX: 'sub/', GIT_COMMON_DIR: '/decoy/.git' });
+    expect(r.status).toBe(0);
+    expect(r.vars.length).toBeGreaterThan(0);
+    for (const line of r.vars) expect(line.split(' ').slice(1)).toEqual(['unset', 'unset', 'unset', 'unset', 'unset']);
   });
 
   it('blocks the push and stops at the first failed step', () => {

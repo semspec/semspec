@@ -65,4 +65,16 @@ acceptance:
         command: node scripts/check-requirement-change.mjs origin/master
   - id: body-edit
     text: "A gate that reads the body of a pull request runs again when the body changes, so its result always holds for the current body."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/ci.test.ts
+        name: reruns the workflow when the body of a pull request is edited
+      - type: unit
+        file: test/ci.test.ts
+        name: skips the heavy job on an edit and keeps the job of the body gates
+      - type: unit
+        file: test/ci.test.ts
+        name: keeps an edit from cancelling the run of the last push
+      - type: gate
+        command: node scripts/check-requirement-change.mjs origin/master

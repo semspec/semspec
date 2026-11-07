@@ -48,4 +48,19 @@ acceptance:
         command: node scripts/self-check.mjs --only tests
   - id: all-suites
     text: "The test check reads the reports of every test suite of the repository, the site suite included, so a test of any suite with no link is a finding."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/self-check.test.ts
+        name: reads a test of a second report, with its file relative to the root, and reports it when it has no link
+      - type: unit
+        file: test/self-check.test.ts
+        name: accepts a link to a test of a second report and reports a link to a missing test of it
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports a missing report of the list and names its path
+      - type: unit
+        file: test/self-check.test.ts
+        name: runs the site suite in the test evidence and reads both reports by default
+      - type: gate
+        command: node scripts/self-check.mjs --only tests

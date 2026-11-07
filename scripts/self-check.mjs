@@ -8,7 +8,7 @@
 // A baseline key that is no longer a finding is reported as fixed. `--write-baseline` writes the baseline from the findings.
 // With --only, it replaces the keys of the checks that ran and keeps the others.
 // Usage: node scripts/self-check.mjs [--strict] [--json] [--all] [--write-baseline] [--baseline <file>]
-//   [--graph <folder>] [--profile <file>] [--report <vitest.json>] [--exemptions <file>] [--root <folder>] [--only <ids>]
+//   [--graph <folder>] [--profile <file>] [--report <vitest.json>]... [--exemptions <file>] [--root <folder>] [--only <ids>]
 // To add a check, add 1 entry to CHECKS. A check is `{ id, title, run(context) }`.
 // `run` returns a list of findings. A finding is `{ key, message }`. The key is stable: it names the finding
 // and holds no count, no line number and no text that changes when an unrelated part changes.
@@ -61,6 +61,18 @@ export function readReport(path, root) {
   return tests;
 }
 
+// The tests of every report of a list. `missing` holds the paths of the reports that do not exist. Each report can hold a different suite.
+export function readReports(paths, root) {
+  const tests = [];
+  const missing = [];
+  for (const path of paths) {
+    const read = readReport(path, root);
+    if (read) tests.push(...read);
+    else missing.push(path);
+  }
+  return { tests: missing.length ? null : tests, missing };
+}
+
 // The exemptions of the tests. The file holds `exemptions`, a list of `{ file, name, reason }`.
 // An entry with no `name` exempts every test of the file.
 export function readExemptions(path) {
@@ -111,6 +123,7 @@ export async function loadContext(options) {
   const warn = profile.status?.values.find((v) => v.tone === 'warn')?.value ?? 'partial';
   // With fresh evidence, the derived status counts. Otherwise the authored status counts.
   const conditions = read.conditions.map((c) => ({ ...c, effective: evidence === 'fresh' ? c.derived : c.authored }));
+  const reports = readReports([options.report].flat(), options.root);
   const linkTypes = profile.evidence?.adapters?.flatMap((a) => a.checkTypes ?? []);
   return {
     ...read,
@@ -124,9 +137,9 @@ export async function loadContext(options) {
     linkTypes: linkTypes?.length ? new Set(linkTypes) : null,
     lifecycleField: profile.lifecycle?.field ?? 'state',
     typeField: profile.checks?.typeField ?? 'type',
-    tests: readReport(options.report, options.root),
+    tests: reports.tests,
     root: options.root,
-    reportPath: options.report,
+    reportPath: reports.missing.map((p) => relative(options.root, p) || p).join(', '),
     exemptions: readExemptions(options.exemptions),
     exemptionsPath: options.exemptions,
   };
@@ -296,7 +309,8 @@ export function parseArgs(argv) {
     else if (VALUES.includes(name)) {
       const value = argv[++i];
       if (value === undefined || value.startsWith('--')) throw new Error(`The option --${name} needs a value.`);
-      args[name] = name === 'only' ? value.split(',') : resolve(value);
+      if (name === 'report') args.report = [...(args.report ?? []), resolve(value)];
+      else args[name] = name === 'only' ? value.split(',') : resolve(value);
     } else throw new Error(`Unknown argument "${argv[i]}".`);
   }
   return args;
@@ -308,7 +322,8 @@ export async function main(argv) {
   const ctx = await loadContext({
     graph: args.graph ?? resolve(root, 'requirements/graph'),
     profile: args.profile ?? resolve(root, 'requirements/profile.yaml'),
-    report: args.report ?? resolve(root, 'dist/vitest.json'),
+    // 1 report for each test suite: the root suite and the site suite.
+    report: args.report ?? [resolve(root, 'dist/vitest.json'), resolve(root, 'dist/vitest-site.json')],
     exemptions: args.exemptions ?? resolve(root, 'requirements/test-exemptions.yaml'),
     root,
   });

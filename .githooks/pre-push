@@ -5,6 +5,13 @@
 # Install it once with `npm run hooks:install`.
 cd "$(dirname "$0")/.." || exit 1
 
+# Git exports the repository variables (GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE and others) to a hook.
+# A push from a linked worktree sets them to the paths of the contributor. A test that makes a temporary
+# repository would then act on the repository of the contributor. Clear them before any step runs.
+for variable in $(git rev-parse --local-env-vars 2>/dev/null); do
+  unset "$variable"
+done
+
 step() {
   echo "pre-push: $*"
   "$@" || {

@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
+import { cleanGitEnv } from './helpers/git-env';
 import { parse } from 'yaml';
 // @ts-expect-error The script is a plain ES module without types.
 import { exemptionReason, unexplainedShippedFiles } from '../scripts/check-requirement-change.mjs';
@@ -19,7 +20,7 @@ afterAll(() => {
 });
 
 const git = (dir: string, ...args: string[]) => {
-  const r = spawnSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@example.org', '-c', 'commit.gpgsign=false', ...args], { cwd: dir, encoding: 'utf8' });
+  const r = spawnSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@example.org', '-c', 'commit.gpgsign=false', ...args], { cwd: dir, encoding: 'utf8', env: cleanGitEnv() });
   expect(r.status, r.stderr).toBe(0);
 };
 
@@ -41,7 +42,7 @@ function topic(changed: string[]): string {
   return dir;
 }
 const run = (dir: string, body?: string, base = 'master') => {
-  const env = { ...process.env };
+  const env = cleanGitEnv();
   delete env.PR_BODY;
   if (body !== undefined) env.PR_BODY = body;
   return spawnSync(process.execPath, [script, base], { cwd: dir, encoding: 'utf8', env });

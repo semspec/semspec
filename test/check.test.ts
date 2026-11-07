@@ -7,6 +7,7 @@ import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rm
 import { tmpdir } from 'node:os';
 import { delimiter, dirname, join } from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
+import { cleanGitEnv } from './helpers/git-env';
 import { stringify } from 'yaml';
 import { GATE_KINDS, gateFindings, indexGraphs, buildModel, type Graph, type Profile } from '@semspec/core';
 import { run } from '../packages/cli/src/index';
@@ -345,7 +346,7 @@ describe('the hooks of the gates guide', () => {
     put('prd.yaml', { id: 'prd-shop', kind: 'product', name: 'Shop' });
     put('epic.yaml', { id: 'epic-a', kind: 'epic', name: 'A', products: ['prd-shop'] });
     if (withBadNode) put('story.yaml', { id: 'story-x', kind: 'story', summary: 'X.' });
-    return { dir, env: { ...process.env, PATH: `${join(dir, 'bin')}${delimiter}${process.env.PATH}` } };
+    return { dir, env: { ...cleanGitEnv(), PATH: `${join(dir, 'bin')}${delimiter}${process.env.PATH}` } };
   }
   const sh = (cwd: string, env: NodeJS.ProcessEnv, cmd: string, args: string[], input?: string) => spawnSync(cmd, args, { cwd, env, input, encoding: 'utf8', timeout: 60000 });
   const git = (dir: string, env: NodeJS.ProcessEnv, ...args: string[]) => sh(dir, { ...env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null' }, 'git', ['-c', 'user.name=t', '-c', 'user.email=t@example.org', ...args]);
@@ -398,7 +399,7 @@ describe('the hooks of the gates guide', () => {
     expect(existsSync(file)).toBe(true);
     const text = readFileSync(file, 'utf8');
     expect(text).toMatch(/run: .*semspec(\.js)? check --graph requirements\/graph --profile requirements\/profile\.yaml/);
-    for (const step of ['npm ci', 'npm run typecheck', 'npm test', 'npm run build']) expect(text).toContain(`run: ${step}`);
+    for (const step of ['npm ci', 'npm run typecheck', 'npm run test:evidence', 'npm run build']) expect(text).toContain(`run: ${step}`);
     const lowest = /\d+/.exec(JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).engines.node)![0];
     expect(text).toMatch(new RegExp(`node-version: ${lowest}\\b`));
     const uses = [...text.matchAll(/uses: (\S+)(.*)/g)];

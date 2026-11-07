@@ -48,7 +48,7 @@ status:
     - { value: verified, label: Verified, tone: good }
     - { value: partial, label: Partial, tone: warn }
     - { value: open, label: Open, tone: bad }
-# The status of a condition comes from the Vitest JSON report of the Semspec tests. `npm run test:evidence` makes the report and the record.
+# The status of a condition comes from the Vitest JSON reports of the root tests and the site tests. `npm run test:evidence` makes the report and the record.
 evidence:
   root: ..
   record: ../dist/evidence.json
@@ -57,7 +57,7 @@ evidence:
   fallback: authored
   adapters:
     - adapter: vitest-json
-      reports: [dist/vitest.json]
+      reports: [dist/vitest.json, dist/vitest-site.json]
       checkTypes: [unit]
       key: { rule: file-name }
 gates:

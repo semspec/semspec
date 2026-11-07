@@ -375,7 +375,7 @@ describe('Evidence port', () => {
     const profilePath = join(repo, 'requirements', 'profile.yaml');
     const profile = loadProfile(profilePath);
     const spec = evidenceOf(profile)!;
-    expect(spec.adapters).toEqual([{ adapter: 'vitest-json', reports: ['dist/vitest.json'], checkTypes: ['unit'], key: { rule: 'file-name' } }]);
+    expect(spec.adapters).toEqual([{ adapter: 'vitest-json', reports: ['dist/vitest.json', 'dist/vitest-site.json'], checkTypes: ['unit'], key: { rule: 'file-name' } }]);
     expect(spec.record.startsWith('../dist/') || spec.record.includes('dist/')).toBe(true);
     // The test names of the graph are the bare titles of the tests, so they join the report by file and name.
     const graphPath = join(repo, 'requirements', 'graph');

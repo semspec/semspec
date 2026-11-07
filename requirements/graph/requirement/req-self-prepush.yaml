@@ -48,4 +48,16 @@ acceptance:
         command: sh .githooks/pre-push
   - id: isolated
     text: "The hook clears the repository variables that git passes to a hook, such as GIT_DIR and GIT_INDEX_FILE, before it runs a check, so a test that makes a temporary repository never changes the repository of the contributor."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/prepush.test.ts
+        name: clears the repository variables of git before it runs a step
+      - type: unit
+        file: test/prepush.test.ts
+        name: runs every step without GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE, GIT_PREFIX and GIT_COMMON_DIR
+      - type: unit
+        file: test/check-baseline.test.ts
+        name: does not touch the repository that GIT_DIR names in the environment
+      - type: gate
+        command: sh .githooks/pre-push

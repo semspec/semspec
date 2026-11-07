@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
+import { cleanGitEnv } from './helpers/git-env';
 // @ts-expect-error The script is a plain ES module without types.
 import { baselineKeys } from '../scripts/check-baseline.mjs';
 
@@ -18,7 +19,7 @@ afterAll(() => {
 });
 
 const git = (dir: string, ...args: string[]) => {
-  const r = spawnSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@example.org', '-c', 'commit.gpgsign=false', ...args], { cwd: dir, encoding: 'utf8' });
+  const r = spawnSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@example.org', '-c', 'commit.gpgsign=false', ...args], { cwd: dir, encoding: 'utf8', env: cleanGitEnv() });
   expect(r.status, r.stderr).toBe(0);
 };
 const put = (dir: string, file: string, text: string) => {
@@ -44,7 +45,7 @@ function repo(before: string[] | null, after: string[] | null): string {
   git(dir, 'commit', '-q', '-m', 'topic');
   return dir;
 }
-const run = (dir: string, base = 'master') => spawnSync(process.execPath, [script, base], { cwd: dir, encoding: 'utf8' });
+const run = (dir: string, base = 'master') => spawnSync(process.execPath, [script, base], { cwd: dir, encoding: 'utf8', env: cleanGitEnv() });
 
 describe('check-baseline', () => {
   it('fails when the pull request adds a key to the baseline, and names each added key', () => {
@@ -101,5 +102,29 @@ describe('check-baseline', () => {
     expect(() => baselineKeys(['a'])).toThrow(/must be an object/);
     expect(() => baselineKeys({ tests: 'a' })).toThrow(/list of text keys for the check "tests"/);
     expect(() => baselineKeys({ tests: [1] })).toThrow(/list of text keys/);
+  });
+});
+
+describe('the git environment of the test helpers', () => {
+  it('does not touch the repository that GIT_DIR names in the environment', () => {
+    const decoy = mkdtempSync(join(tmpdir(), 'semspec-decoy-'));
+    temps.push(decoy);
+    const init = spawnSync('git', ['init', '-q', '-b', 'master', decoy], { encoding: 'utf8', env: cleanGitEnv() });
+    expect(init.status, init.stderr).toBe(0);
+    const headOf = () => spawnSync('git', ['-C', decoy, 'symbolic-ref', 'HEAD'], { encoding: 'utf8', env: cleanGitEnv() }).stdout.trim();
+    expect(headOf()).toBe('refs/heads/master');
+    const inherited = { GIT_DIR: join(decoy, '.git'), GIT_WORK_TREE: decoy, GIT_INDEX_FILE: join(decoy, '.git/index') };
+    const saved = Object.fromEntries(Object.keys(inherited).map((k) => [k, process.env[k]]));
+    Object.assign(process.env, inherited);
+    try {
+      const dir = repo(['a'], ['a', 'b']);
+      expect(spawnSync('git', ['-C', dir, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', env: cleanGitEnv() }).stdout.trim()).not.toBe(decoy);
+    } finally {
+      for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
+    }
+    expect(headOf()).toBe('refs/heads/master');
+    const count = spawnSync('git', ['-C', decoy, 'rev-list', '--all', '--count'], { encoding: 'utf8', env: cleanGitEnv() });
+    expect(count.stdout.trim()).toBe('0');
+    expect(Object.keys(cleanGitEnv({}, inherited))).not.toContain('GIT_DIR');
   });
 });

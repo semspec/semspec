@@ -167,5 +167,6 @@ export default defineConfig(({ isSsrBuild }) => ({
     copyPublicDir: !isSsrBuild,
     rolldownOptions: { input: { index: here('./index.html'), roadmap: here('./roadmap/index.html'), docs: here('./docs/index.html') } },
   },
-  test: { include: ['test/**/*.test.ts'], environment: 'node' },
+  // The JSON report goes to the dist folder of the repository root. The self-check and the evidence port read it with the root report.
+  test: { include: ['test/**/*.test.ts'], environment: 'node', reporters: ['default', 'json'], outputFile: { json: '../dist/vitest-site.json' } },
 }));

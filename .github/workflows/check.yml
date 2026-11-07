@@ -5,11 +5,14 @@ name: Check
 on:
   push:
     branches: [master]
+  # An edit of the body reruns the gates that read the body. The heavy jobs skip that event.
   pull_request:
+    types: [opened, synchronize, reopened, edited]
 
 # A new push to a pull request cancels its older run. A push to master is never cancelled, because its run can make a release.
+# An edit of the body has its own group, so it never cancels the run of the last push.
 concurrency:
-  group: check-${{ github.event_name == 'push' && github.sha || github.ref }}
+  group: check-${{ github.event_name == 'push' && github.sha || github.ref }}${{ github.event.action == 'edited' && '-edited' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -20,6 +23,8 @@ jobs:
   # (jsdom and its undici) support it too, so the job runs every gate.
   check:
     name: All gates on Node 22
+    # A change of the title or the body of a pull request changes no code, so this job skips it.
+    if: github.event.action != 'edited'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -31,10 +36,11 @@ jobs:
             package-lock.json
             site/package-lock.json
       - run: npm ci
+      - run: npm ci --prefix site
       - run: npm run licences
       - run: npm run typecheck
       - run: npm run build
-      # The test run also writes the test report and the evidence record that the self-check reads.
+      # The test run covers the root suite and the site suite. It also writes the test reports and the evidence record that the self-check reads.
       - run: npm run test:evidence
       - name: Check the requirements of Semspec
         run: node bin/semspec.js check --graph requirements/graph --profile requirements/profile.yaml
@@ -43,8 +49,6 @@ jobs:
       # The self-check is a gate. A finding that is not in the baseline fails the job, and the message names it.
       - name: Gate the findings of the self-check against the baseline
         run: node scripts/self-check.mjs --baseline requirements/self-check-baseline.json
-      - run: npm ci --prefix site
-      - run: npm test --prefix site
 
   # A pull request needs a changeset against its base branch. An empty changeset counts.
   # The same job holds the rules of a pull request about the baseline of the self-check and the requirement graph.
