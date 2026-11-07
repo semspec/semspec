@@ -562,7 +562,9 @@ function renderTable(c: Ctx, ids: string[]): string[] {
       else if (col === 'parent') cell = n.parents[0] ? nodeRef(c, c.s.g.id, n.parents[0]) : '';
       else {
         const v = getPath(n.d, col);
-        cell = filled(v) ? esc(cut(valueLabel(p, col, v, c), CELL_MAX)) : '';
+        // A tagged list keeps its links in a table cell, as in a list. Its Markdown is already escaped.
+        if (Array.isArray(v) && isObjectList(v)) cell = taggedMarkdown(c, col, v);
+        else cell = filled(v) ? esc(cut(valueLabel(p, col, v, c), CELL_MAX)) : '';
       }
       return (i === 0 ? anchorTag(c, id) : '') + cell;
     });

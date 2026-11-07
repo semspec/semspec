@@ -49,6 +49,9 @@ acceptance:
         file: test/tagged.test.ts
         name: "writes a link for the address of a line and a link to the node that a text names"
       - type: unit
+        file: test/tagged.test.ts
+        name: "keeps the links of a tagged list in a cell of a Markdown table"
+      - type: unit
         file: test/app/tagged-links.test.tsx
         name: "shows the line of an entry as an outside link and shows no line for the link key"
   - id: nested

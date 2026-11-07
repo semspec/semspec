@@ -201,4 +201,10 @@ describe('the tagged list in the spec Markdown', () => {
     const out = fillSpecs(graphs, [{ path: '/work/doc.md', text: doc }]).files[0].text;
     expect(out).toContain('[Narrows STD Device](https://example.org/x.yaml#L1); Obligation: [Beta](#item-b); Obligation: gone');
   });
+  it('keeps the links of a tagged list in a cell of a Markdown table', () => {
+    const graphs = indexGraphs([{ id: 'graph', label: 'Mini', model: buildModel(graph, profile as never) }]);
+    const doc = '<!-- semspec:section shape=table ids=item-a columns=id,basis -->\n<!-- semspec:end -->\n';
+    const out = fillSpecs(graphs, [{ path: '/work/doc.md', text: doc }]).files[0].text;
+    expect(out).toContain('| [Narrows STD Device](https://example.org/x.yaml#L1); Obligation: Beta (`item-b`); Obligation: gone |');
+  });
 });
