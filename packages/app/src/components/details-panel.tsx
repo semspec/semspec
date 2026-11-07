@@ -570,9 +570,7 @@ export function DetailsPanel({ v }: { v: Viewer }) {
               <ul className="flex flex-col gap-1">
                 {d[l.field].map((entry: unknown, i: number) => (
                   <li key={i} className="flex flex-col gap-0.5 text-[13px] break-words">
-                    {Core.taggedLines(entry, l.labels).map((line, j) => (
-                      <span key={j}>{line}</span>
-                    ))}
+                    <TaggedEntry v={v} entry={entry} spec={l} />
                   </li>
                 ))}
               </ul>
@@ -619,6 +617,44 @@ export function DetailsPanel({ v }: { v: Viewer }) {
         </div>
       ))}
     </div>
+  );
+}
+
+// The lines of 1 entry of a tagged list. The address of a line is an outside link. A node is a link that selects it.
+function TaggedEntry({ v, entry, spec }: { v: Viewer; entry: unknown; spec: { labels?: Record<string, string>; linkKey?: string } }) {
+  const ws = useWorkspace();
+  // The active graph first, then the other graphs of the workspace.
+  const resolve = (id: string) => {
+    for (const g of [ws.activeId, ...ws.graphs.map((x) => x.id).filter((x) => x !== ws.activeId)]) {
+      const n = ws.nodeOf(g, id);
+      if (n) return { graph: g, id, title: n.title || id };
+    }
+    return undefined;
+  };
+  return (
+    <>
+      {Core.taggedLines(entry, spec.labels, { linkKey: spec.linkKey, resolve }).map((line, i) => {
+        const href = line.href ? Core.safeUrl(line.href) : null;
+        if (line.node) {
+          const { graph, id } = line.node;
+          return (
+            <span key={i}>
+              {line.label}:{' '}
+              <button type="button" title={id} onClick={() => (graph === ws.activeId ? v.select(id) : ws.jump(graph, id))} className="text-left text-primary underline underline-offset-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                {line.value}
+              </button>
+            </span>
+          );
+        }
+        if (href)
+          return (
+            <a key={i} href={href} {...OUTSIDE} className="text-primary underline underline-offset-2">
+              {line.text}
+            </a>
+          );
+        return <span key={i}>{line.text}</span>;
+      })}
+    </>
   );
 }
 

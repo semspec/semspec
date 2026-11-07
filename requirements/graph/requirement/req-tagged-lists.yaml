@@ -31,13 +31,61 @@ acceptance:
         name: falls back to the tag and the key as written when a label is missing
   - id: link-key
     text: "The option linkKey names an inner key whose value is a URL. That value becomes the link of the line of its entry, and it gives no line of its own."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: "makes the value of the link key the link of the line and gives no line of its own"
+      - type: unit
+        file: test/tagged.test.ts
+        name: "links every line of the entry and refuses an address that is not http or https"
+      - type: unit
+        file: test/tagged.test.ts
+        name: "gives the label of the tag with the link when the tag has only the link key"
+      - type: unit
+        file: test/tagged.test.ts
+        name: "accepts a text as the link key of a tagged list and rejects another type"
+      - type: unit
+        file: test/tagged.test.ts
+        name: "writes a link for the address of a line and a link to the node that a text names"
+      - type: unit
+        file: test/app/tagged-links.test.tsx
+        name: "shows the line of an entry as an outside link and shows no line for the link key"
   - id: nested
     text: "An inner value that is an object with exactly 1 key is a nested tag. The entry gives 1 line: the label of <tag>.<nested tag>, then the values of the inner keys of the nested tag, apart from the link key, and the link of the link key."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: 'gives 1 line with the label of "<tag>.<nested tag>", the inner values and the link'
+      - type: unit
+        file: test/tagged.test.ts
+        name: "joins several inner values with a space, in key order, and falls back to the tag and the nested tag"
+      - type: unit
+        file: test/tagged.test.ts
+        name: "gives the label of the nested tag alone when it has no inner value"
+      - type: unit
+        file: test/app/tagged-links.test.tsx
+        name: "shows a nested tag as 1 outside link"
   - id: string-value
     text: "An inner value that is a text gives 1 line: the label of the tag, then the text. When a node of any graph of the workspace has the text as its id, the line shows the title of that node and links to it."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/tagged.test.ts
+        name: "gives the label of the tag and the text when no node has the text as its id"
+      - type: unit
+        file: test/tagged.test.ts
+        name: "shows the title of the node that has the text as its id, with the node"
+      - type: unit
+        file: test/app/tagged-links.test.tsx
+        name: "shows the text as is when no node of the workspace has it as its id"
+      - type: unit
+        file: test/app/tagged-links.test.tsx
+        name: "shows the title of a node of another graph and jumps to the node"
+      - type: unit
+        file: test/app/tagged-links.test.tsx
+        name: "selects a node of the same graph"
   - id: nothing-hidden
     text: An entry that is not an object with exactly 1 key, and an inner value of another shape, shows as compact JSON.
     status: verified
@@ -52,3 +100,6 @@ acceptance:
       - type: unit
         file: test/tagged.test.ts
         name: rejects an unknown details option
+      - type: unit
+        file: test/tagged.test.ts
+        name: "accepts a text as the link key of a tagged list and rejects another type"

@@ -156,7 +156,8 @@ export interface DetailsSpec {
   sourceSections?: { title: string; field: string; name: string; section?: string; url?: string; retrieved?: string }[];
   objectLists?: { title: string; field: string; badge: string; value: string[]; suffix?: string; suffixSeparator?: string }[];
   // A list of tagged objects, 1 key each. `labels` maps "<tag>.<key>" and "<tag>" to a label.
-  taggedLists?: { title: string; field: string; labels?: Record<string, string> }[];
+  // `linkKey` names an inner key whose value is a URL. It links the line of its entry and gives no line.
+  taggedLists?: { title: string; field: string; labels?: Record<string, string>; linkKey?: string }[];
   citations?: {
     kind: string;
     title: string;
