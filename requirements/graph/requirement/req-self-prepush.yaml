@@ -46,3 +46,6 @@ acceptance:
         name: keeps the hook out of every lifecycle script and out of the published files
       - type: gate
         command: sh .githooks/pre-push
+  - id: isolated
+    text: "The hook clears the repository variables that git passes to a hook, such as GIT_DIR and GIT_INDEX_FILE, before it runs a check, so a test that makes a temporary repository never changes the repository of the contributor."
+    status: open

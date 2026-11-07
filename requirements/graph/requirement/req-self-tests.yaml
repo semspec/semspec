@@ -46,3 +46,6 @@ acceptance:
         name: prints the findings as Markdown grouped by check, and as JSON with --json
       - type: gate
         command: node scripts/self-check.mjs --only tests
+  - id: all-suites
+    text: "The test check reads the reports of every test suite of the repository, the site suite included, so a test of any suite with no link is a finding."
+    status: open
