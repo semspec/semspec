@@ -1,0 +1,19 @@
+{
+  "title": "Shop workspace",
+  "graphs": [
+    { "id": "req", "label": "Requirements", "graph": "product/graph.json", "profile": "product/profile.json" },
+    { "id": "domain", "label": "Retail market", "graph": "domain/graph", "profile": "domain/profile.yaml" }
+  ],
+  "views": [
+    { "id": "req", "label": "Requirements", "graph": "req" },
+    { "id": "market", "label": "Market model", "graph": "domain" },
+    {
+      "id": "ownership",
+      "label": "Ownership",
+      "graph": "domain",
+      "parents": { "shop": [["operatesIn"], ["ownedBy"]] },
+      "layout": { "groupBy": "parents" },
+      "filters": { "kinds": ["shop", "market"] }
+    }
+  ]
+}

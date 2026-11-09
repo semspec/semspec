@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://semspec.dev/schema/workspace.schema.json",
   "title": "Semspec workspace",
-  "description": "A workspace file lists several graphs of 1 system. Each graph has its own profile. A path is relative to the workspace file.",
+  "description": "A workspace file lists several graphs of 1 system. Each graph has its own profile. An optional list of views shows a graph in more than 1 way. A path is relative to the workspace file.",
   "type": "object",
   "required": ["title", "graphs"],
   "additionalProperties": false,
@@ -83,6 +83,7 @@
         }
       }
     },
+    "sourceRoot": { "type": "string", "minLength": 1, "description": "The folder that holds the source files of the nodes. serve shows the text of a file only when the file lies inside this folder. The default is the folder of the workspace file." },
     "graphs": {
       "type": "array",
       "minItems": 1,
@@ -96,6 +97,50 @@
           "graph": { "type": "string", "minLength": 1, "description": "The path of the graph: a JSON file, a YAML file or a folder of YAML files." },
           "profile": { "type": "string", "minLength": 1, "description": "The path of the profile of the graph." },
           "exclude": { "type": "array", "items": { "type": "string" }, "description": "Patterns of paths to skip in a graph folder. They work like --exclude." }
+        }
+      }
+    },
+    "views": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The views of the page, in the order of the menu. A view shows 1 graph. Without views, each graph is 1 view. A cross link opens in the first view of its graph.",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "graph"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "description": "The id of the view. It is unique among the views. A view with the id of a graph keeps the link of that graph." },
+          "label": { "type": "string", "minLength": 1, "description": "The name of the view in the menu." },
+          "graph": { "type": "string", "minLength": 1, "description": "The id of a graph of the workspace." },
+          "profile": { "type": "string", "minLength": 1, "description": "The path of a profile file for the data of the graph. Without it, the view uses the profile of the graph." },
+          "parents": {
+            "type": "object",
+            "description": "The parents rule of a kind, by kind id. The rule replaces the rule of the kind in the profile, for this view only. It has the same form as parents in a kind.",
+            "additionalProperties": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } }
+          },
+          "layout": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "The layout keys of this view. A key here replaces the same key of the profile layout.",
+            "properties": {
+              "default": { "enum": ["layered", "grouped", "force"] },
+              "groupEdge": { "type": "string" },
+              "groupBy": { "enum": ["parents"] }
+            }
+          },
+          "filters": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "The filters that the page applies when a person opens the view for the first time.",
+            "properties": {
+              "kinds": { "type": "array", "items": { "type": "string" } },
+              "lifecycles": { "type": "array", "items": { "type": "string" } },
+              "deliveries": { "type": "array", "items": { "type": "string" } },
+              "statuses": { "type": "array", "items": { "type": "string" } },
+              "markers": { "type": "array", "items": { "type": "string" }, "description": "The empty text selects the nodes without a marker." },
+              "fields": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } }, "description": "The selected values of each field filter, by field." }
+            }
+          }
         }
       }
     }

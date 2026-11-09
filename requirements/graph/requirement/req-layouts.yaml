@@ -28,6 +28,28 @@ acceptance:
       - type: unit
         file: test/layout.test.ts
         name: puts a member with 2 containers in the first one
+  - id: grouped-parents
+    text: "With layout.groupBy set to parents, the grouped layout nests each node in the parent that the parents rule of its kind picks, as the tree does. When the picked parent is not on the canvas, the next group of the rule that names a node on the canvas picks the container."
+    status: verified
+    tests:
+      - type: unit
+        file: test/layout.test.ts
+        name: nests each node in the parent that the parents rule of its kind picks
+      - type: unit
+        file: test/layout.test.ts
+        name: picks the next group of the rule when the picked parent is not on the canvas
+      - type: unit
+        file: test/layout.test.ts
+        name: skips a cycle of the parents rule
+      - type: unit
+        file: test/layout.test.ts
+        name: marks the edge to the container and to a container above it as nested
+      - type: unit
+        file: test/layout.test.ts
+        name: accepts grouped with groupBy parents and no group edge
+      - type: unit
+        file: test/app/views.test.tsx
+        name: enables the grouped layout and nests by the parents rule when the profile has groupBy and no groupEdge
   - id: force
     text: The force layout gives the same positions for the same input, and no 2 nodes lie on each other.
     status: verified

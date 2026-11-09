@@ -2,7 +2,7 @@
 // Copyright 2026 The Semspec Authors
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { applyFilters, buildIndex, buildModel, fieldValues, filterValues, taggedKeys, taggedLines, type Filters, type Graph, type Profile } from '@semspec/core';
+import { applyFilters, buildIndex, buildModel, fieldValues, fillSpecs, indexGraphs, filterValues, taggedKeys, taggedLines, type Filters, type Graph, type Profile } from '@semspec/core';
 import { validateProfile } from '../packages/cli/src/validate';
 
 const load = (name: string) => ({
@@ -14,31 +14,81 @@ const none: Filters = { q: '', kinds: [], lifecycles: [], deliveries: [], module
 
 const labels = { 'a.area': 'Area A', 'b.type': 'Type B', 'b.property': 'Property B', own: 'Own term' };
 
+const texts = (lines: { text: string }[]) => lines.map((l) => l.text);
+const nested = { specialises: { std: { type: 'Device', url: 'https://example.org/x.yaml#L1' } } };
+const nodes: Record<string, { graph: string; id: string; title: string }> = { 'obl-1': { graph: 'g2', id: 'obl-1', title: 'Pay on time' } };
+const resolve = (id: string) => nodes[id];
+
 describe('the lines of a tagged entry', () => {
   it('gives 1 line for each inner key, with the label of "<tag>.<key>"', () => {
-    expect(taggedLines({ a: { area: 'X' } }, labels)).toEqual(['Area A: X']);
-    expect(taggedLines({ b: { type: 'Y', property: 'Z' } }, labels)).toEqual(['Type B: Y', 'Property B: Z']);
+    expect(texts(taggedLines({ a: { area: 'X' } }, labels))).toEqual(['Area A: X']);
+    expect(texts(taggedLines({ b: { type: 'Y', property: 'Z' } }, labels))).toEqual(['Type B: Y', 'Property B: Z']);
   });
   it('gives the label of the tag alone when the tag has no inner key', () => {
-    expect(taggedLines({ own: {} }, labels)).toEqual(['Own term']);
-    expect(taggedLines({ own: null }, labels)).toEqual(['Own term']);
+    expect(texts(taggedLines({ own: {} }, labels))).toEqual(['Own term']);
+    expect(texts(taggedLines({ own: null }, labels))).toEqual(['Own term']);
   });
   it('falls back to the tag and the key as written when a label is missing', () => {
-    expect(taggedLines({ a: { other: 'X' } }, labels)).toEqual(['a other: X']);
-    expect(taggedLines({ c: {} }, labels)).toEqual(['c']);
-    expect(taggedLines({ a: { area: 'X' } })).toEqual(['a area: X']);
+    expect(texts(taggedLines({ a: { other: 'X' } }, labels))).toEqual(['a other: X']);
+    expect(texts(taggedLines({ c: {} }, labels))).toEqual(['c']);
+    expect(texts(taggedLines({ a: { area: 'X' } }))).toEqual(['a area: X']);
   });
   it('shows an entry that is not an object with exactly 1 key as compact JSON', () => {
-    expect(taggedLines({ a: {}, b: {} }, labels)).toEqual(['{"a":{},"b":{}}']);
-    expect(taggedLines({}, labels)).toEqual(['{}']);
-    expect(taggedLines('text', labels)).toEqual(['"text"']);
-    expect(taggedLines(['a'], labels)).toEqual(['["a"]']);
-    expect(taggedLines(null, labels)).toEqual(['null']);
-    expect(taggedLines({ a: 'x' }, labels)).toEqual(['{"a":"x"}']);
-    expect(taggedLines({ a: ['x'] }, labels)).toEqual(['{"a":["x"]}']);
+    expect(texts(taggedLines({ a: {}, b: {} }, labels))).toEqual(['{"a":{},"b":{}}']);
+    expect(texts(taggedLines({}, labels))).toEqual(['{}']);
+    expect(texts(taggedLines('text', labels))).toEqual(['"text"']);
+    expect(texts(taggedLines(['a'], labels))).toEqual(['["a"]']);
+    expect(texts(taggedLines(null, labels))).toEqual(['null']);
+    expect(texts(taggedLines({ a: ['x'] }, labels))).toEqual(['{"a":["x"]}']);
+    expect(texts(taggedLines({ a: 3 }, labels))).toEqual(['{"a":3}']);
   });
   it('shows a value that is not a string as compact JSON', () => {
-    expect(taggedLines({ a: { area: 3, other: { k: 1 } } }, labels)).toEqual(['Area A: 3', 'a other: {"k":1}']);
+    expect(texts(taggedLines({ a: { area: 3, other: { k: 1 } } }, labels))).toEqual(['Area A: 3', 'a other: {"k":1}']);
+  });
+});
+
+describe('the link key of a tagged list', () => {
+  it('makes the value of the link key the link of the line and gives no line of its own', () => {
+    const lines = taggedLines({ std: { type: 'Entry', url: 'https://example.org/e' } }, { 'std.type': 'Kind' }, { linkKey: 'url' });
+    expect(lines).toEqual([{ label: 'Kind', value: 'Entry', text: 'Kind: Entry', href: 'https://example.org/e' }]);
+    expect(taggedLines({ std: { type: 'Entry', url: 'https://example.org/e' } }, {}).map((l) => l.text)).toEqual(['std type: Entry', 'std url: https://example.org/e']);
+  });
+  it('links every line of the entry and refuses an address that is not http or https', () => {
+    const two = taggedLines({ std: { type: 'A', note: 'B', url: 'https://example.org/e' } }, {}, { linkKey: 'url' });
+    expect(two.map((l) => l.href)).toEqual(['https://example.org/e', 'https://example.org/e']);
+    const bad = taggedLines({ std: { type: 'A', url: 'javascript:alert(1)' } }, {}, { linkKey: 'url' });
+    expect(bad.map((l) => [l.text, l.href])).toEqual([['std type: A', undefined]]);
+  });
+  it('gives the label of the tag with the link when the tag has only the link key', () => {
+    expect(taggedLines({ std: { url: 'https://example.org/e' } }, { std: 'Standard' }, { linkKey: 'url' })).toEqual([{ label: 'Standard', value: '', text: 'Standard', href: 'https://example.org/e' }]);
+  });
+});
+
+describe('the nested tag of a tagged list', () => {
+  it('gives 1 line with the label of "<tag>.<nested tag>", the inner values and the link', () => {
+    expect(taggedLines(nested, { 'specialises.std': 'Narrows STD' }, { linkKey: 'url' })).toEqual([
+      { label: 'Narrows STD', value: 'Device', text: 'Narrows STD Device', href: 'https://example.org/x.yaml#L1' },
+    ]);
+  });
+  it('joins several inner values with a space, in key order, and falls back to the tag and the nested tag', () => {
+    const lines = taggedLines({ a: { b: { y: 'Two', x: 'One', url: 'https://example.org/z' } } }, {}, { linkKey: 'url' });
+    expect(texts(lines)).toEqual(['a b Two One']);
+    expect(lines[0].href).toBe('https://example.org/z');
+  });
+  it('gives the label of the nested tag alone when it has no inner value', () => {
+    expect(texts(taggedLines({ a: { b: {} } }, { 'a.b': 'Bee' }))).toEqual(['Bee']);
+  });
+});
+
+describe('the text value of a tagged list', () => {
+  it('gives the label of the tag and the text when no node has the text as its id', () => {
+    expect(texts(taggedLines({ obligation: 'obl-9' }, { obligation: 'Obligation' }, { resolve }))).toEqual(['Obligation: obl-9']);
+    expect(texts(taggedLines({ obligation: 'obl-1' }, { obligation: 'Obligation' }))).toEqual(['Obligation: obl-1']);
+  });
+  it('shows the title of the node that has the text as its id, with the node', () => {
+    expect(taggedLines({ obligation: 'obl-1' }, { obligation: 'Obligation' }, { resolve })).toEqual([
+      { label: 'Obligation', value: 'Pay on time', text: 'Obligation: Pay on time', node: nodes['obl-1'] },
+    ]);
   });
 });
 
@@ -117,10 +167,44 @@ describe('the schema of the profile', () => {
     const bad = { ...profile, details: { ...profile.details, taggedList: [] } };
     expect(validateProfile(bad).join('\n')).toMatch(/profile\/details must NOT have additional properties/);
   });
+  it('accepts a text as the link key of a tagged list and rejects another type', () => {
+    expect(validateProfile({ ...profile, details: { taggedLists: [{ title: 'T', field: 'f', linkKey: 'url' }] } })).toEqual([]);
+    expect(validateProfile({ ...profile, details: { taggedLists: [{ title: 'T', field: 'f', linkKey: 3 }] } }).join('\n')).toMatch(/linkKey/);
+  });
   it('rejects an unknown key inside a taggedLists entry and a wrong value of from', () => {
     const entry = { title: 'T', field: 'f', label: 'x' };
     expect(validateProfile({ ...profile, details: { taggedLists: [entry] } }).join('\n')).toMatch(/taggedLists\/0 must NOT have additional properties/);
     const filter = { field: 'origin', label: 'O', from: 'values' };
     expect(validateProfile({ ...profile, fieldFilters: [filter] }).join('\n')).toMatch(/from/);
+  });
+});
+
+describe('the tagged list in the spec Markdown', () => {
+  const profile = {
+    project: 'Mini',
+    source: { nodes: 'nodes', id: 'id', kind: 'kind' },
+    fields: { title: ['title'], statement: ['text'] },
+    lifecycle: { field: 'state', fallback: 'live' },
+    kinds: [{ id: 'item', label: 'Item', plural: 'items', prefix: 'item-', role: 'hierarchy', color: { light: '#222222', dark: '#dddddd' }, chips: [] }],
+    edges: {},
+    details: { taggedLists: [{ title: 'Basis', field: 'basis', linkKey: 'url', labels: { 'specialises.std': 'Narrows STD', obligation: 'Obligation' } }] },
+  };
+  const graph = {
+    nodes: [
+      { id: 'item-a', kind: 'item', title: 'Alpha', text: 'A.', basis: [nested, { obligation: 'item-b' }, { obligation: 'gone' }] },
+      { id: 'item-b', kind: 'item', title: 'Beta', text: 'B.' },
+    ],
+  };
+  it('writes a link for the address of a line and a link to the node that a text names', () => {
+    const graphs = indexGraphs([{ id: 'graph', label: 'Mini', model: buildModel(graph, profile as never) }]);
+    const doc = '<!-- semspec:section shape=list show=fields -->\n<!-- semspec:end -->\n';
+    const out = fillSpecs(graphs, [{ path: '/work/doc.md', text: doc }]).files[0].text;
+    expect(out).toContain('[Narrows STD Device](https://example.org/x.yaml#L1); Obligation: [Beta](#item-b); Obligation: gone');
+  });
+  it('keeps the links of a tagged list in a cell of a Markdown table', () => {
+    const graphs = indexGraphs([{ id: 'graph', label: 'Mini', model: buildModel(graph, profile as never) }]);
+    const doc = '<!-- semspec:section shape=table ids=item-a columns=id,basis -->\n<!-- semspec:end -->\n';
+    const out = fillSpecs(graphs, [{ path: '/work/doc.md', text: doc }]).files[0].text;
+    expect(out).toContain('| [Narrows STD Device](https://example.org/x.yaml#L1); Obligation: Beta (`item-b`); Obligation: gone |');
   });
 });

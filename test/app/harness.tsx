@@ -100,7 +100,11 @@ export function blockStorage() {
 export const storedKey = (store: Map<string, string>) => [...store.keys()].find((k) => k.startsWith('semspec:'));
 export const storedState = (store: Map<string, string>) => JSON.parse(store.get(storedKey(store)!)!);
 
+// Picks a view in the menu of views.
 export async function switchTo(label: string) {
-  await userEvent.setup().click(screen.getByRole('tab', { name: label }));
+  const user = userEvent.setup();
+  screen.getByRole('button', { name: 'Views' }).focus();
+  await user.keyboard('{Enter}');
+  await user.click(await screen.findByRole('menuitemradio', { name: label }));
   await settle();
 }

@@ -5,7 +5,7 @@ title: Getting started
 description: Install Semspec and open a graph in the browser.
 order: 1
 related: [cli, yaml-folder]
-documents: [cap-html, req-serve, req-build-html]
+documents: [cap-html, req-serve, req-serve-live, req-build-html]
 ---
 ## Install
 
@@ -24,5 +24,5 @@ semspec serve --graph <graph> --profile <profile> [--port 4173] [--host 127.0.0.
 semspec build --graph <graph> --profile <profile> --out explorer.html [--exclude <pattern>]...
 ```
 
-- `serve` starts a server on localhost. It reads both inputs again on each page load.
+- `serve` starts a server on localhost. It reads both inputs again on each page load. It watches the files, and the open page reloads when you save a file. The page keeps the view, scope, selection, layout and filters. See [Live reload](../reference/cli.md#live-reload).
 - `build` writes 1 HTML file. The file has the data, the script and the style inline. It opens from disk and makes no network request.

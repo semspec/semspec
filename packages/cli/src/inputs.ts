@@ -2,6 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // Reads and checks a graph and a profile.
 import { statSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { Graph, Profile } from '@semspec/core';
 import { readInput } from './input';
 import { validateGraph, validateProfile } from './validate';
@@ -19,25 +20,29 @@ export function loadProfile(profilePath: string): Profile {
 
 // Reads and checks both inputs. It throws on an error and returns the warnings.
 // `exclude` holds the patterns of the paths to skip in a graph folder.
+// `files` holds the absolute path of the file of each node, in the order of the nodes.
 // With `evidenceErrors: 'warn'`, an error of the test evidence gives a warning, and every condition is not-run.
-export function loadInputs(graphPath: string, profilePath: string, exclude: string[] = [], options: { evidenceErrors?: 'throw' | 'warn' } = {}): { graph: Graph; profile: Profile; warnings: string[] } {
+export function loadInputs(graphPath: string, profilePath: string, exclude: string[] = [], options: { evidenceErrors?: 'throw' | 'warn' } = {}): { graph: Graph; profile: Profile; files: string[]; warnings: string[] } {
   const profile = loadProfile(profilePath);
   let labels: string[] | undefined;
+  let files: string[];
   let graph: Graph;
   const extra: string[] = [];
   if (isDirectory(graphPath)) {
     const folder = readGraphFolder(graphPath, profile, exclude);
-    ({ graph, labels } = folder);
+    ({ graph, labels, files } = folder);
     extra.push(...folder.warnings);
   }
   else {
     graph = readInput(graphPath, 'graph') as Graph;
+    const list = (graph as Record<string, unknown> | null)?.[profile.source.nodes];
+    files = Array.isArray(list) ? list.map(() => resolve(graphPath)) : [];
     if (exclude.length) extra.push('The option --exclude has no effect because the graph is a file, not a folder.');
   }
   const checked = validateGraph(graph, profile, labels);
   if (checked.errors.length) throw new Error(`The graph "${graphPath}" is not valid:\n  ${checked.errors.slice(0, 20).join('\n  ')}`);
   const verified = options.evidenceErrors === 'warn' ? evidenceOrWarning(graph, profile, profilePath, graphPath) : verifiedGraph(graph, profile, profilePath, graphPath);
-  return { graph: verified.graph, profile, warnings: [...extra, ...checked.warnings, ...verified.warnings] };
+  return { graph: verified.graph, profile, files, warnings: [...extra, ...checked.warnings, ...verified.warnings] };
 }
 
 function evidenceOrWarning(graph: Graph, profile: Profile, profilePath: string, graphPath: string): { graph: Graph; warnings: string[] } {

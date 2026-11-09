@@ -26,26 +26,59 @@ export interface Containers {
   children: Map<string, string[]>;
   // The nodes that are in no container, in the order of the ids. A container can be among them.
   roots: string[];
+  // The edges that the nesting shows. The canvas draws no line for them.
+  nested: Set<VEdge>;
 }
 
-// A node that is the target of `groupEdge` from a node on the canvas is a container. A member
-// with 2 containers goes in the first one. A link that would close a cycle is skipped.
-export function findContainers(ids: string[], edges: VEdge[], groupEdge: string | undefined): Containers {
+// How the grouped layout finds the container of a node. A string is the name of the group edge.
+// `parents` gives the parents rule of a node, which is the groups of parent fields of its kind.
+export type GroupBy = string | { parents: (id: string) => string[][] };
+
+// The edge names of a rule, in the order of the groups.
+const fieldsOf = (rule: string[][]) => rule.flat();
+
+// With a group edge, a node that is the target of the edge from a node on the canvas is a container.
+// With a parents rule, each node sits in the first node on the canvas that a group of its rule names,
+// as the tree does. A member with 2 containers goes in the first one. A link that would close a
+// cycle is skipped.
+export function findContainers(ids: string[], edges: VEdge[], by: GroupBy | undefined): Containers {
   const parentOf = new Map<string, string>();
   const onCanvas = new Set(ids);
-  if (groupEdge) {
-    const wanted = new Map<string, string[]>();
+  const nested = new Set<VEdge>();
+  if (by !== undefined) {
+    const rule = typeof by === 'string' ? undefined : by.parents;
+    // The names of the edges that a node reads, in the order of the rule.
+    const names = (id: string): string[] => (rule ? fieldsOf(rule(id)) : [by as string]);
+    const bySource = new Map<string, VEdge[]>();
     edges.forEach((e) => {
-      if (e.k !== groupEdge || e.s === e.t || !onCanvas.has(e.s) || !onCanvas.has(e.t)) return;
-      wanted.set(e.s, [...(wanted.get(e.s) ?? []), e.t]);
+      if (e.s === e.t || !onCanvas.has(e.s) || !onCanvas.has(e.t)) return;
+      if (!names(e.s).includes(e.k)) return;
+      bySource.set(e.s, [...(bySource.get(e.s) ?? []), e]);
     });
     ids.forEach((id) => {
-      for (const target of wanted.get(id) ?? []) {
+      const mine = bySource.get(id) ?? [];
+      const order = names(id);
+      const wanted = [...mine].sort((a, b) => order.indexOf(a.k) - order.indexOf(b.k)).map((e) => e.t);
+      for (const target of wanted) {
         let up: string | undefined = target;
         while (up !== undefined && up !== id) up = parentOf.get(up);
         if (up === id) continue;
         parentOf.set(id, target);
         return;
+      }
+    });
+    edges.forEach((e) => {
+      if (e.s === e.t || !onCanvas.has(e.s) || !onCanvas.has(e.t) || !names(e.s).includes(e.k)) return;
+      if (!rule) {
+        if (parentOf.get(e.s) === e.t) nested.add(e);
+        return;
+      }
+      // A line to a container that holds the node adds nothing to the nesting.
+      for (let up = parentOf.get(e.s); up !== undefined; up = parentOf.get(up)) {
+        if (up === e.t) {
+          nested.add(e);
+          return;
+        }
       }
     });
   }
@@ -54,7 +87,7 @@ export function findContainers(ids: string[], edges: VEdge[], groupEdge: string 
     const p = parentOf.get(id);
     if (p !== undefined) children.set(p, [...(children.get(p) ?? []), id]);
   });
-  return { parentOf, children, roots: ids.filter((id) => !parentOf.has(id)) };
+  return { parentOf, children, roots: ids.filter((id) => !parentOf.has(id)), nested };
 }
 
 // The chain of containers of a node, from the outermost to the node itself.
@@ -182,8 +215,8 @@ function spacing(mode: Mode) {
 // The top level packs its containers and its free nodes into rows when the drawing is too wide.
 // A level inside a container packs its containers when its row is too wide. `aspect` is the aimed
 // ratio of width to height.
-export function grouped(ids: string[], edges: VEdge[], mode: Mode, groupEdge: string, down: Set<string>, aspect = PACK_ASPECT): Map<string, Pos> {
-  const { parentOf, children, roots } = findContainers(ids, edges, groupEdge);
+export function grouped(ids: string[], edges: VEdge[], mode: Mode, by: GroupBy, down: Set<string>, aspect = PACK_ASPECT): Map<string, Pos> {
+  const { parentOf, children, roots, nested } = findContainers(ids, edges, by);
   const leaf = SIZE[mode];
   const chains = new Map(ids.map((id) => [id, chainOf(parentOf, id)]));
   const sizes = new Map<string, Size>();
@@ -203,7 +236,7 @@ export function grouped(ids: string[], edges: VEdge[], mode: Mode, groupEdge: st
     g.setDefaultEdgeLabel(() => ({}));
     items.forEach((id) => g.setNode(id, { width: (sizes.get(id) ?? leaf).w, height: (sizes.get(id) ?? leaf).h }));
     edges.forEach((e) => {
-      if (e.k === groupEdge || !chains.has(e.s) || !chains.has(e.t)) return;
+      if (e.k === by || nested.has(e) || !chains.has(e.s) || !chains.has(e.t)) return;
       const a = itemOf(level, e.s);
       const b = itemOf(level, e.t);
       if (a === undefined || b === undefined || a === b) return;

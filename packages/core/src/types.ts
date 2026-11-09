@@ -24,6 +24,12 @@ export interface CitationSpec {
   parts: { field: string; prefix?: string; wrap?: string }[];
 }
 
+export interface ProfileLayout {
+  default?: 'layered' | 'grouped' | 'force';
+  groupEdge?: string;
+  groupBy?: 'parents';
+}
+
 export interface KindSpec {
   id: string;
   label: string;
@@ -156,7 +162,8 @@ export interface DetailsSpec {
   sourceSections?: { title: string; field: string; name: string; section?: string; url?: string; retrieved?: string }[];
   objectLists?: { title: string; field: string; badge: string; value: string[]; suffix?: string; suffixSeparator?: string }[];
   // A list of tagged objects, 1 key each. `labels` maps "<tag>.<key>" and "<tag>" to a label.
-  taggedLists?: { title: string; field: string; labels?: Record<string, string> }[];
+  // `linkKey` names an inner key whose value is a URL. It links the line of its entry and gives no line.
+  taggedLists?: { title: string; field: string; labels?: Record<string, string>; linkKey?: string }[];
   citations?: {
     kind: string;
     title: string;
@@ -295,7 +302,8 @@ export interface Profile {
   project: string;
   // `defaultKind` is the kind of a node with no value in the `kind` key.
   // `markdown` turns on the reading of `*.md` files in a graph folder. `body` is the field that gets the text after the front matter.
-  source: { nodes: string; id: string; kind: string; defaultKind?: string; markdown?: { body: string } };
+  // `origin` names the field that holds the path of the file a node was copied from. The Source section shows that file.
+  source: { nodes: string; id: string; kind: string; defaultKind?: string; markdown?: { body: string }; origin?: string };
   fields: { title: string[]; idPrefixPattern?: string; statement: string[]; level?: string; delivery?: string; decided?: string };
   lifecycle: {
     field: string;
@@ -347,7 +355,8 @@ export interface Profile {
   groups?: { hierarchy: string };
   details?: DetailsSpec;
   // The layout of the Graph and Cards views. `groupEdge` names the edge whose target is the container of its source.
-  layout?: { default?: 'layered' | 'grouped' | 'force'; groupEdge?: string };
+  // `groupBy: 'parents'` nests each node in the parent that the parents rule of its kind picks. It wins over `groupEdge`.
+  layout?: ProfileLayout;
 }
 
 // A graph is a list of nodes. Each node has an id, a kind and any other fields.
@@ -443,6 +452,9 @@ export interface Model {
   stats: { unplaced: number; unplacedLive: number };
   disclosure: Record<string, unknown>;
   problems: number;
+  // The file of each node, by node id: a path relative to the workspace file, or to the profile in the single graph form.
+  // The CLI sets it. A node that comes from no file has no entry.
+  files?: Record<string, string>;
 }
 
 export interface Index {

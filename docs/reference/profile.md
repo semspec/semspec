@@ -12,7 +12,7 @@ The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../s
 | Key | Meaning |
 |---|---|
 | `project` | The name of the project. The page shows it as secondary text. |
-| `source` | The keys of the list of nodes, the id and the kind. The optional `defaultKind` is the kind of a node with no value in the kind key. The optional `markdown.body` names the field that gets the text of a Markdown page. A graph folder reads `*.md` files only when `markdown` is set. See [Markdown pages as nodes](../guide/markdown-folder.md). |
+| `source` | The keys of the list of nodes, the id and the kind. The optional `defaultKind` is the kind of a node with no value in the kind key. The optional `origin` names the field of a node that holds the path of the file the node was copied from. The path is relative to the profile, or to the workspace file in a workspace. The Source section of the details panel shows that file. See [The Source section](cli.md#the-source-section). The optional `markdown.body` names the field that gets the text of a Markdown page. A graph folder reads `*.md` files only when `markdown` is set. See [Markdown pages as nodes](../guide/markdown-folder.md). |
 | `fields` | The fields for the title, the statement, the level and the delivery state, and a pattern that cuts a prefix from an id. |
 | `lifecycle` | The field of the state, a fallback, a fallback for each kind, and the states that show muted. |
 | `kinds` | The node kinds: id, label, plural, role, colour for the light and the dark theme, parent field groups, a citation rule (with an optional `name` path for the display name of the source) and the chips of a summary. |
@@ -35,7 +35,7 @@ The profile is a JSON or YAML object. See [`schema/profile.schema.json`](../../s
 | `spec` | The settings of `semspec spec`. `roots` lists the kinds whose nodes get a default document. `presets` maps a name to the options of a section marker, for example `{ shape: table, status: [open] }`. A marker takes a set with `use=<name>`. An unknown option in a set is an error. See [Markdown specs](../guide/specs.md). |
 | `provenance` | Where a fact comes from: the fields of the marker, the source, the date, the agent and the note, and the markers that need a source. See [Provenance](provenance.md). |
 | `iri`, `fieldIris` | The IRIs of the export: a base, prefixes, the field that holds a node IRI, and the property of a field. A kind, an edge, an edge property, a vocabulary and a concept can name an `iri` too. See [Export](export.md). |
-| `layout` | The layout of the Graph and Cards views. The optional `default` is `layered`, `grouped` or `force`. The optional `groupEdge` names the edge whose target is the container of its source. The value `grouped` needs `groupEdge`. See [Layouts](../guide/layouts.md). |
+| `layout` | The layout of the Graph and Cards views. The optional `default` is `layered`, `grouped` or `force`. The optional `groupEdge` names the edge whose target is the container of its source. The optional `groupBy` has the value `parents`. It nests each node in the parent that the parents rule of its kind picks, and it wins over `groupEdge`. The value `grouped` needs `groupEdge` or `groupBy`. See [Layouts](../guide/layouts.md). |
 | `facets`, `entry`, `groups` | The group facet, the start page and the names of tree groups. |
 | `details` | The sections of the details panel: properties, text sections, option lists, source lists, object lists, tagged lists and citations. |
 

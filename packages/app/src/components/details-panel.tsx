@@ -2,13 +2,14 @@
 // Copyright 2026 The Semspec Authors
 // The details of the selected node, and the neighbours panel for the walk.
 // The profile says which sections a node has and which fields they read.
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ArrowRight, ChevronsLeft, EyeOff, ExternalLink as ExternalLinkIcon, Network, Target, Undo2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ChipView, KindBadge, KindDot, NodeSummaryView, StatusCounts, StatusDot } from '@/components/kind';
 import { Core, type ExternalLink, type VEdge } from '@/lib/core';
+import { hasSourceText, loadSourceText } from '@/lib/source';
 import { useWorkspace } from '@/lib/workspace';
 import type { Viewer } from '@/lib/use-viewer';
 import { cn } from '@/lib/utils';
@@ -577,9 +578,7 @@ export function DetailsPanel({ v }: { v: Viewer }) {
               <ul className="flex flex-col gap-1">
                 {d[l.field].map((entry: unknown, i: number) => (
                   <li key={i} className="flex flex-col gap-0.5 text-[13px] break-words">
-                    {Core.taggedLines(entry, l.labels).map((line, j) => (
-                      <span key={j}>{line}</span>
-                    ))}
+                    <TaggedEntry v={v} entry={entry} spec={l} />
                   </li>
                 ))}
               </ul>
@@ -604,6 +603,8 @@ export function DetailsPanel({ v }: { v: Viewer }) {
 
       <CrossLinks v={v} id={n.id} />
 
+      <SourceBlock node={n.id} />
+
       {[
         { title: 'Outgoing edges', list: groups(out, 0), total: out.length },
         { title: 'Incoming edges', list: groups(inc, 1), total: inc.length },
@@ -625,6 +626,110 @@ export function DetailsPanel({ v }: { v: Viewer }) {
           </Section>
         </div>
       ))}
+    </div>
+  );
+}
+
+// The lines of 1 entry of a tagged list. The address of a line is an outside link. A node is a link that selects it.
+function TaggedEntry({ v, entry, spec }: { v: Viewer; entry: unknown; spec: { labels?: Record<string, string>; linkKey?: string } }) {
+  const ws = useWorkspace();
+  // The active graph first, then the other graphs of the workspace.
+  const resolve = (id: string) => {
+    for (const g of [ws.activeId, ...ws.graphs.map((x) => x.id).filter((x) => x !== ws.activeId)]) {
+      const n = ws.nodeOf(g, id);
+      if (n) return { graph: g, id, title: n.title || id };
+    }
+    return undefined;
+  };
+  return (
+    <>
+      {Core.taggedLines(entry, spec.labels, { linkKey: spec.linkKey, resolve }).map((line, i) => {
+        const href = line.href ? Core.safeUrl(line.href) : null;
+        if (line.node) {
+          const { graph, id } = line.node;
+          return (
+            <span key={i}>
+              {line.label}:{' '}
+              <button type="button" title={id} onClick={() => (graph === ws.activeId ? v.select(id) : ws.jump(graph, id))} className="text-left text-primary underline underline-offset-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                {line.value}
+              </button>
+            </span>
+          );
+        }
+        if (href)
+          return (
+            <a key={i} href={href} {...OUTSIDE} className="text-primary underline underline-offset-2">
+              {line.text}
+            </a>
+          );
+        return <span key={i}>{line.text}</span>;
+      })}
+    </>
+  );
+}
+
+// The key of the session storage that keeps the Source section open across a reload of the page.
+const SOURCE_OPEN_KEY = 'semspec:source-open';
+
+function storedOpen(): boolean {
+  try {
+    return window.sessionStorage.getItem(SOURCE_OPEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+// The Source section of a node: the path of its file, and the text of the file when the page can give it.
+// The text loads when the section opens, so the page data holds no text.
+function SourceBlock({ node }: { node: string }) {
+  const ws = useWorkspace();
+  const graph = ws.views.find((x) => x.id === ws.activeId)?.graph ?? '';
+  const path = ws.graphs.find((g) => g.id === graph)?.model.files?.[node];
+  const [open, setOpen] = useState(storedOpen);
+  // The text belongs to the source that it came from. The section never shows the text of another source.
+  const [state, setState] = useState<{ id: string; text?: string; error?: string }>({ id: '' });
+  const canLoad = path !== undefined && hasSourceText(graph, path);
+  const id = canLoad ? [graph, node, path].join('|') : '';
+  const loaded = state.id === id ? state : { id };
+  useEffect(() => {
+    if (!open || !canLoad) return;
+    let stale = false;
+    setState({ id });
+    loadSourceText(graph, node, path).then(
+      (text) => !stale && setState({ id, text }),
+      (e: Error) => !stale && setState({ id, error: e.message }),
+    );
+    return () => {
+      stale = true;
+    };
+  }, [open, canLoad, id, graph, node, path]);
+  if (path === undefined) return null;
+  const toggle = () => {
+    setOpen(!open);
+    try {
+      window.sessionStorage.setItem(SOURCE_OPEN_KEY, open ? '0' : '1');
+    } catch {
+      // The storage is not available. The section stays closed after a reload.
+    }
+  };
+  return (
+    <div data-testid="source-section">
+      <Separator />
+      <Section title="Source">
+        <code className="font-mono text-[11px] break-all" data-testid="source-path">{path}</code>
+        {canLoad && (
+          <Button variant="outline" size="sm" className="self-start" aria-expanded={open} onClick={toggle}>
+            {open ? 'Hide the text' : 'Show the text'}
+          </Button>
+        )}
+        {open && canLoad && loaded.text === undefined && !loaded.error && <span className="text-xs text-muted-foreground">Loading the text.</span>}
+        {open && loaded.error && <span className="text-xs text-warn">{loaded.error}</span>}
+        {open && loaded.text !== undefined && (
+          <pre className="max-h-96 overflow-auto rounded-md border bg-muted/40 p-2 font-mono text-[11px] leading-snug whitespace-pre-wrap break-words" data-testid="source-text">
+            {loaded.text}
+          </pre>
+        )}
+      </Section>
     </div>
   );
 }

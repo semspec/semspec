@@ -53,8 +53,15 @@ const THEME_SCRIPT = `(function(){var s=null;try{s=localStorage.getItem('${THEME
 
 const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
+export interface PageOptions {
+  // serve sets it. The page then opens the event channel of serve and asks serve for the source texts.
+  live?: boolean;
+  // The source texts of `build --sources`: for each graph id, the text of each file by its relative path.
+  sources?: Record<string, Record<string, string>>;
+}
+
 // A workspace page holds `{ title, graphs }`. A page of 1 graph holds the model itself.
-export async function renderPage(data: Model | WorkspaceData): Promise<string> {
+export async function renderPage(data: Model | WorkspaceData, options: PageOptions = {}): Promise<string> {
   const { js, css } = await loadAssets();
   const workspace = 'graphs' in data;
   const first = workspace ? data.graphs[0].model : data;
@@ -66,6 +73,7 @@ export async function renderPage(data: Model | WorkspaceData): Promise<string> {
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     `<meta name="generator" content="${escapeHtml(generatorLabel())}">`,
+    ...(options.live ? ['<meta name="semspec-live" content="1">'] : []),
     `<title>Semspec – ${escapeHtml(title)}</title>`,
     `<script>${THEME_SCRIPT}</script>`,
     `<style>${inlineStyle(css)}</style>`,
@@ -74,6 +82,7 @@ export async function renderPage(data: Model | WorkspaceData): Promise<string> {
     '<body>',
     '<div id="root"></div>',
     `<script type="application/json" id="graph-data">${jsonForHtml(data)}</script>`,
+    ...(options.sources ? [`<script type="application/json" id="source-data">${jsonForHtml(options.sources)}</script>`] : []),
     `<script>${inlineScript(js)}</script>`,
     '</body>',
     '</html>',
