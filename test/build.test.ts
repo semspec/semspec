@@ -603,7 +603,8 @@ describe('the requirements of the repository', () => {
   });
   it('points every test reference at an existing test with that exact title', () => {
     const { graph } = loadInputs(graphPath, profilePath);
-    const refs = (graph.nodes as { acceptance?: { tests?: { file: string; name: string }[] }[] }[]).flatMap((n) => (n.acceptance ?? []).flatMap((a) => a.tests ?? []));
+    // A check of the type gate runs a command and has no test file.
+    const refs = (graph.nodes as { acceptance?: { tests?: { type?: string; file: string; name: string }[] }[] }[]).flatMap((n) => (n.acceptance ?? []).flatMap((a) => (a.tests ?? []).filter((t) => t.type !== 'gate')));
     expect(refs.length).toBeGreaterThan(0);
     const sources = new Map<string, string>();
     for (const { file, name } of refs) {

@@ -35,6 +35,8 @@
     "test:evidence": "node scripts/test-evidence.mjs",
     "test:time": "node scripts/test-time.mjs",
     "licences": "node scripts/check-licences.mjs",
+    "self-check": "node scripts/self-check.mjs",
+    "hooks:install": "git config core.hooksPath .githooks",
     "eval:search": "node bin/semspec.js eval-search",
     "requirements": "node bin/semspec.js serve --graph requirements/graph --profile requirements/profile.yaml",
     "requirements:build": "node bin/semspec.js build --graph requirements/graph --profile requirements/profile.yaml --out dist/requirements.html",

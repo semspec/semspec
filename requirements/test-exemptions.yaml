@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The Semspec Authors
+# Tests that need no link to an acceptance condition. `node scripts/self-check.mjs` reads this file.
+# Each entry has `file`, `reason` and optionally `name`. An entry with no `name` covers every test of the file.
+# An entry with no reason is a finding.
+exemptions:
+  - file: test/self-check.test.ts
+    name: exits 2 for an unknown argument
+    reason: It checks the error exit of a repository script. No acceptance condition names it.

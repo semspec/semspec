@@ -1,8 +1,6 @@
 id: req-self-prepush
 kind: requirement
 title: Block a push that fails the checks
-state: draft
-priority: now
 statement: A pre-push git hook runs the checks of the repository and blocks the push on a failure.
 capabilities:
   - cap-self-check
@@ -11,13 +9,55 @@ area:
 acceptance:
   - id: checks
     text: "The hook runs the typecheck, the tests, semspec check on the requirements, semspec spec --check on the docs and npm run licences."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/prepush.test.ts
+        name: is an executable POSIX shell script
+      - type: unit
+        file: test/prepush.test.ts
+        name: runs the typecheck, the tests, semspec check, semspec spec --check and the licence check, then the self-check
+      - type: gate
+        command: sh .githooks/pre-push
   - id: block
     text: "The hook blocks the push when 1 of these checks fails."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/prepush.test.ts
+        name: blocks the push and stops at the first failed step
+      - type: gate
+        command: sh .githooks/pre-push
   - id: install
     text: "A contributor installs the hook once with 1 npm script."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/prepush.test.ts
+        name: installs the hook with 1 npm script that sets the hooks path
+      - type: gate
+        command: sh .githooks/pre-push
   - id: dependency
     text: "An install of Semspec as a dependency never installs a hook."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/prepush.test.ts
+        name: keeps the hook out of every lifecycle script and out of the published files
+      - type: gate
+        command: sh .githooks/pre-push
+  - id: isolated
+    text: "The hook clears the repository variables that git passes to a hook, such as GIT_DIR and GIT_INDEX_FILE, before it runs a check, so a test that makes a temporary repository never changes the repository of the contributor."
+    status: verified
+    tests:
+      - type: unit
+        file: test/prepush.test.ts
+        name: clears the repository variables of git before it runs a step
+      - type: unit
+        file: test/prepush.test.ts
+        name: runs every step without GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE, GIT_PREFIX and GIT_COMMON_DIR
+      - type: unit
+        file: test/check-baseline.test.ts
+        name: does not touch the repository that GIT_DIR names in the environment
+      - type: gate
+        command: sh .githooks/pre-push

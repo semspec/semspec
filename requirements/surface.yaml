@@ -1,0 +1,91 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The Semspec Authors
+# Maps each user-visible item to the requirement that covers it.
+# The script scripts/surface-inventory.mjs lists the items. An item that is not here is a finding.
+# An entry for an item that does not exist, or for an unknown requirement id, is a finding too.
+# Format: kind, then item name, then requirement id.
+cli-command:
+  serve: req-serve
+  build: req-build-html
+  mcp: req-mcp-serve
+  slice: req-context-slice
+  deliverables: req-deliverables
+  coverage: req-coverage-query
+  spec: req-spec-markers
+  check: req-gate-check
+  test-record: req-test-record
+  schema: req-schema-per-kind
+  version: req-build-info
+  export: req-export-rdf-cypher
+cli-flag:
+  "--graph": req-mcp-serve
+  "--profile": req-mcp-serve
+  "--exclude": req-exclude-patterns
+  "--out": req-spec-default
+  "--workspace": req-workspace-file
+  "--json": req-gate-check
+  "--depth": req-context-slice
+  "--budget": req-context-slice
+  "--group": req-coverage-query
+  "--list": req-coverage-query
+  "--gate": req-coverage-query
+  "--check": req-spec-check
+  "--changed": req-gate-check
+  "--strict": req-gate-check
+  "--version": req-build-info
+  "-v": req-build-info
+  "--format": req-export-rdf-cypher
+  "--annotations": req-export-rdf-cypher
+  "--allow-command": req-embed-provider
+  "--allow-remote": req-embed-provider
+mcp-tool:
+  schema: req-mcp-check-tools
+  validate: req-mcp-check-tools
+  gaps: req-mcp-check-tools
+  get: req-mcp-read-tools
+  trace: req-mcp-read-tools
+  impact: req-mcp-read-tools
+  search: req-search-keyword
+  walk: req-navigate-walk
+  slice: req-context-slice
+  coverage: req-coverage-query
+mcp-resource:
+  "semspec://<graph>/profile": req-mcp-resources
+  "semspec://<graph>/vocabularies": req-mcp-resources
+profile-key:
+  crossLinks: req-cross-links
+  deliverables: req-deliverables
+  embedded: req-embedded-nodes
+  fieldFilters: req-spec-options
+  gates: req-gate-check
+  externalLinks: req-external-links
+  iri: req-export-rdf-cypher
+  layout: req-layouts
+  provenance: req-provenance
+  refs: req-refs-list
+  search: req-search-synonyms
+  spec: req-spec-presets
+  supersededBy: req-schema-fields
+  verification: req-test-record
+  vocabularies: req-vocabularies
+workspace-key:
+  graphs: req-workspace-file
+  search: req-embed-provider
+site-page:
+  home: req-site-generated
+  roadmap: req-site-generated
+  docs: req-site-generated
+  doc: req-site-generated
+app-control:
+  Graph: req-graph-view
+  Cards: req-cards-table
+  Table: req-cards-table
+  Layout: req-layouts
+  Reset the view: req-state-storage
+  Open the tree: req-phone-sheets
+  Open the details: req-phone-sheets
+  Details: req-details-panel
+  Hierarchy: req-tree
+  Expand: req-walk-reversible
+  Collapse: req-walk-reversible
+  CSV: req-csv-safe
