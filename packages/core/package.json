@@ -1,6 +1,6 @@
 {
   "name": "@semspec/core",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "The framework-free logic of Semspec: model, scope, walk, casing, CSV and export.",
   "license": "Apache-2.0",
   "author": "The Semspec Authors",
