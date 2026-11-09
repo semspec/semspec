@@ -1,0 +1,25 @@
+id: req-gate-checks
+kind: requirement
+title: Verify decisions and NFRs with gates
+state: draft
+priority: now
+statement: "A gate is a check of a condition of a decision or of a non-functional requirement. Semspec links each gate to the condition it verifies, and the status of the condition comes from the gate like from any other check."
+rationale: "A gate of CI or of a hook usually verifies an NFR or a decision, such as an architecture rule or a licence rule. As a check in the graph, the gate shows what it protects, and a decision with no gate shows as a gap."
+capabilities:
+  - cap-gate
+area:
+  - core
+  - repository
+acceptance:
+  - id: owners
+    text: "A profile can give conditions to decisions and to non-functional requirements, in the same way as to requirements."
+    status: open
+  - id: gate-type
+    text: "A check of the type gate names the command that runs the gate, and optionally the workflow and the job of CI that run the command."
+    status: open
+  - id: self
+    text: "In the Semspec graph, each decision has conditions, and a gate or a test verifies each condition. For example, a test verifies that the core library imports no module for I/O."
+    status: open
+  - id: unclaimed-gates
+    text: "The coverage report lists each gate of the CI workflows and of the hooks that no condition claims."
+    status: open

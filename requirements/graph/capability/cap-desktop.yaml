@@ -1,0 +1,8 @@
+id: cap-desktop
+kind: capability
+title: Desktop app
+state: draft
+priority: later
+statement: "A desktop app for macOS, Windows and Linux shows the workspace with the same app as the page. A native shell watches the files, runs the adapters and reads git."
+features:
+  - feat-distribute

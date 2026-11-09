@@ -1,0 +1,8 @@
+id: dec-ports-adapters
+kind: decision
+title: A core with ports, and adapters for each outside format
+state: draft
+statement: "The core library holds the domain and does no I/O. Each outside format connects through a port: graph source, evidence, freshness, view, export and sign-off store. 1 adapter implements 1 format of 1 port."
+rationale: "Semspec connects requirements to test runners, models, diagrams and runtime traces of many technologies. A port keeps the rules of 1 format out of the domain, so a new format adds 1 adapter and changes no domain code. The core already does no I/O, and the exports are already pure functions from the model to text."
+governs:
+  - req-coverage-query

@@ -61,9 +61,6 @@ export interface SpecRunOptions {
   [key: string]: never;
 }
 
-const CELL_MAX = 120;
-const TEXT_MAX = 160;
-
 // ---------- text ----------
 
 // Escapes the characters of Markdown in a value. A `<` and a `>` become entities, so no value holds a marker.
@@ -73,10 +70,6 @@ export function escapeMd(text: string): string {
 
 const oneLine = (text: string): string => text.replace(/\s+/g, ' ').trim();
 
-const cut = (text: string, max: number): string => {
-  const t = oneLine(text);
-  return t.length <= max ? t : `${t.slice(0, max - 1).trimEnd()}…`;
-};
 
 const esc = (text: string): string => escapeMd(oneLine(text));
 const code = (text: string): string => `\`${oneLine(text).replace(/`/g, "'")}\``;
@@ -361,7 +354,7 @@ function testsOf(c: Ctx, id: string): VNode[] {
 // The Markdown links of a node or a check, each after a space.
 const linksText = (p: Profile, n: VNode): string => nodeLinks(p, n).map((l) => ` ${markdownLink(l)}`).join('');
 // The title of a check with its links.
-const testText = (p: Profile, t: VNode, max?: number): string => esc(max === undefined ? t.title : cut(t.title, max)) + linksText(p, t);
+const testText = (p: Profile, t: VNode): string => esc(t.title) + linksText(p, t);
 
 const testsTitle = (p: Profile): string => p.checks?.sectionTitle ?? 'Checks';
 const noTests = (p: Profile): string => p.checks?.noneText ?? 'None';
@@ -433,7 +426,7 @@ function conditionBlocks(c: Ctx, n: VNode): Block[] {
   const title: Block = { t: 'p', lines: [`**${esc(p.parts?.find((x) => x.kind === parts[0].kind)?.sectionTitle ?? partLabel(p))}**`] };
   if (c.s.conditions === 'table') {
     const headers = ['Id', esc(partLabel(p)), ...(p.status ? [esc(p.status.label)] : []), ...(withTests ? [esc(testsTitle(p))] : [])];
-    const rows = parts.map((x) => [`${anchorTag(c, x.id)}${code(key(x))}`, esc(cut(x.statement || x.title, CELL_MAX)), ...(p.status ? [esc(status(x))] : []), ...(withTests ? [tests(x) || esc(noTests(p))] : [])]);
+    const rows = parts.map((x) => [`${anchorTag(c, x.id)}${code(key(x))}`, esc(x.statement || x.title), ...(p.status ? [esc(status(x))] : []), ...(withTests ? [tests(x) || esc(noTests(p))] : [])]);
     return [title, { t: 'table', lines: tableLines(headers, rows) }];
   }
   const lines: string[] = [];
@@ -527,17 +520,17 @@ function renderTable(c: Ctx, ids: string[]): string[] {
     return columns.map((col, i) => {
       let cell: string;
       if (col === 'id') cell = code(n.id);
-      else if (col === 'title') cell = esc(cut(n.title || n.id, CELL_MAX)) + linksText(p, n);
+      else if (col === 'title') cell = esc(n.title || n.id) + linksText(p, n);
       else if (col === 'kind') cell = esc(kindLabel(p, n.kind));
       else if (col === 'lifecycle') cell = esc(lifecycleLabel(p, n));
       else if (col === 'status') cell = esc(statusLabelOf(p, statusOf(index, id).value));
-      else if (col === 'statement') cell = esc(cut(n.statement, CELL_MAX));
+      else if (col === 'statement') cell = esc(n.statement);
       else if (col === 'delivery') cell = esc(n.delivery);
       else if (col === 'level') cell = esc(n.level);
       else if (col === 'parent') cell = n.parents[0] ? nodeRef(c, c.s.g.id, n.parents[0]) : '';
       else {
         const v = getPath(n.d, col);
-        cell = filled(v) ? esc(cut(valueLabel(p, col, v), CELL_MAX)) : '';
+        cell = filled(v) ? esc(valueLabel(p, col, v)) : '';
       }
       return (i === 0 ? anchorTag(c, id) : '') + cell;
     });
@@ -556,13 +549,13 @@ function renderTrace(c: Ctx, ids: string[]): string[] {
     partsOf(c, id).forEach((part, row) => {
       if (row === 0) c.anchored.add(id);
       const key = String(part.d.id || part.id.split('#').slice(1).join('#'));
-      const tests = testsOf(c, part.id).map((t) => testText(p, t, CELL_MAX)).join('; ');
+      const tests = testsOf(c, part.id).map((t) => testText(p, t)).join('; ');
       rows.push(
         columns.map((col, i) => {
           let cell = '';
-          if (col === 'requirement') cell = esc(cut(n.title || n.id, CELL_MAX)) + linksText(p, n);
+          if (col === 'requirement') cell = esc(n.title || n.id) + linksText(p, n);
           else if (col === 'id') cell = code(n.id);
-          else if (col === 'condition') cell = `${code(key)} ${esc(cut(part.statement || part.title, TEXT_MAX))}`;
+          else if (col === 'condition') cell = `${code(key)} ${esc(part.statement || part.title)}`;
           else if (col === 'key') cell = code(key);
           else if (col === 'status') cell = esc(statusLabelOf(p, part.status));
           else if (col === 'tests') cell = tests || esc(noTests(p));
@@ -617,11 +610,11 @@ function renderGaps(c: Ctx, ids: string[]): string[] {
   const good = p.status?.values.find((v) => v.tone === 'good');
   add(
     good ? `${p.status!.label} is not ${good.label}` : 'Status',
-    lists.status.map((x) => `- ${idRef(c, node(x.id))} (${esc(statusLabelOf(p, x.status))}): ${esc(cut(node(x.id).statement || x.title, TEXT_MAX))}`),
+    lists.status.map((x) => `- ${idRef(c, node(x.id))} (${esc(statusLabelOf(p, x.status))}): ${esc(node(x.id).statement || x.title)}`),
   );
   add(
     `Without ${(p.checks?.sectionTitle ?? 'checks').toLowerCase()}`,
-    lists.uncheckedParts.map((x) => `- ${idRef(c, node(x.id))}: ${esc(cut(node(x.id).statement || x.title, TEXT_MAX))}`),
+    lists.uncheckedParts.map((x) => `- ${idRef(c, node(x.id))}: ${esc(node(x.id).statement || x.title)}`),
   );
   const unchecked = new Set(lists.uncheckedParts.map((x) => x.id));
   add(

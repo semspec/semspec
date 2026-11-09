@@ -16,6 +16,8 @@
 //   semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
 //   semspec deliverables --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--json]
 //   semspec deliverables --workspace <file> [--in <graph>] [--scope <id>] [--kind <kind>]... [--json]
+//   semspec coverage --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--lifecycle <state>]... [--delivery <value>]... [--status <value>]... [--marker <value>]... [--field <name>=<value>]... [--group <kind|field>] [--list <status>]... [--limit <n>] [--gate <tone>]... [--json]
+//   semspec coverage --workspace <file> [--in <graph>] [same options]
 //   semspec spec --graph <file> --profile <file> <template.md>... [--check] [--json]
 //   semspec spec --workspace <file> --out <dir> [--roots <kind,...>] [--glossary <graph>] [--check] [--json]
 //   semspec check --graph <file> --profile <file> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
@@ -37,6 +39,7 @@ import { UsageError, checkInputs, exitCode, formatFindings, formatJson, parseChe
 import { setPermissions } from './embeddings';
 import { evalSearch, parseEvalArgs } from './eval';
 import { indexInputs, parseIndexArgs } from './indexcmd';
+import { coverageInputs, formatCoverage, parseCoverageArgs } from './coverage';
 import { deliverablesInputs, formatDeliverables, parseDeliverablesArgs } from './deliverables';
 import { loadInputs, loadProfile } from './inputs';
 import { readInput } from './input';
@@ -74,6 +77,8 @@ Usage:
   semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
   semspec deliverables --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--json]
   semspec deliverables --workspace <file> [--in <graph>] [--scope <id>] [--kind <kind>]... [--json]
+  semspec coverage --graph <file> --profile <file> [--scope <id>] [--kind <kind>]... [--lifecycle <state>]... [--delivery <value>]... [--status <value>]... [--marker <value>]... [--field <name>=<value>]... [--group <kind|field>] [--list <status>]... [--limit <n>] [--gate <tone>]... [--json]
+  semspec coverage --workspace <file> [--in <graph>] [same options]
   semspec spec --graph <file> --profile <file> <template.md>... [--check] [--json]
   semspec spec --workspace <file> --out <dir> [--roots <kind,...>] [--glossary <graph>] [--check] [--json]
   semspec check --graph <file> --profile <file> [--exclude <pattern>]... [--changed <file>...] [--json] [--strict]
@@ -98,6 +103,7 @@ The index command embeds the nodes with the model of search.embeddings and write
 The eval-search command prints recall at 5 and MRR of the keyword and the hybrid search. See docs/guide/meaning-search.md.
 The slice command prints the brief for a task on 1 node. See docs/reference/cli.md.
 The deliverables command lists the nodes that miss a deliverable of the profile. See docs/reference/cli.md.
+The coverage command reports the status of the conditions in a selection. It exits with 0, with 1 when --gate finds a condition, and with 2 for a wrong use. See docs/reference/cli.md.
 The spec command fills the marked sections of Markdown templates from the graph. See docs/guide/specs.md.
 The schema command writes 1 JSON Schema for each kind of the profile. See docs/reference/schemas.md.
 The export command writes the graph as RDF (turtle, jsonld), as SHACL shapes (shacl) or as a Cypher script (cypher).
@@ -333,6 +339,18 @@ export async function run(rawArgv: string[]): Promise<number> {
     } catch (e) {
       console.error((e as Error).message);
       return 1;
+    }
+  }
+  if (command === 'coverage') {
+    try {
+      const args = parseCoverageArgs(argv.slice(1));
+      const { result, warnings } = coverageInputs(args);
+      warnings.forEach((w) => console.error(`warning: ${w}`));
+      console.log(formatCoverage(result, args.json));
+      return result.gate && !result.gate.pass ? 1 : 0;
+    } catch (e) {
+      console.error((e as Error).message);
+      return 2;
     }
   }
   if (command === 'spec') {

@@ -1,0 +1,25 @@
+id: req-satisfy-links
+kind: requirement
+title: Link a condition to the code that implements it
+state: draft
+priority: next
+statement: "A node or a condition links to the code that implements it, by file and symbol. A change of that code makes the evidence of the condition stale and names the checks to run again."
+rationale: "Tests verify behaviour, but they do not say which code implements it. Without the link, freshness covers the whole repository, and each change makes all evidence stale."
+capabilities:
+  - cap-coverage
+area:
+  - core
+  - cli
+acceptance:
+  - id: link
+    text: "The profile declares a satisfy field. Each link names a file and optionally a symbol, and the check command fails a link to a file or a symbol that does not exist."
+    status: open
+  - id: impact
+    text: "For a list of changed files, Semspec names the conditions whose linked code changed and the checks to run again."
+    status: open
+  - id: stale
+    text: "The evidence of a condition goes stale when its linked code changes, and stays fresh when only other code changes."
+    status: open
+  - id: unclaimed
+    text: "The coverage report lists the source files that no satisfy link claims, for the file sets that the profile declares."
+    status: open

@@ -40,12 +40,12 @@ export class QueryError extends Error {}
 const brief = (n: VNode): Brief => ({ id: n.id, kind: n.kind, title: n.title });
 
 // Takes the first `limit` items. It records the omitted count under `name`.
-function cap<T>(items: T[], limit: number, name: string, truncated: Truncated): T[] {
+export function cap<T>(items: T[], limit: number, name: string, truncated: Truncated): T[] {
   if (items.length > limit) truncated[name] = items.length - limit;
   return items.slice(0, limit);
 }
 
-const withTruncated = <T extends object>(result: T, truncated: Truncated): T & { truncated?: Truncated } => (Object.keys(truncated).length ? { ...result, truncated } : result);
+export const withTruncated = <T extends object>(result: T, truncated: Truncated): T & { truncated?: Truncated } => (Object.keys(truncated).length ? { ...result, truncated } : result);
 
 export function graphById(graphs: GraphIndex[], id?: string): GraphIndex {
   if (!graphs.length) throw new QueryError('The workspace has no graph.');
