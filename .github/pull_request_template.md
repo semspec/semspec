@@ -18,7 +18,7 @@ Example of a decisions table:
 
 ## Requirement graph
 
-The affected part of `requirements/graph` only: the nodes this pull request adds, changes or removes, and their direct neighbours. Not the whole graph. Every change of behaviour starts with its requirement nodes (see `CLAUDE.md` and `CONTRIBUTING.md`). A pull request that changes no node writes "None." here, with no diagram, and says why below.
+The affected part of `requirements/graph` only: the nodes this pull request adds, changes or removes, and their direct neighbours. Not the whole graph. Every change of behaviour starts with its requirement nodes (see `CONTRIBUTING.md`). A pull request that changes no node writes "None." here, with no diagram, and says why below.
 
 Conventions:
 1. The diagram shows graph nodes only: features, capabilities, requirements and decisions. A condition and a test are never boxes. They go in the Acceptance conditions table below. No file and no path is a box or a label.
@@ -88,6 +88,12 @@ Each dependency that this pull request adds, removes or changes, with its exact 
 
 What a profile author, a graph author or a user of the CLI, the MCP server or `@semspec/core` must change. Write "None." if nothing breaks.
 
+## Requirement exemption
+
+Optional. A change of `packages/`, `bin/` or `package.json` also changes a file of `requirements/graph`. When it does not, write 1 line "Requirement exemption: <reason>" below, with a reason. Otherwise delete this section.
+
+<!-- Requirement exemption: <reason> -->
+
 ## Release
 
 The changeset file and its bump, for example `.changeset/short-name.md`: `@semspec/core` minor. Or "empty changeset: <reason>" when the change has nothing for a user. A user-facing change in `app`, `cli` or `mcp` puts its bump on `@semspec/core`, because that package carries the version of both public packages. Run `npx changeset` to add the file.
@@ -104,6 +110,6 @@ Each gate line reads "<gate>: <result> at <head sha>", with the head sha of the 
 - licences: <result> at <head sha>
 - site tests: <result> at <head sha>
 - browser check: none, or what was checked, in which browser, at which width
-- codex review: <number> findings, all fixed or answered at <head sha>
+- review: <number> findings, all fixed or answered at <head sha>
 
 Each commit carries a DCO `Signed-off-by` line (`git commit -s`).

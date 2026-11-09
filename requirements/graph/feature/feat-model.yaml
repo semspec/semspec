@@ -3,6 +3,6 @@ kind: feature
 title: Model
 order: 2
 statement: Semspec builds nodes and edges from the graph and the profile. The status of each node rolls up from the conditions below it.
-tagline: "The profile defines every kind, edge, field, colour and label. The tool knows no project."
+tagline: "The profile defines every kind, edge, field, colour and label. A condition takes its status from the graph, or from the reports of the tests that check it."
 products:
   - prd-semspec

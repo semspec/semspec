@@ -10,6 +10,7 @@ import { validateProfile } from './validate';
 import { resolveVocabularyFiles } from './vocabulary';
 import { readGraphFolder } from './yaml';
 import { validateWorkspace, viewGraphProblem, type ViewFile } from './workspace';
+import { verifiedGraph } from './test-record';
 
 export interface Finding {
   level: 'error' | 'warning';
@@ -122,6 +123,14 @@ function checkGraph(graphPath: string, profilePath: string, exclude: string[]): 
   checked.errors.forEach((m) => error(labelFile(m) ?? graphPath, m));
   checked.warnings.forEach((m) => findings.push({ level: 'warning', subject: labelFile(m) ?? graphPath, message: m }));
   if (checked.errors.length) return { findings };
+  try {
+    const verified = verifiedGraph(graph, profile, profilePath, graphPath);
+    graph = verified.graph;
+    verified.warnings.forEach((warning) => findings.push({ level: 'warning', subject: graphPath, message: warning }));
+  } catch (e) {
+    error(graphPath, message(e));
+    return { findings };
+  }
   const model = buildModel(graph, profile);
   const files = new Map<string, string>();
   const list = graph[profile.source.nodes] as Record<string, unknown>[];

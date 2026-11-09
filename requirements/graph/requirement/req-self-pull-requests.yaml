@@ -21,9 +21,57 @@ acceptance:
   - id: review
     text: "A pull request needs the approval of a code owner before it merges."
     status: open
-  - id: codex-review
-    text: "Each pull request gets a Codex review against its base before it is ready. The Gates section of the body records the number of findings and the commit that fixes or answers them."
-    status: open
   - id: signed
     text: "Every commit of a pull request is signed and has a DCO sign-off, and a check fails a commit without them."
     status: open
+  - id: requirement-change
+    text: "A gate of CI fails a pull request that changes a shipped file (packages/, bin/, package.json) and changes no file of requirements/graph, unless the body names an exemption with a reason. The message names the changed files."
+    status: verified
+    tests:
+      - type: unit
+        file: test/requirement-change.test.ts
+        name: fails for a change of packages, bin or package.json with no change of the graph, and names each changed file
+      - type: unit
+        file: test/requirement-change.test.ts
+        name: passes when the change of a shipped file comes with a change of a file of requirements/graph
+      - type: unit
+        file: test/requirement-change.test.ts
+        name: passes for a change with no shipped file, such as the docs, the tests, the scripts and the requirements outside the graph
+      - type: unit
+        file: test/requirement-change.test.ts
+        name: passes with a line Requirement exemption and a reason in the body, and prints the reason
+      - type: unit
+        file: test/requirement-change.test.ts
+        name: fails for an exemption with an empty reason, a missing body and a line that is only a comment
+      - type: unit
+        file: test/requirement-change.test.ts
+        name: exits with 2 for an unknown base ref and for no base ref
+      - type: unit
+        file: test/requirement-change.test.ts
+        name: finds the reason on any line of the body, and ignores the case of the label
+      - type: unit
+        file: test/requirement-change.test.ts
+        name: lists the shipped files of a change only when it changes no file of requirements/graph
+      - type: unit
+        file: test/requirement-change.test.ts
+        name: runs the rule on pull requests with the body of the pull request in PR_BODY
+      - type: unit
+        file: test/requirement-change.test.ts
+        name: names the exemption line in the template as an optional section
+      - type: gate
+        command: node scripts/check-requirement-change.mjs origin/master
+  - id: body-edit
+    text: "A gate that reads the body of a pull request runs again when the body changes, so its result always holds for the current body."
+    status: verified
+    tests:
+      - type: unit
+        file: test/ci.test.ts
+        name: reruns the workflow when the body of a pull request is edited
+      - type: unit
+        file: test/ci.test.ts
+        name: skips the heavy job on an edit and keeps the job of the body gates
+      - type: unit
+        file: test/ci.test.ts
+        name: keeps an edit from cancelling the run of the last push
+      - type: gate
+        command: node scripts/check-requirement-change.mjs origin/master

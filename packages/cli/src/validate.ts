@@ -45,6 +45,7 @@ function crossCheckProfile(p: Profile): string[] {
   need('facets groupKind', p.facets?.groupKind);
   need('entry kind', p.entry?.kind);
   need('entry childKind', p.entry?.childKind);
+  errors.push(...profileEvidenceProblems(p));
   if (p.status) {
     const tones = p.status.values.map((x) => x.tone).join(',');
     if (tones !== 'good,warn,bad') errors.push(`profile status values have the tones ${tones}. They must have the tones good, warn, bad in this order.`);
@@ -79,3 +80,17 @@ function crossCheckProfile(p: Profile): string[] {
   return errors;
 }
 
+
+// The evidence settings need parts, checks and a status. The adapters need known check types.
+function profileEvidenceProblems(p: Profile): string[] {
+  const errors: string[] = [];
+  if (p.evidence && p.verification) errors.push('profile has evidence and verification. Use evidence alone. The key verification is the alias for 1 JUnit adapter.');
+  const spec = p.evidence ?? p.verification;
+  if (!spec) return errors;
+  if (!p.parts?.length || !p.checks || !p.status) errors.push(`profile ${p.evidence ? 'evidence' : 'verification'} needs parts, checks and status.`);
+  p.evidence?.adapters.forEach((a, i) => {
+    for (const t of a.checkTypes ?? []) if (p.checks && !p.checks.types?.[t]) errors.push(`profile evidence adapter ${i + 1} names the unknown check type "${t}".`);
+    if (a.adapter === 'vitest-json' && a.key.rule === 'class-method') errors.push(`profile evidence adapter ${i + 1}: the adapter vitest-json has no class and method. Use the key rule file-name or file-titlepath.`);
+  });
+  return errors;
+}

@@ -457,10 +457,13 @@ export function summaryOf(index: Index, n: VNode): Summary {
       if (first) chips.push({ text: plural(index, first[1], first[0]), tone: 'count' });
     } else if (spec === 'coverage') {
       // The count of parts with checks. The words come from the check kind, so they never read as a status.
-      if (n.cov?.parts && checks) chips.push({ text: `${n.cov.verified} of ${n.cov.parts} with ${kindPlural(P, checks.kind)}`, tone: n.cov.verified === n.cov.parts ? 'good' : 'warn' });
+      if (n.cov?.parts && checks) chips.push({ text: index.model.derived ? `${n.cov.verified} of ${n.cov.parts} passed` : `${n.cov.verified} of ${n.cov.parts} with ${kindPlural(P, checks.kind)}`, tone: n.cov.verified === n.cov.parts ? 'good' : 'warn' });
     } else if (spec === 'verified') {
       const v = (n.d.checks as unknown[]) ?? [];
-      if (checks) chips.push({ text: v.length ? plural(index, v.length, checks.kind) : `no ${kindLabel(P, checks.kind).toLowerCase()}`, tone: v.length ? 'good' : 'warn' });
+      if (index.model.derived) {
+        const evidence = n.d.verification;
+        chips.push({ text: `${evidence?.outcome ?? 'not-run'}${evidence?.stale ? ' (stale)' : ''}`, tone: evidence?.outcome === 'passed' && !evidence?.stale ? 'good' : 'warn' });
+      } else if (checks) chips.push({ text: v.length ? plural(index, v.length, checks.kind) : `no ${kindLabel(P, checks.kind).toLowerCase()}`, tone: v.length ? 'good' : 'warn' });
     } else if (spec === 'verifyTypes') {
       const types: string[] = [];
       ((n.d.checks as Record<string, string>[]) ?? []).forEach((x) => {

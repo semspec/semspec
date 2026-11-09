@@ -3,7 +3,7 @@
 // The tools of the MCP server. Each tool maps its input to 1 function of the core.
 import Ajv from 'ajv/dist/2020.js';
 import { parse } from 'yaml';
-import { DEFAULT_LIMIT, QueryError, TONES, coverage, coverageMarkdown, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, searchSemantic, SEARCH_MODES, slice, sliceMarkdown, DEFAULT_SLICE_BUDGET, MAX_SLICE_DEPTH, trace, validateNode, walk, MAX_WALK_DEPTH, type GraphIndex, type Graph, type StatusTone, type SearchMode, type SearchResult, type SemanticSource, type Model, type Profile } from '@semspec/core';
+import { DEFAULT_LIMIT, QueryError, TONES, coverage, coverageMarkdown, describeSchema, gaps, graphById, impact, indexGraphs, kindSchemas, nodeDetail, searchSemantic, SEARCH_MODES, slice, sliceMarkdown, DEFAULT_SLICE_BUDGET, MAX_SLICE_DEPTH, trace, validateNode, walk, MAX_WALK_DEPTH, type GraphIndex, type Graph, type StatusTone, type StatusSource, type SearchMode, type SearchResult, type SemanticSource, type Model, type Profile } from '@semspec/core';
 
 // A graph as the loader returns it. `graph` is the raw graph, and `profile` is the profile with its vocabulary files read.
 export interface LoadedGraph {
@@ -230,7 +230,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'coverage',
     description:
-      'Report the status of the conditions (the nodes of the kinds in the "parts" of the profile) in a selection of nodes. The selection takes the scope and the filters of the explorer. The answer counts the conditions for each status value of the profile, with no status and with no check, each with a percentage of the selection. With "group", the counts have 1 row for each value of a field or each node of a hierarchy kind. With "list", the answer lists the conditions of the chosen status values with owner, text and checks. With "gate", the answer names each condition whose status has one of the tones. It covers all graphs unless "graph" is set, and gives the counts of each graph and the total.',
+      'Report the status of the conditions (the nodes of the kinds in the "parts" of the profile) in a selection of nodes. The selection takes the scope and the filters of the explorer. The answer counts the conditions for each status value of the profile, with no status and with no check, each with a percentage of the selection. With "group", the counts have 1 row for each value of a field or each node of a hierarchy kind. With "list", the answer lists the conditions of the chosen status values with owner, text and checks. With "gate", the answer names each condition whose status has one of the tones. When the profile derives a status from evidence, a condition has an authored status and a derived status. The answer then counts both, counts the conditions where they differ, and counts the stale conditions apart. "statusSource" selects the status that the filters, the groups, the counts and the gate use. It covers all graphs unless "graph" is set, and gives the counts of each graph and the total.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -243,7 +243,8 @@ export const TOOLS: Tool[] = [
         markers: { type: 'array', items: { type: 'string' }, description: 'Keep the conditions that have one of these provenance markers themselves or below a node with one of them. The empty text selects the nodes with no marker.' },
         fields: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' } }, description: 'The values of each field filter of the profile, by field. The values of 1 field are OR. The fields are AND.' },
         group: { type: 'string', description: 'A hierarchy kind id or a field. The counts get 1 row for each node of the kind, or for each value of the field. A condition counts in each group of its owner. A node of the kind counts the conditions of all nodes below it.' },
-        list: { type: 'array', items: { type: 'string' }, description: 'Status values, "no-status" or "no-check". The answer lists the conditions that match one of them.' },
+        list: { type: 'array', items: { type: 'string' }, description: 'Status values, "no-status", "no-check", "differ" (the derived status differs from the authored status) or "stale". The answer lists the conditions that match one of them.' },
+        statusSource: { type: 'string', enum: ['authored', 'derived'], description: 'The status that the filters, the groups, the counts and the gate use. The default is the derived status when the profile derives a status from evidence.' },
         limit: limitProp,
         gate: { type: 'array', items: { type: 'string', enum: TONES }, description: 'Tones. The answer has "gate" with each condition whose status has one of these tones, and "pass" is false when it finds one.' },
         format: { type: 'string', enum: ['markdown', 'json'], description: 'markdown: text (the default). json: the structured answer.' },
@@ -269,6 +270,7 @@ export const TOOLS: Tool[] = [
         fields: (fields as Record<string, string[]> | null | undefined) ?? undefined,
         group: text(args, 'group', false),
         list: list(args, 'list'),
+        statusSource: text(args, 'statusSource', false) as StatusSource | undefined,
         limit: whole(args, 'limit', DEFAULT_LIMIT, MAX_LIMIT),
         gate: gate as StatusTone[] | undefined,
       });

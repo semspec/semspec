@@ -23,3 +23,9 @@ acceptance:
   - id: source
     text: "Each piece of evidence names its source: a test run, a gate, a review or a runtime monitor."
     status: open
+  - id: run-record
+    text: Semspec declares a JSON format of a run record for replays, runtime monitors, mutation runs and other runs. The record holds the run with its time, inputs digest, driver and source, and the result of each named item. A record whose inputs digest is out of date is stale.
+    status: open
+  - id: credit
+    text: The profile states the credit rule of a run record for each level of evidence. For example, a runtime monitor needs evaluations, no violation and a caught mutation with a clean control.
+    status: open

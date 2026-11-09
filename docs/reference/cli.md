@@ -23,7 +23,7 @@ semspec index --workspace <file>
 semspec eval-search [--set <file>] [--workspace <file> | --graph <graph> --profile <profile>] [--mode keyword|hybrid|vector]
 semspec slice --graph <graph> --profile <profile> <id> [--depth <n>] [--budget <n>] [--json] [--exclude <pattern>]...
 semspec slice --workspace <file> <id> [--in <graph>] [--depth <n>] [--budget <n>] [--json]
-semspec coverage --graph <graph> --profile <profile> [--scope <id>] [--kind <kind>]... [--lifecycle <state>]... [--delivery <value>]... [--status <value>]... [--marker <value>]... [--field <name>=<value>]... [--group <kind|field>] [--list <status>]... [--limit <n>] [--gate <tone>]... [--json] [--exclude <pattern>]...
+semspec coverage --graph <graph> --profile <profile> [--scope <id>] [--kind <kind>]... [--lifecycle <state>]... [--delivery <value>]... [--status <value>]... [--marker <value>]... [--field <name>=<value>]... [--group <kind|field>] [--list <status|no-status|no-check|differ|stale>]... [--status-source authored|derived] [--limit <n>] [--gate <tone>]... [--json] [--exclude <pattern>]...
 semspec coverage --workspace <file> [--in <graph>] [same options]
 semspec deliverables --graph <graph> --profile <profile> [--scope <id>] [--kind <kind>]... [--json]
 semspec deliverables --workspace <file> [--in <graph>] [--scope <id>] [--kind <kind>]... [--json]
@@ -147,7 +147,8 @@ semspec slice --graph requirements/graph --profile requirements/profile.yaml req
 | `--marker <value>` | Filter by provenance marker. Repeat or comma as above. |
 | `--field <name>=<value>` | Filter by a field filter of the profile, for example `--field area=core,cli`. The option can repeat for other fields. |
 | `--group <kind or field>` | Give 1 row of counts for each node of a hierarchy kind or each value of a field. |
-| `--list <value>` | List the conditions with this status value, `no-status` or `no-check`. Repeat or comma as above. |
+| `--list <value>` | List the conditions with this status value, `no-status`, `no-check`, `differ` or `stale`. Repeat or comma as above. |
+| `--status-source <source>` | `authored` or `derived`. The status that the filters, the groups, the counts and the gate use. The default is the derived status when the profile derives a status from evidence. |
 | `--limit <n>` | The most conditions in the list. The default is 50. |
 | `--gate <tone>` | Fail when a condition has a status with this tone: `good`, `warn` or `bad`. Repeat or comma as above. |
 | `--json` | Print the answer as 1 line of JSON in place of Markdown. |

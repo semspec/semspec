@@ -1,0 +1,30 @@
+#!/bin/sh
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The Semspec Authors
+# Runs the checks of the repository before a push. The first failure blocks the push.
+# Install it once with `npm run hooks:install`.
+cd "$(dirname "$0")/.." || exit 1
+
+# Git exports the repository variables (GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE and others) to a hook.
+# A push from a linked worktree sets them to the paths of the contributor. A test that makes a temporary
+# repository would then act on the repository of the contributor. Clear them before any step runs.
+for variable in $(git rev-parse --local-env-vars 2>/dev/null); do
+  unset "$variable"
+done
+
+step() {
+  echo "pre-push: $*"
+  "$@" || {
+    echo "pre-push: blocked, because this step failed: $*" >&2
+    exit 1
+  }
+}
+
+step npm run typecheck
+# The test run also writes the report and the record that the self-check reads.
+step npm run test:evidence
+step node bin/semspec.js check --graph requirements/graph --profile requirements/profile.yaml
+step node bin/semspec.js spec --graph requirements/graph --profile requirements/profile.yaml docs/reference/requirements.md --check
+step npm run licences
+# The self-check is a gate: a finding that is not in the baseline blocks the push.
+step node scripts/self-check.mjs --baseline requirements/self-check-baseline.json

@@ -141,7 +141,7 @@ function loadView(v: ViewFile, source: WorkspaceSource, base: string): Workspace
   return { ...out, model: buildModel(source.graph, profile) };
 }
 
-export function loadWorkspace(path: string): { data: WorkspaceData; warnings: string[]; sources: Map<string, WorkspaceSource>; files: SourceIndex; embeddings?: unknown } {
+export function loadWorkspace(path: string, options: { evidenceErrors?: 'throw' | 'warn' } = {}): { data: WorkspaceData; warnings: string[]; sources: Map<string, WorkspaceSource>; files: SourceIndex; embeddings?: unknown } {
   const file = readInput(path, 'workspace');
   const base = dirname(resolve(path));
   const problems = validateWorkspace(file, undefined, base);
@@ -156,7 +156,7 @@ export function loadWorkspace(path: string): { data: WorkspaceData; warnings: st
     try {
       const graphPath = resolve(base, g.graph);
       const profilePath = resolve(base, g.profile);
-      const inputs = loadInputs(graphPath, profilePath, g.exclude ?? []);
+      const inputs = loadInputs(graphPath, profilePath, g.exclude ?? [], options);
       warnings.push(...inputs.warnings.map((w) => `Graph "${g.id}": ${w}`));
       const found = nodeFiles(inputs.graph, inputs.profile, inputs.files, base);
       files.graphs.set(g.id, found);

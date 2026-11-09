@@ -1,0 +1,31 @@
+id: req-evidence-plugins
+kind: requirement
+title: Let a project bring its own evidence formats
+state: draft
+priority: next
+statement: "A project brings an evidence format that Semspec does not ship, as a run record that any program writes, or as a local adapter module that the profile names."
+rationale: "Projects run tools that no adapter of Semspec reads, such as a replay driver, an architecture check or a rare test runner. A data contract works for every language and runs no code of the project in serve or in the MCP server. A code plugin is for a format that a converter cannot write."
+capabilities:
+  - cap-evidence
+area:
+  - core
+  - cli
+acceptance:
+  - id: run-record-adapter
+    text: "The adapter run-record reads files in the run record format of Semspec and checks each file against its JSON Schema. A file that is not valid is an error of check and a warning of the MCP server."
+    status: open
+  - id: module
+    text: "The profile can name a local module as an adapter, by a path relative to the profile. The module exports 1 function of the port with the apiVersion of the port. Semspec loads no package from the network."
+    status: open
+  - id: api-version
+    text: "The core library publishes the types of the port and its apiVersion. A module with another major apiVersion is an error that names the module and both versions."
+    status: open
+  - id: isolation
+    text: "A module that throws or returns results that are not valid gives an error in check and a warning in serve and in the MCP server, and the other adapters still give their results."
+    status: open
+  - id: other-repository
+    text: "A run record can come from another repository that tests part of the graph. The record names that repository, its commit and the graph version it tested against, and the graph reads it as evidence for the checks it covers, through a path that the profile names outside the evidence root."
+    status: open
+  - id: unanswered
+    text: "A condition whose checks no adapter answers has the outcome unanswered, apart from not-run, and the coverage report counts it apart, so a project sees which conditions wait for evidence from elsewhere."
+    status: open

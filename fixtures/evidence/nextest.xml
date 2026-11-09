@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="3" failures="1" errors="0" uuid="4e5a1a52-6e0c-4f7b-9d75-2f1b7f3a0c11" timestamp="2026-11-03T10:00:00.000+00:00" time="0.050">
+    <testsuite name="cart-core" tests="3" disabled="0" errors="0" failures="1">
+        <testcase name="totals::adds_an_item" classname="cart-core" timestamp="2026-11-03T10:00:00.010+00:00" time="0.010"/>
+        <testcase name="totals::rejects_an_old_coupon" classname="cart-core" timestamp="2026-11-03T10:00:00.020+00:00" time="0.012">
+            <failure message="assertion failed: total == 0" type="test failure with exit code 101"/>
+            <system-err>thread 'totals::rejects_an_old_coupon' panicked at src/totals.rs:21:9</system-err>
+        </testcase>
+        <testcase name="totals::keeps_a_skipped_case" classname="cart-core" timestamp="2026-11-03T10:00:00.030+00:00" time="0.000">
+            <skipped/>
+        </testcase>
+    </testsuite>
+</testsuites>

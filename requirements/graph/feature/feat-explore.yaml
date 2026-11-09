@@ -3,6 +3,6 @@ kind: feature
 title: Explore
 order: 3
 statement: A user reads the graph in the browser app. The app has a tree, a scope by any node, a walk by expansion, filters, Graph, Cards and Table views, a details panel and a phone layout.
-tagline: "Read the graph as a tree, a Graph view, Cards or a Table. Scope it by any node, walk it by expansion and filter it by status or by any field."
+tagline: "Read the graph as a tree, a Graph view, Cards or a Table, in the views that a project declares. Scope it by any node, filter it by status or by any field, and see each save at once."
 products:
   - prd-semspec

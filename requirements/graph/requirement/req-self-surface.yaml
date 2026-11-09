@@ -11,10 +11,40 @@ area:
 acceptance:
   - id: inventory
     text: "An inventory script lists the CLI commands and flags, the MCP tools and resources, the profile keys, the site pages and the controls of the app by their accessible names."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/surface.test.ts
+        name: lists the commands, the flags, the tools, the resources, the keys, the pages and the controls of this repository
+      - type: unit
+        file: test/surface.test.ts
+        name: skips a control with a name that the code builds at run time and lists it as skipped
+      - type: gate
+        command: node scripts/self-check.mjs --only surface
   - id: coverage
     text: "For each listed item, the inventory names the requirement that covers it."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/surface.test.ts
+        name: names the requirement of an item from the mapping file, and gives null for an item with no entry
+      - type: unit
+        file: test/surface.test.ts
+        name: maps only to requirements that exist in the graph of this repository
+      - type: gate
+        command: node scripts/self-check.mjs --only surface
   - id: finding
     text: "An item with no covering requirement is a finding."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/surface.test.ts
+        name: reports an item with no requirement, an unknown requirement id and a mapping entry with no item
+      - type: unit
+        file: test/surface.test.ts
+        name: reports no finding when each item has a known requirement
+      - type: unit
+        file: test/surface.test.ts
+        name: returns the check name surface and a list of findings with an item and a message
+      - type: gate
+        command: node scripts/self-check.mjs --only surface

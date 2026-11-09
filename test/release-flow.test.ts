@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
+import { cleanGitEnv } from './helpers/git-env';
 import { parse } from 'yaml';
 
 const repo = fileURLToPath(new URL('..', import.meta.url));
@@ -271,7 +272,7 @@ describe('release-plan', () => {
     writeFileSync(join(dir, 'package.json'), JSON.stringify({ version }));
     writeFileSync(join(dir, 'packages/core/package.json'), JSON.stringify({ version: core }));
     const sh = (...args: string[]) => {
-      const r = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', ...args], { cwd: dir, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+      const r = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', ...args], { cwd: dir, encoding: 'utf8', env: cleanGitEnv({ GIT_CONFIG_GLOBAL: '/dev/null' }) });
       expect(r.status, r.stderr).toBe(0);
     };
     sh('init', '-q', '-b', 'master');
@@ -279,7 +280,7 @@ describe('release-plan', () => {
     sh('commit', '-q', '-m', 'base');
     return dir;
   }
-  const plan = (dir: string) => spawnSync(process.execPath, [script], { cwd: dir, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+  const plan = (dir: string) => spawnSync(process.execPath, [script], { cwd: dir, encoding: 'utf8', env: cleanGitEnv({ GIT_CONFIG_GLOBAL: '/dev/null' }) });
 
   it('prints release=true and the tag when the version has no tag', () => {
     const r = plan(project('1.2.3'));
@@ -290,7 +291,7 @@ describe('release-plan', () => {
   it('prints release=false when the tag exists locally, as a lightweight or an annotated tag', () => {
     for (const args of [['tag', 'v1.2.3'], ['tag', '-a', 'v1.2.3', '-m', 'x']]) {
       const dir = project('1.2.3');
-      const r0 = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { cwd: dir, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+      const r0 = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { cwd: dir, encoding: 'utf8', env: cleanGitEnv({ GIT_CONFIG_GLOBAL: '/dev/null' }) });
       expect(r0.status, r0.stderr).toBe(0);
       const r = plan(dir);
       expect(r.status, r.stderr).toBe(0);
@@ -300,15 +301,15 @@ describe('release-plan', () => {
 
   it('prints release=false when only origin has the tag, and release=true when origin has not', () => {
     const origin = project('1.2.3');
-    const tagged = spawnSync('git', ['tag', 'v1.2.3'], { cwd: origin });
+    const tagged = spawnSync('git', ['tag', 'v1.2.3'], { cwd: origin, env: cleanGitEnv() });
     expect(tagged.status).toBe(0);
     const clone = mkdtempSync(join(tmpdir(), 'semspec-plan-clone-'));
     temps.push(clone);
     // A clone without tags has the tag only on origin.
-    const c = spawnSync('git', ['clone', '-q', '--no-tags', origin, join(clone, 'w')], { encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+    const c = spawnSync('git', ['clone', '-q', '--no-tags', origin, join(clone, 'w')], { encoding: 'utf8', env: cleanGitEnv({ GIT_CONFIG_GLOBAL: '/dev/null' }) });
     expect(c.status, c.stderr).toBe(0);
     expect(plan(join(clone, 'w')).stdout).toBe('release=false\ntag=v1.2.3\n');
-    spawnSync('git', ['tag', '-d', 'v1.2.3'], { cwd: origin });
+    spawnSync('git', ['tag', '-d', 'v1.2.3'], { cwd: origin, env: cleanGitEnv() });
     expect(plan(join(clone, 'w')).stdout).toBe('release=true\ntag=v1.2.3\n');
   });
 
@@ -357,7 +358,7 @@ describe('the release guide', () => {
 describe('the concurrency of the Check workflow', () => {
   it('never cancels the run of a push to master and cancels an older run of the same pull request', () => {
     const workflow = parse(text('.github/workflows/check.yml'));
-    expect(workflow.concurrency.group).toBe("check-${{ github.event_name == 'push' && github.sha || github.ref }}");
+    expect(workflow.concurrency.group).toBe("check-${{ github.event_name == 'push' && github.sha || github.ref }}${{ github.event.action == 'edited' && '-edited' || '' }}");
     expect(workflow.concurrency['cancel-in-progress']).toBe("${{ github.event_name == 'pull_request' }}");
   });
 });

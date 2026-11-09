@@ -2,7 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // The command `semspec coverage`: reports the status of the conditions in a selection, as Markdown or as JSON.
 // The options map to the inputs of the MCP tool coverage.
-import { coverage, coverageMarkdown, indexGraphs, type CoverageQuery, type CoverageResult, type StatusTone } from '@semspec/core';
+import { coverage, coverageMarkdown, indexGraphs, type CoverageQuery, type CoverageResult, type StatusSource, type StatusTone } from '@semspec/core';
 import { mcpLoader } from './mcp';
 
 export interface CoverageArgs {
@@ -12,7 +12,7 @@ export interface CoverageArgs {
 }
 
 // The options that the command accepts. Each takes 1 value, except --json. This list follows the usage line of the command.
-const OPTIONS = new Set(['graph', 'profile', 'workspace', 'in', 'exclude', 'scope', 'kind', 'lifecycle', 'delivery', 'status', 'marker', 'field', 'group', 'list', 'limit', 'gate']);
+const OPTIONS = new Set(['graph', 'profile', 'workspace', 'in', 'exclude', 'scope', 'kind', 'lifecycle', 'delivery', 'status', 'marker', 'field', 'group', 'list', 'limit', 'gate', 'status-source']);
 
 // Reads the arguments after the command name. It throws for an unknown option and for an option with no value.
 export function parseCoverageArgs(argv: string[]): CoverageArgs {
@@ -69,6 +69,7 @@ export function coverageQuery(args: CoverageArgs): CoverageQuery {
     fields: fieldsOf(args),
     group: flags.group,
     list: values(args, 'list'),
+    statusSource: flags['status-source'] as StatusSource | undefined,
     limit,
     gate: values(args, 'gate') as StatusTone[] | undefined,
   };

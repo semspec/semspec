@@ -40,6 +40,15 @@ acceptance:
         name: picks the next group of the rule when the picked parent is not on the canvas
       - type: unit
         file: test/layout.test.ts
+        name: picks the first group of the rule over a later group
+      - type: unit
+        file: test/layout.test.ts
+        name: marks only the edge to the container as nested for a group edge
+      - type: unit
+        file: test/layout.test.ts
+        name: lays out a box in a box with the parents rule
+      - type: unit
+        file: test/layout.test.ts
         name: skips a cycle of the parents rule
       - type: unit
         file: test/layout.test.ts
@@ -64,6 +73,9 @@ acceptance:
     text: The profile validation refuses the layout grouped without a group edge, and a group edge that is not in edges.
     status: verified
     tests:
+      - type: unit
+        file: test/layout.test.ts
+        name: refuses an unknown groupBy value
       - type: unit
         file: test/layout.test.ts
         name: refuses grouped without a group edge

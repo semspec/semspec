@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
+import { cleanGitEnv } from './helpers/git-env';
 // @ts-expect-error The scripts are plain ES modules without types.
 import { releaseNotes } from '../scripts/release-notes.mjs';
 // @ts-expect-error The scripts are plain ES modules without types.
@@ -24,7 +25,7 @@ const write = (file: string, value: unknown) => {
   writeFileSync(file, typeof value === 'string' ? value : `${JSON.stringify(value, null, 2)}\n`);
 };
 const read = (file: string) => JSON.parse(readFileSync(file, 'utf8'));
-const run = (cwd: string, cmd: string, args: string[]) => spawnSync(cmd, args, { cwd, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null' } });
+const run = (cwd: string, cmd: string, args: string[]) => spawnSync(cmd, args, { cwd, encoding: 'utf8', env: cleanGitEnv({ GIT_CONFIG_GLOBAL: '/dev/null' }) });
 const git = (cwd: string, ...args: string[]) => {
   const r = run(cwd, 'git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', ...args]);
   expect(r.status, r.stderr).toBe(0);

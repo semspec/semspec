@@ -21,7 +21,7 @@ export function loadWithTargets(flags: Record<string, string>, exclude: string[]
   const targets = new Map<string, EmbeddingTarget>();
   if (flags.workspace !== undefined) {
     const path = flags.workspace;
-    const { data, warnings, sources, embeddings } = loadWorkspace(path);
+    const { data, warnings, sources, embeddings } = loadWorkspace(path, { evidenceErrors: 'warn' });
     const dir = dirname(resolve(path));
     const graphs = data.graphs.map((g) => {
       const s = sources.get(g.id)!;
@@ -31,7 +31,7 @@ export function loadWithTargets(flags: Record<string, string>, exclude: string[]
     });
     return { title: data.title, warnings, graphs, targets };
   }
-  const { graph, profile, warnings } = loadInputs(flags.graph, flags.profile, exclude);
+  const { graph, profile, warnings } = loadInputs(flags.graph, flags.profile, exclude, { evidenceErrors: 'warn' });
   const target = embeddingTarget({ graphId: SINGLE_GRAPH_ID, graphPath: resolve(flags.graph), profile, profileDir: dirname(resolve(flags.profile)) });
   if (target) targets.set(SINGLE_GRAPH_ID, target);
   return { title: profile.project, warnings, graphs: [{ id: SINGLE_GRAPH_ID, label: profile.project, graph, profile, model: buildModel(graph, profile) }], targets };

@@ -1,8 +1,6 @@
 id: req-self-tests
 kind: requirement
 title: Link every test to a condition
-state: draft
-priority: now
 statement: Every test proves an acceptance condition, or has an exemption.
 capabilities:
   - cap-self-check
@@ -11,10 +9,58 @@ area:
 acceptance:
   - id: linked
     text: "Every test is linked to an acceptance condition, or listed in 1 exemption file."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports a test with no link and no exemption, and accepts a linked test and an exempt test
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports an exemption that matches no test, and a missing report
+      - type: gate
+        command: node scripts/self-check.mjs --only tests
   - id: reason
     text: "Each entry of the exemption file has a reason."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports an exemption with no reason or a blank reason, and does not let it exempt the test
+      - type: gate
+        command: node scripts/self-check.mjs --only tests
   - id: finding
     text: "A test with no link and no exemption is a finding."
-    status: open
+    status: verified
+    tests:
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports a test with no link and no exemption, and accepts a linked test and an exempt test
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports a linked test name that no test of the report has
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports a link to a test file that does not exist, and ignores a link to a file of another suite
+      - type: unit
+        file: test/self-check.test.ts
+        name: prints the findings as Markdown grouped by check, and as JSON with --json
+      - type: gate
+        command: node scripts/self-check.mjs --only tests
+  - id: all-suites
+    text: "The test check reads the reports of every test suite of the repository, the site suite included, so a test of any suite with no link is a finding."
+    status: verified
+    tests:
+      - type: unit
+        file: test/self-check.test.ts
+        name: reads a test of a second report, with its file relative to the root, and reports it when it has no link
+      - type: unit
+        file: test/self-check.test.ts
+        name: accepts a link to a test of a second report and reports a link to a missing test of it
+      - type: unit
+        file: test/self-check.test.ts
+        name: reports a missing report of the list and names its path
+      - type: unit
+        file: test/self-check.test.ts
+        name: runs the site suite in the test evidence and reads both reports by default
+      - type: gate
+        command: node scripts/self-check.mjs --only tests

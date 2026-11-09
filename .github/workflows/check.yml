@@ -5,11 +5,14 @@ name: Check
 on:
   push:
     branches: [master]
+  # An edit of the body reruns the gates that read the body. The heavy jobs skip that event.
   pull_request:
+    types: [opened, synchronize, reopened, edited]
 
 # A new push to a pull request cancels its older run. A push to master is never cancelled, because its run can make a release.
+# An edit of the body has its own group, so it never cancels the run of the last push.
 concurrency:
-  group: check-${{ github.event_name == 'push' && github.sha || github.ref }}
+  group: check-${{ github.event_name == 'push' && github.sha || github.ref }}${{ github.event.action == 'edited' && '-edited' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -20,6 +23,8 @@ jobs:
   # (jsdom and its undici) support it too, so the job runs every gate.
   check:
     name: All gates on Node 22
+    # A change of the title or the body of a pull request changes no code, so this job skips it.
+    if: github.event.action != 'edited'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -31,18 +36,24 @@ jobs:
             package-lock.json
             site/package-lock.json
       - run: npm ci
+      - run: npm ci --prefix site
       - run: npm run licences
       - run: npm run typecheck
       - run: npm run build
-      - run: npm test
+      # The test run covers the root suite and the site suite. It also writes the test reports and the evidence record that the self-check reads.
+      - run: npm run test:evidence
       - name: Check the requirements of Semspec
         run: node bin/semspec.js check --graph requirements/graph --profile requirements/profile.yaml
       - name: Check the spec document of the requirements
         run: node bin/semspec.js spec --graph requirements/graph --profile requirements/profile.yaml docs/reference/requirements.md --check
-      - run: npm ci --prefix site
-      - run: npm test --prefix site
+      # The self-check is a gate. A finding that is not in the baseline fails the job, and the message names it.
+      - name: Gate the findings of the self-check against the baseline
+        run: node scripts/self-check.mjs --baseline requirements/self-check-baseline.json
 
   # A pull request needs a changeset against its base branch. An empty changeset counts.
+  # The same job holds the rules of a pull request about the baseline of the self-check and the requirement graph.
+  # The baseline only shrinks (scripts/check-baseline.mjs). A change of a shipped file needs a change of the
+  # requirement graph or a line "Requirement exemption: <reason>" in the body (scripts/check-requirement-change.mjs).
   # The step with scripts/check-changeset.mjs also covers the private packages, which `changeset status` ignores.
   # The version pull request removes the changesets, so it is exempt. A pull request of Dependabot
   # changes only the version of a dependency, so it is exempt too. The job is skipped, and no other job needs it
@@ -67,6 +78,12 @@ jobs:
         run: node scripts/check-changeset.mjs origin/${{ github.base_ref }}
       - name: Check the format of the changesets
         run: npx changeset status --since=origin/${{ github.base_ref }}
+      - name: Check that the baseline of the self-check adds no key
+        run: node scripts/check-baseline.mjs origin/${{ github.base_ref }}
+      - name: Check that a change of a shipped file changes the requirements
+        run: node scripts/check-requirement-change.mjs origin/${{ github.base_ref }}
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
 
   # Makes the tag and the GitHub Release after the merge of the version pull request.
   # It runs on a push to master after every gate job passed. The changeset job is skipped on a push,

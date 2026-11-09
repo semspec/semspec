@@ -89,7 +89,10 @@ acceptance:
         name: answers the tool coverage with counts, groups, a list and a gate
   - id: derived-status
     text: "A node can have an authored status and a derived status. When the profile derives a status from evidence, the answer counts both, counts the conditions where the 2 differ, and counts the stale conditions apart. A filter and a group option select which of the 2 they use."
-    status: open
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: counts the authored and derived status and the conditions where they differ}
+      - {type: unit, file: test/evidence.test.ts, name: selects the status source for the filters and the groups and the gate}
   - id: gate
     text: "With the gate option, the command is a gate for a selection: it exits with a non-zero code when the selection has a condition whose status value has a tone that the option names, and it names each such condition. CI, a hook or a test runs it next to the other gates. An unknown option or an option with no value is a wrong use, with exit code 2, so a typing error cannot pass the gate."
     status: verified

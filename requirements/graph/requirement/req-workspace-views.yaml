@@ -1,8 +1,6 @@
 id: req-workspace-views
 kind: requirement
 title: Declare the views of a project
-state: draft
-priority: now
 statement: "A workspace file lists views in the order of the project. A view shows 1 graph with its own profile, tree, layout and filters. The header of the page shows a menu of the views."
 rationale: "A project can need a Vocabulary view next to a Domain model view. Both show the same graph of terms, with a different tree and a different grouping. A fixed switch between graphs cannot show 2 views of 1 graph."
 capabilities:

@@ -1,0 +1,112 @@
+{
+ "numTotalTestSuites": 3,
+ "numPassedTestSuites": 0,
+ "numFailedTestSuites": 3,
+ "numPendingTestSuites": 0,
+ "numTotalTests": 6,
+ "numPassedTests": 3,
+ "numFailedTests": 1,
+ "numPendingTests": 1,
+ "numTodoTests": 1,
+ "snapshot": {
+  "added": 0,
+  "failure": false,
+  "filesAdded": 0,
+  "filesRemoved": 0,
+  "filesRemovedList": [],
+  "filesUnmatched": 0,
+  "filesUpdated": 0,
+  "matched": 0,
+  "total": 0,
+  "unchecked": 0,
+  "uncheckedKeysByFile": [],
+  "unmatched": 0,
+  "updated": 0,
+  "didUpdate": false
+ },
+ "startTime": 1793750253950,
+ "success": false,
+ "testResults": [
+  {
+   "assertionResults": [
+    {
+     "ancestorTitles": [
+      "Cart"
+     ],
+     "fullName": "Cart adds an item",
+     "status": "passed",
+     "title": "adds an item",
+     "duration": 0.8127919999999733,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "Cart",
+      "with a coupon"
+     ],
+     "fullName": "Cart with a coupon lowers the total",
+     "status": "passed",
+     "title": "lowers the total",
+     "duration": 0.09691700000001902,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "Cart",
+      "with a coupon"
+     ],
+     "fullName": "Cart with a coupon rejects an old coupon",
+     "status": "failed",
+     "title": "rejects an old coupon",
+     "duration": 3.040791999999982,
+     "failureMessages": [
+      "AssertionError: expected 1 to be 2"
+     ],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "Cart"
+     ],
+     "fullName": "Cart keeps a skipped case",
+     "status": "skipped",
+     "title": "keeps a skipped case",
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "Cart"
+     ],
+     "fullName": "Cart handles gift cards",
+     "status": "todo",
+     "title": "handles gift cards",
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [],
+     "fullName": "runs at the top level",
+     "status": "passed",
+     "title": "runs at the top level",
+     "duration": 0.11104100000000017,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    }
+   ],
+   "startTime": 1793750254429,
+   "endTime": 1793750254433.111,
+   "status": "failed",
+   "message": "",
+   "name": "/work/cart/shapes.test.ts"
+  }
+ ]
+}

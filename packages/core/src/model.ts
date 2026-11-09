@@ -11,6 +11,7 @@ import type { CrossLink, Graph, Index, Model, ProfileInput, RawNode, VEdge, VNod
 import { allLinkFields, crossLinkTargets, embeddedObjects, firstOf, getPath, isMuted, kindOf, normalise, omitPath, refNote, withDefaultKind } from './profile.js';
 import { propsKey, readLinkItem, refProps, linkTargetKey } from './edges.js';
 import { derivedEdgeName } from './provenance.js';
+import { evidenceOf } from './evidence.js';
 import { checkKey, checkTitle, citationTitle, deriveTitle, snippet, wordCasing } from './titles.js';
 
 // The items of a link field. A value that is not a list has none.
@@ -59,6 +60,8 @@ export function buildModel(graph: Graph, input: ProfileInput): Model {
     const v = P.status ? item[P.status.field] : undefined;
     return P.status?.values.some((x) => x.value === v) ? String(v) : undefined;
   };
+  // Evidence is derived when a condition carries a derived status. A load of the raw graph file stays authored.
+  const derived = !!evidenceOf(P) && P.parts!.some((part) => graphNodes.some((n) => n[kindKey] === part.owner && ((n[part.field] as Record<string, any>[]) ?? []).some((a) => a.derivedStatus !== undefined)));
   const blank = { lifecycle: '', delivery: '', level: '', statement: '', parents: [] as string[], up: [] as string[] };
 
   for (const n of graphNodes) {
@@ -83,7 +86,9 @@ export function buildModel(graph: Graph, input: ProfileInput): Model {
       parents: [],
       up: [],
       d,
-      status: statusValue(n),
+      // With derived evidence, the conditions give the status of a node above them. The authored status stays visible.
+      status: derived ? undefined : statusValue(n),
+      ...(derived ? { authoredStatus: statusValue(n) } : {}),
     });
   }
 
@@ -147,13 +152,15 @@ export function buildModel(graph: Graph, input: ProfileInput): Model {
             setup: part.setup ? a[part.setup] : undefined,
             scope: part.scope ? a[part.scope] : undefined,
             checks: list,
+            ...(derived ? { verification: a.verification, derivedStatus: a.derivedStatus } : {}),
             ...(P.status ? { [P.status.field]: a[P.status.field] } : {}),
             ...(P.status?.detail ? { [P.status.detail.field]: a[P.status.detail.field] } : {}),
           },
-          status: statusValue(a),
+          status: derived ? statusValue({ [P.status!.field]: a.derivedStatus }) : statusValue(a),
+          ...(derived ? { authoredStatus: statusValue(a), derivedStatus: statusValue({ [P.status!.field]: a.derivedStatus }) } : {}),
         });
         addEdge(cid, n[idKey], part.edge);
-        if (list.length) verified++;
+        if (derived ? a.verification?.outcome === 'passed' && !a.verification?.stale : list.length) verified++;
         list.forEach((v) => addCheck(v, cid, n[idKey]));
       });
       const owner = byId.get(n[idKey]);
@@ -248,6 +255,7 @@ export function buildModel(graph: Graph, input: ProfileInput): Model {
     unresolved,
     crossLinks,
     unplaced,
+    ...(derived ? { derived } : {}),
     stats: { unplaced: unplaced.length, unplacedLive: live.length },
     disclosure: (graph.disclosure as Record<string, unknown>) ?? {},
     problems: Array.isArray(graph.problems) ? graph.problems.length : 0,
