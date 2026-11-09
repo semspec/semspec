@@ -3,6 +3,6 @@ kind: feature
 title: Harness
 order: 5
 statement: An agent works with the graph through MCP tools, a slice for each task, deliverables, gates and Markdown specs. The repository checks itself with the same tools.
-tagline: "An agent searches the graph and gets the slice of 1 task over MCP. Gates block a change that breaks the graph, and Semspec writes specs in Markdown."
+tagline: "An agent gets the slice of 1 task over MCP and the coverage of any part of the graph. Gates block a change that breaks the graph, and the repository checks itself with them."
 products:
   - prd-semspec
