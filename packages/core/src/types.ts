@@ -320,6 +320,10 @@ export interface Profile {
   // The links to outside tools. See `ExternalLinkSpec`.
   externalLinks?: ExternalLinkSpec[];
   status?: StatusSpec;
+  // Local test evidence. The record and root are relative to the profile. The inputs and the report paths are relative to root.
+  evidence?: EvidenceSpec;
+  // The alias of `evidence` with 1 JUnit adapter and the key rule class and method.
+  verification?: { record: string; root: string; inputs: string[]; exclude?: string[]; classField: string; methodField: string };
   fieldFilters?: FieldFilterSpec[];
   // Vocabularies by scheme id. The command line tool reads the ones that name a file.
   vocabularies?: Record<string, Vocabulary>;
@@ -351,6 +355,41 @@ export interface Profile {
 export type RawNode = { id?: string; [field: string]: unknown };
 export type Graph = { [key: string]: unknown };
 
+// The rules that join a result to a check. The fields name where the check holds each part of the key.
+// A field that the profile leaves out has the name of the part: class, method, file, name.
+export type EvidenceRule = 'class-method' | 'file-name' | 'file-titlepath';
+
+export interface EvidenceKeyRule {
+  rule: EvidenceRule;
+  class?: string;
+  method?: string;
+  file?: string;
+  // With the rule file-titlepath, this field of the check holds the title path. Its parts are joined with the separator.
+  name?: string;
+  // Joins the titles of a title path. The default is " > ".
+  separator?: string;
+}
+
+export interface EvidenceAdapterSpec {
+  adapter: string;
+  // The report files or folders that the adapter reads, relative to root.
+  reports?: string[];
+  // The check types that the adapter answers. Without it, the adapter answers every check type.
+  checkTypes?: string[];
+  key: EvidenceKeyRule;
+}
+
+export interface EvidenceSpec {
+  record: string;
+  root: string;
+  inputs: string[];
+  exclude?: string[];
+  // What a load gives when the evidence is stale or absent. The default is 'not-run': every condition is not-run.
+  // With 'authored', the load keeps the authored status and writes a warning.
+  fallback?: 'not-run' | 'authored';
+  adapters: EvidenceAdapterSpec[];
+}
+
 export interface VNode {
   id: string;
   kind: string;
@@ -364,7 +403,12 @@ export interface VNode {
   up: string[];
   cov?: { parts: number; verified: number };
   // The status value of the node itself, when the profile has a status and the node names a known value.
+  // With derived evidence, this is the derived status of a condition. A node above the conditions has none.
   status?: string;
+  // The status value that the graph file holds. It is set only when the model has derived evidence.
+  authoredStatus?: string;
+  // The status value that the evidence gives to a condition.
+  derivedStatus?: string;
   // The fields of the graph node that the details panel reads.
   d: Record<string, any>;
 }
@@ -388,6 +432,8 @@ export interface CrossLink {
 
 export interface Model {
   profile: Profile;
+  // True when the conditions of the graph carry a derived status. Set only then.
+  derived?: boolean;
   nodes: VNode[];
   edges: VEdge[];
   unresolved: { s: string; t: string; k: string }[];

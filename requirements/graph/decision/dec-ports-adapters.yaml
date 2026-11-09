@@ -6,3 +6,4 @@ statement: "The core library holds the domain and does no I/O. Each outside form
 rationale: "Semspec connects requirements to test runners, models, diagrams and runtime traces of many technologies. A port keeps the rules of 1 format out of the domain, so a new format adds 1 adapter and changes no domain code. The core already does no I/O, and the exports are already pure functions from the model to text."
 governs:
   - req-coverage-query
+  - req-test-record

@@ -17,7 +17,8 @@ questions:
   - { q: which version of the tool am I running, expect: [req-build-info] }
   - { q: what type does a node get when none is given, expect: [req-default-kind] }
   - { q: turn my notes in markdown into nodes, expect: [cap-read-markdown, req-read-markdown] }
-  - { q: what must a task hand over when it is done, expect: [cap-deliverables, req-deliverables] }
+  # With verification enabled, completion evidence includes the record and original reports.
+  - { q: what must a task hand over when it is done, expect: [cap-deliverables, req-deliverables, req-test-record] }
   - { q: give an AI the context for one task, expect: [cap-slice, req-context-slice, cap-slice] }
   - { q: check a new node before I save it, expect: [req-mcp-check-tools] }
   - { q: find nodes by words, expect: [cap-search, req-search-keyword] }
@@ -39,7 +40,8 @@ questions:
   - { q: where does a node without a parent go in the tree, expect: [req-tree, req-placement] }
   - { q: switch between layered, force and grouped drawing, expect: [req-layouts] }
   - { q: write a formal specification of a condition, expect: [req-verify-models, cap-formal] }
-  - { q: test results change whether a condition is met, expect: [req-verify-conformance, cap-formal, cap-evidence] }
+  # Native JUnit records now derive condition outcomes as well as formal conformance traces.
+  - { q: test results change whether a condition is met, expect: [req-verify-conformance, cap-formal, cap-evidence, req-test-record] }
   - { q: vector similarity together with keywords, expect: [req-embed-hybrid, cap-embeddings] }
   - { q: which AI model comes with the tool, expect: [req-embed-license, req-embed-provider] }
   - { q: where a fact came from and when it was read, expect: [req-provenance] }

@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 The Semspec Authors
+id: req-test-record
+kind: requirement
+title: Derive verification from test reports
+statement: Semspec derives condition verification from fresh test reports and the current source contents, through an evidence port with 1 adapter for each report format.
+capabilities: [cap-status, cap-evidence]
+area: [core, cli]
+acceptance:
+  - id: outcomes
+    text: Every named class and method must have at least one passing case. A failure wins over a pass. A missing or skipped case prevents a pass. Repeated cases count together. An ambiguous simple class name cannot pass.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: aggregates named tests conservatively}
+  - id: source
+    text: A native command snapshots declared source, test, contract, build, configuration and graph inputs before execution. Collection rejects changed inputs and unchanged old reports. Reading a record derives stale evidence as not-run when input contents change.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: rejects stale sources and old reports}
+  - id: integrity
+    text: Record validation rejects malformed data and a record whose own integrity digest fails. XML import rejects malformed XML and entity declarations.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: validates report and record integrity}
+  - id: changed-reports
+    text: A report that changes, disappears or is added after collection makes the evidence stale. Every condition is not-run, a warning names the number of changed or missing reports, and the check, the build and the MCP server keep working. A test run or a clean of the build output does this, so it is no error.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: makes the evidence stale when a report changes or disappears after collection}
+  - id: mcp-start
+    text: When the test evidence cannot load, for any reason, the MCP server still starts. It writes a warning with the error, and every condition is not-run. The check command still reports the error, so a gate fails.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: starts the MCP server with a warning when the test evidence cannot load}
+      - {type: unit, file: test/evidence.test.ts, name: starts a workspace in the MCP server with a warning when the test evidence cannot load}
+  - id: shared
+    text: CLI, MCP and explorer loads derive condition status from the same record. No condition status is written to graph files. Profiles without verification keep their current behavior.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: derives model status without editing the graph}
+  - id: outputs
+    text: Collection outputs cannot overwrite source inputs, profiles or reports. Unsafe output links and unmanaged file collisions are rejected before mutation. A failed begin preserves valid prior evidence.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: preserves sources and evidence when output preflight fails}
+  - id: exclusions
+    text: The profile can exclude generated output paths from source fingerprints with glob patterns. Output-only changes preserve freshness. Source additions, changes and deletions change the fingerprint. Exclusions cannot hide the profile. Selecting a report path never excludes authored inputs. Fingerprint inputs do not follow symlinks.
+    tests:
+      - {type: unit, file: test/verification.test.ts, name: excludes generated outputs while retaining source changes}
+      - {type: unit, file: test/verification.test.ts, name: rejects report paths that contain authored inputs}
+  - id: authored-derived
+    text: The model keeps the authored status of a condition in its status field, and the derived status in its own field, with the outcome, the stale flag and the run. With evidence, the roll-up, the gates and the default display use the derived status. Without evidence, nothing changes.
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: keeps the authored status next to the derived status}
+  - id: port
+    text: The core library holds the types of the evidence port, with no I/O. A result has a key, an outcome and a run. An adapter reads 1 report format and gives results. The rule that joins results to checks and the aggregation of repeated cases are in the core library.
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: joins results to checks in the core without reading any file}
+  - id: keys
+    text: The profile sets the key rule of each check type. The rules are class and method, file and name, and file and title path. A title path joins the titles of the groups and of the test with a separator that the profile can set.
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: joins a check with each of the 3 key rules}
+  - id: alias
+    text: The profile key verification stays valid as the JUnit adapter with the key rule class and method. A record of version 1 still loads. A record of an unknown version makes the evidence stale with a warning and is no error.
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: loads a record of version 1 and makes a record of an unknown version stale}
+  - id: junit-keys
+    text: The JUnit adapter matches cases with each key rule, so it reads the reports of JUnit, of node test with the JUnit reporter, of cargo nextest and of the JUnit reporter of Playwright or Vitest.
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: reads the reports of node test and cargo nextest and Playwright with each key rule}
+  - id: vitest
+    text: An adapter reads the JSON report of Vitest. The key of a test is its file and its title path. The fixture of the adapter is a cut copy of a real report.
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: reads a Vitest JSON report with the title array in the key}
+  - id: self
+    text: The Semspec repository derives the status of its own conditions from a Vitest JSON report of its own tests. The coverage report names the conditions whose derived status differs from the authored status.
+    status: verified
+    tests:
+      - {type: unit, file: test/evidence.test.ts, name: derives the status of the conditions of Semspec from its own Vitest report}
+  - id: unanswered-type
+    text: A check of a type that no adapter answers gives no vote. It does not hold its condition at not-run. A condition with no check that an adapter answers is not-run.
+    status: verified
+    tests:
+      - type: unit
+        file: test/evidence.test.ts
+        name: ignores a check of a type that no adapter answers, and keeps a condition with no answered check not-run

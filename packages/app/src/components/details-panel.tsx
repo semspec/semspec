@@ -342,6 +342,9 @@ export function DetailsPanel({ v }: { v: Viewer }) {
             {value.label}
           </span>
         )}
+        {index.model.derived && (c.authoredStatus ?? null) !== (c.derivedStatus ?? null) && (
+          <span className="text-muted-foreground">authored: {S?.values.find((x) => x.value === c.authoredStatus)?.label ?? 'none'}</span>
+        )}
         {detail.length > 0 && (
           <span className="text-muted-foreground">
             {S!.detail!.label}: {detail.join(', ')}
@@ -430,6 +433,10 @@ export function DetailsPanel({ v }: { v: Viewer }) {
         <>
           <Divider />
           <Section title={P.checks?.sectionTitle ?? 'Checks'} count={(d.checks ?? []).length}>
+            {index.model.derived && <Text>{d.verification?.outcome ?? 'not-run'}{d.verification?.stale ? ' (stale)' : ''}</Text>}
+            {index.model.derived && (n.authoredStatus ?? null) !== (n.derivedStatus ?? null) && (
+              <Text className="text-muted-foreground">Authored status: {S?.values.find((x) => x.value === n.authoredStatus)?.label ?? 'none'}. Derived status: {S?.values.find((x) => x.value === n.derivedStatus)?.label ?? 'none'}.</Text>
+            )}
             {d.setup && <Text className="text-muted-foreground">Setup: {d.setup}</Text>}
             {(d.checks ?? []).length ? <CheckList list={d.checks} /> : <Text className="text-warn">{P.checks?.noneText ?? 'No check.'}</Text>}
           </Section>
