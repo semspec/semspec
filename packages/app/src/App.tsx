@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Info, ListTree, Menu, Monitor, Moon, Network, Palette, RotateCcw, Sun, Table2, TriangleAlert, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Info, Layers, ListTree, Menu, Monitor, Moon, Network, Palette, RotateCcw, Sun, Table2, TriangleAlert, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
@@ -17,13 +17,14 @@ import { KindDot } from '@/components/kind';
 import { TableView } from '@/components/table-view';
 import { ThemeSwitch } from '@/components/theme-switch';
 import { TreePanel } from '@/components/tree-panel';
-import { incomingCrossLinks, kindColorCss, type WorkspaceData } from '@semspec/core';
+import { incomingCrossLinks, kindColorCss, workspaceViews, type WorkspaceData } from '@semspec/core';
 import { Core, setProfile, type Model } from '@/lib/core';
 import { usePhone } from '@/lib/use-phone';
 import { useTheme } from '@/lib/use-theme';
 import type { ThemeChoice } from '@/lib/theme';
 import { useViewer, type View, type Viewer } from '@/lib/use-viewer';
 import { attachAddress } from '@/lib/address';
+import { useLiveError } from '@/lib/live';
 import { attachPersistence, hydrate, patchGraph, resetStored, setActive, useAppStore, type GraphState } from '@/lib/store';
 import { WorkspaceContext, type WorkspaceApi } from '@/lib/workspace';
 import { cn } from '@/lib/utils';
@@ -154,7 +155,7 @@ interface Focus {
   center: boolean;
 }
 
-// The workspace state: the trail of jumps. The store holds the active graph and the state of each graph.
+// The workspace state: the trail of jumps. The store holds the active view and the state of each view.
 export function App({ data }: { data: WorkspaceData }) {
   // The store loads the stored state and the hash once for each workspace, before the first render of a graph.
   const [loaded, setLoaded] = useState<WorkspaceData | null>(null);
@@ -172,24 +173,27 @@ export function App({ data }: { data: WorkspaceData }) {
   }, [data]);
   const activeId = useAppStore((s) => s.active);
   const epoch = useAppStore((s) => s.epoch);
-  const [trail, setTrail] = useState<{ graph: string; node: string | null; viewport: GraphState['viewport'] }[]>([]);
+  const [trail, setTrail] = useState<{ view: string; node: string | null; viewport: GraphState['viewport'] }[]>([]);
   const [focus, setFocus] = useState<Focus | null>(null);
   const seq = useRef(0);
   const incoming = useMemo(() => incomingCrossLinks(data.graphs), [data]);
   const nodes = useMemo(() => new Map(data.graphs.map((g) => [g.id, new Map(g.model.nodes.map((n) => [n.id, n]))])), [data]);
-  const graph = data.graphs.find((g) => g.id === activeId) ?? data.graphs[0];
-  // The profile is global for the app. The graph that shows is the only one that reads it.
-  setProfile(graph.model.profile);
+  const views = useMemo(() => workspaceViews(data), [data]);
+  const view = views.find((v) => v.id === activeId) ?? views[0];
+  // The profile is global for the app. The view that shows is the only one that reads it.
+  setProfile(view.model.profile);
 
+  // A cross link names a graph. It opens in the first view of the graph.
   const jumpFrom = (target: string, node: string, from: string | null) => {
-    // The trail keeps the canvas viewport of the source graph, so Back returns to the same view.
-    setTrail((t) => [...t, { graph: activeId, node: from, viewport: useAppStore.getState().graphs[activeId]?.viewport ?? {} }]);
-    setActive(target);
+    // The trail keeps the canvas viewport of the source view, so Back returns to the same place.
+    setTrail((t) => [...t, { view: activeId, node: from, viewport: useAppStore.getState().graphs[activeId]?.viewport ?? {} }]);
+    setActive((views.find((v) => v.graph === target) ?? view).id);
     setFocus({ node, seq: ++seq.current, center: true });
   };
   const last = trail[trail.length - 1];
   const root: Omit<WorkspaceApi, 'jump'> & { jumpFrom: typeof jumpFrom } = {
     graphs: data.graphs,
+    views,
     activeId,
     setActive: (id) => {
       setTrail([]);
@@ -200,13 +204,13 @@ export function App({ data }: { data: WorkspaceData }) {
     back: () => {
       if (!last) return;
       setTrail((t) => t.slice(0, -1));
-      patchGraph(last.graph, { viewport: last.viewport });
-      setActive(last.graph);
+      patchGraph(last.view, { viewport: last.viewport });
+      setActive(last.view);
       setFocus(last.node ? { node: last.node, seq: ++seq.current, center: false } : null);
     },
     canBack: trail.length > 0,
-    backLabel: last ? data.graphs.find((g) => g.id === last.graph)?.label : undefined,
-    incoming: (node) => incoming.get(activeId)?.get(node) ?? [],
+    backLabel: last ? views.find((v) => v.id === last.view)?.label : undefined,
+    incoming: (node) => incoming.get(view.graph)?.get(node) ?? [],
     nodeOf: (g, node) => nodes.get(g)?.get(node),
     resetView: () => {
       setTrail([]);
@@ -214,7 +218,27 @@ export function App({ data }: { data: WorkspaceData }) {
       resetStored();
     },
   };
-  return <GraphApp key={`${activeId}:${epoch}`} graph={graph.id} label={graph.label} model={graph.model} root={root} focus={focus} />;
+  return (
+    <>
+      <GraphApp key={`${view.id}:${epoch}`} graph={view.id} label={view.label} model={view.model} root={root} focus={focus} />
+      <LiveError />
+    </>
+  );
+}
+
+// The error of the last change of the files. The page keeps the last valid graph. The next valid save removes the error.
+function LiveError() {
+  const error = useLiveError();
+  if (error === null) return null;
+  return (
+    <div role="alert" data-testid="live-error" className="fixed right-3 bottom-10 z-50 max-h-64 w-[min(40rem,calc(100%-1.5rem))] overflow-auto rounded-md border border-destructive bg-card p-3 text-xs shadow-lg">
+      <div className="mb-1 flex items-center gap-1.5 font-semibold text-destructive">
+        <TriangleAlert className="size-3.5" /> The files changed and are not valid
+      </div>
+      <div className="mb-1 text-muted-foreground">The page shows the last valid graph. Save a valid file to remove this message.</div>
+      <pre className="font-mono break-words whitespace-pre-wrap">{error}</pre>
+    </div>
+  );
 }
 
 function GraphApp({
@@ -317,16 +341,21 @@ function GraphApp({
               </div>
             </div>
           </div>
-          {ws.graphs.length > 1 && (
-            <Tabs value={ws.activeId} onValueChange={ws.setActive}>
-              <TabsList aria-label="Graph">
-                {ws.graphs.map((g) => (
-                  <TabsTrigger key={g.id} value={g.id}>
-                    {g.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+          {ws.views.length > 1 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="outline" size="sm" aria-label="Views" />}>
+                <Layers /> {label} <ChevronDown />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuRadioGroup value={ws.activeId} onValueChange={(id: string) => ws.setActive(id)}>
+                  {ws.views.map((x) => (
+                    <DropdownMenuRadioItem key={x.id} value={x.id}>
+                      {x.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           {ws.canBack && (
             <Button variant="outline" size="sm" onClick={ws.back}>
@@ -436,7 +465,7 @@ function GraphApp({
   );
 }
 
-// The header below 768 px. The tree and the details panel open from 2 buttons. The graph switch, the
+// The header below 768 px. The tree and the details panel open from 2 buttons. The view menu, the
 // status colour and the theme are in a menu. The view tabs have a row of their own.
 function PhoneHeader({
   v,
@@ -475,14 +504,14 @@ function PhoneHeader({
             <Menu />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            {ws.graphs.length > 1 && (
+            {ws.views.length > 1 && (
               <>
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel>Graph</DropdownMenuLabel>
+                  <DropdownMenuLabel>Views</DropdownMenuLabel>
                   <DropdownMenuRadioGroup value={ws.activeId} onValueChange={(id: string) => ws.setActive(id)}>
-                    {ws.graphs.map((g) => (
-                      <DropdownMenuRadioItem key={g.id} value={g.id}>
-                        {g.label}
+                    {ws.views.map((x) => (
+                      <DropdownMenuRadioItem key={x.id} value={x.id}>
+                        {x.label}
                       </DropdownMenuRadioItem>
                     ))}
                   </DropdownMenuRadioGroup>

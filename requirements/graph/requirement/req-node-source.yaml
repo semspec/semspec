@@ -1,0 +1,83 @@
+id: req-node-source
+kind: requirement
+title: Show the source file of a node
+state: draft
+priority: now
+statement: "The details panel has a Source section with the path and the text of the file that holds the node, as it is written."
+rationale: "The profile shows only some fields of a node. A person who reviews a draft wants to read the whole file and know where it is."
+capabilities:
+  - cap-cards-table
+area:
+  - cli
+  - app
+acceptance:
+  - id: section
+    text: "The details panel of a node that comes from a file has a Source section with the path of the file and its full text. A file with several nodes shows the whole file."
+    status: verified
+    tests:
+      - type: unit
+        file: test/live.test.ts
+        name: names the file of each node in the page data with a relative path
+      - type: unit
+        file: test/live.test.ts
+        name: gives the whole text of a file that holds several nodes
+      - type: unit
+        file: test/app/live.test.tsx
+        name: shows the path of the file in the Source section of a node that comes from a file
+      - type: unit
+        file: test/app/live.test.tsx
+        name: has no Source section for a node with no file
+  - id: origin
+    text: "The profile key source.origin names a field of the node that holds the path of the file the node was copied from. The path is relative to the workspace file, or to the profile in the single graph form. When the field has a value, the Source section shows that file."
+    status: verified
+    tests:
+      - type: unit
+        file: test/live.test.ts
+        name: "shows the origin file of a node, relative to the profile, when the field has a value"
+      - type: unit
+        file: test/live.test.ts
+        name: reads the origin path relative to the workspace file in a workspace
+      - type: unit
+        file: test/live.test.ts
+        name: refuses a profile where source.origin is not a text
+  - id: root
+    text: "serve returns the text of a file only when it is a source of a node and lies inside the source root. The source root is the workspace key sourceRoot, or the folder of the workspace file or of the profile. A path that leaves the root gives no text."
+    status: verified
+    tests:
+      - type: unit
+        file: test/live.test.ts
+        name: "returns no text for an origin path that leaves the source root, a link out of the root or an unknown node"
+      - type: unit
+        file: test/live.test.ts
+        name: "uses the key sourceRoot of the workspace, and the folder of the workspace file when the key is missing"
+      - type: unit
+        file: test/live.test.ts
+        name: refuses a sourceRoot that is not a text
+      - type: unit
+        file: test/live.test.ts
+        name: gives no text of a link that leads to a folder or to a missing file
+      - type: unit
+        file: test/live.test.ts
+        name: leaves out of --sources a file outside the source root
+  - id: on-demand
+    text: "serve gives the text when the section opens, so the page data does not grow. A page that build writes shows the path only, unless the option --sources puts the texts into the page. A node whose text the page does not have shows the path only, and never the text of a node selected before."
+    status: verified
+    tests:
+      - type: unit
+        file: test/app/live.test.tsx
+        name: "asks serve for the whole text when the section opens, and keeps it open after a reload"
+      - type: unit
+        file: test/app/live.test.tsx
+        name: shows the error when serve gives no text
+      - type: unit
+        file: test/live.test.ts
+        name: keeps the texts out of the page data of serve and out of a built page without --sources
+      - type: unit
+        file: test/live.test.ts
+        name: "puts the texts into a built page with --sources, by relative path"
+      - type: unit
+        file: test/app/live.test.tsx
+        name: shows the embedded text of a built page and no button when the build had no texts
+      - type: unit
+        file: test/app/live.test.tsx
+        name: shows the path only for a node whose text the page lacks, and not the text of the node before

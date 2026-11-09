@@ -27,7 +27,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { CountBadge, KindDot, NodeSummaryView, StatusDot, kindColor, statusShare, toneColor } from '@/components/kind';
 import { Core, type Kind, type NodeStatus, type Summary, type VEdge } from '@/lib/core';
 import { SIZE, layered, placeNear, type Mode, type Pos } from '@/lib/layout';
-import { LAYOUTS, boundsOf, facingSides, findContainers, forceLayout, grouped, moveWithMembers, rectsOf, type LayoutName } from '@/lib/layouts';
+import { LAYOUTS, boundsOf, facingSides, findContainers, forceLayout, grouped, moveWithMembers, rectsOf, type GroupBy, type LayoutName } from '@/lib/layouts';
 import type { Viewer } from '@/lib/use-viewer';
 import { usePhone } from '@/lib/use-phone';
 import { useTheme } from '@/lib/use-theme';
@@ -183,12 +183,18 @@ function Inner({ v, mode, center, onCentered }: { v: Viewer; mode: Mode; center?
 
   const store = v.positions.current[mode];
   const spec = Core.profile.layout;
+  // `groupBy: parents` nests each node by the parents rule of its kind and wins over `groupEdge`.
+  const groupBy = spec?.groupBy;
   const groupEdge = spec?.groupEdge;
+  const nesting = useMemo<GroupBy | undefined>(
+    () => (groupBy === 'parents' ? { parents: (id) => Core.kindSpec(index.byId.get(id)?.kind ?? '')?.parents ?? [] } : groupEdge),
+    [groupBy, groupEdge, index],
+  );
   const chosen = v.layoutChoice;
   const setChosen = v.setLayoutChoice;
   const wanted: LayoutName = chosen ?? spec?.default ?? 'layered';
-  const layout: LayoutName = wanted === 'grouped' && !groupEdge ? 'layered' : wanted;
-  const containers = useMemo(() => findContainers(ids, edges, layout === 'grouped' ? groupEdge : undefined), [ids, edges, layout, groupEdge]);
+  const layout: LayoutName = wanted === 'grouped' && !nesting ? 'layered' : wanted;
+  const containers = useMemo(() => findContainers(ids, edges, layout === 'grouped' ? nesting : undefined), [ids, edges, layout, nesting]);
 
   const positions = useMemo(() => {
     const key = `${layout}::${ids.join('|')}`;
@@ -212,8 +218,8 @@ function Inner({ v, mode, center, onCentered }: { v: Viewer; mode: Mode; center?
       bySource.forEach((list, from) => {
         next = placeNear(next, from, list, mode);
       });
-    } else if (layout === 'grouped' && groupEdge) {
-      next = grouped(ids, edges, mode, groupEdge, Core.DOWN_EDGES);
+    } else if (layout === 'grouped' && nesting) {
+      next = grouped(ids, edges, mode, nesting, Core.DOWN_EDGES);
     } else if (layout === 'force') {
       next = forceLayout(ids, edges, mode);
     } else {
@@ -224,7 +230,7 @@ function Inner({ v, mode, center, onCentered }: { v: Viewer; mode: Mode; center?
     store.key = key;
     return next;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ids, edges, mode, v.layoutTick, walk, layout, groupEdge]);
+  }, [ids, edges, mode, v.layoutTick, walk, layout, nesting]);
 
   // The rectangle of each node. A container takes the box around its members.
   const rects = useMemo(() => rectsOf(ids, containers.parentOf, positions, mode), [ids, containers, positions, mode]);
@@ -270,7 +276,7 @@ function Inner({ v, mode, center, onCentered }: { v: Viewer; mode: Mode; center?
     () =>
       edges.flatMap((e: VEdge, i) => {
         // The nesting shows the edge to the container of a node.
-        if (layout === 'grouped' && e.k === groupEdge && containers.parentOf.get(e.s) === e.t) return [];
+        if (containers.nested.has(e)) return [];
         const chosen = e === v.selectedEdge;
         const touches = chosen || e.s === hovered || e.t === hovered || e.s === selected || e.t === selected;
         const dim = !!neighbours && !touches;
@@ -302,7 +308,7 @@ function Inner({ v, mode, center, onCentered }: { v: Viewer; mode: Mode; center?
           ...(down ? { markerStart: marker } : { markerEnd: marker }),
         }];
       }),
-    [edges, hovered, selected, v.selectedEdge, neighbours, showAll, layout, groupEdge, containers, rects],
+    [edges, hovered, selected, v.selectedEdge, neighbours, showAll, layout, containers, rects],
   );
 
   // Fit keeps the text readable: the zoom never goes below 0.7 (0.2 on a phone). A canvas that is larger than the
@@ -452,10 +458,10 @@ function Inner({ v, mode, center, onCentered }: { v: Viewer; mode: Mode; center?
         <ToggleGroup value={[layout]} onValueChange={(next) => next[0] && setChosen(next[0] as LayoutName)} variant="outline" size="sm" spacing={0} aria-label="Layout">
           {LAYOUTS.map((name) => (
             <Tooltip key={name}>
-              <TooltipTrigger render={<ToggleGroupItem value={name} className="max-md:size-10" aria-label={LAYOUT_LABEL[name]} disabled={name === 'grouped' && !groupEdge} />}>
+              <TooltipTrigger render={<ToggleGroupItem value={name} className="max-md:size-10" aria-label={LAYOUT_LABEL[name]} disabled={name === 'grouped' && !nesting} />}>
                 {LAYOUT_ICON[name]}
               </TooltipTrigger>
-              <TooltipContent>{name === 'grouped' && !groupEdge ? 'The profile has no group edge' : LAYOUT_LABEL[name]}</TooltipContent>
+              <TooltipContent>{name === 'grouped' && !nesting ? 'The profile has no group edge or groupBy' : LAYOUT_LABEL[name]}</TooltipContent>
             </Tooltip>
           ))}
         </ToggleGroup>

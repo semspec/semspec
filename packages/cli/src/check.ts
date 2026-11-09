@@ -9,7 +9,7 @@ import { readInput } from './input';
 import { validateProfile } from './validate';
 import { resolveVocabularyFiles } from './vocabulary';
 import { readGraphFolder } from './yaml';
-import { validateWorkspace } from './workspace';
+import { validateWorkspace, viewGraphProblem, type ViewFile } from './workspace';
 
 export interface Finding {
   level: 'error' | 'warning';
@@ -79,6 +79,7 @@ const isDirectory = (path: string): boolean => {
 const labelFile = (text: string): string | undefined => /^File "([^"]+)"/.exec(text)?.[1];
 
 interface Loaded {
+  graph: Graph;
   profile: Profile;
   model: Model;
   // The absolute path of the file of each node. An embedded node has the file of its owner.
@@ -134,7 +135,7 @@ function checkGraph(graphPath: string, profilePath: string, exclude: string[]): 
     for (let hops = 0; id !== undefined && !files.has(id) && hops < byId.size; hops++) id = byId.get(id)?.parents[0];
     if (id !== undefined && id !== n.id && files.has(id)) files.set(n.id, files.get(id)!);
   }
-  return { findings, loaded: { profile, model, files } };
+  return { findings, loaded: { graph, profile, model, files } };
 }
 
 // Runs the check. `changed` limits the gate findings to the nodes of those files. A rule error always counts.
@@ -151,15 +152,25 @@ export function checkInputs(args: CheckArgs): Finding[] {
     } catch (e) {
       return [{ level: 'error', subject: args.workspace, message: message(e) }];
     }
-    const problems = validateWorkspace(file);
-    if (problems.length) return problems.map((m) => ({ level: 'error', subject: args.workspace!, message: m }));
     const base = dirname(resolve(args.workspace));
+    const problems = validateWorkspace(file, undefined, base);
+    if (problems.length) return problems.map((m) => ({ level: 'error', subject: args.workspace!, message: m }));
     for (const g of (file as { graphs: { id: string; label: string; graph: string; profile: string; exclude?: string[] }[] }).graphs) {
       const profilePath = resolve(base, g.profile);
       const result = checkGraph(resolve(base, g.graph), profilePath, g.exclude ?? []);
       findings.push(...result.findings);
       if (result.loaded) graphs.push({ id: g.id, label: g.label, loaded: result.loaded, profilePath });
       else failed = true;
+    }
+    // A graph must fit the profile of each view, as in the build.
+    for (const v of (file as { views?: ViewFile[] }).views ?? []) {
+      const loaded = graphs.find((g) => g.id === v.graph)?.loaded;
+      if (!loaded) continue;
+      const problem = viewGraphProblem(v, loaded.graph, base);
+      if (problem !== undefined) {
+        findings.push({ level: 'error', subject: args.workspace!, message: `View "${v.id}": ${problem}` });
+        failed = true;
+      }
     }
     if (!failed) {
       const workspaceGraphs: WorkspaceGraph[] = graphs.map((g) => ({ id: g.id, label: g.label, model: g.loaded.model }));

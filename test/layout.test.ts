@@ -73,6 +73,60 @@ describe('the containers', () => {
   });
 });
 
+// A node of kind term sits in a group (inGroup) or else in a context (inContext). A group sits in a context.
+const rules: Record<string, string[][]> = { term: [['inGroup'], ['inContext']], group: [['inContext']], context: [] };
+const kindOfId = (id: string) => (id.startsWith('t') ? 'term' : id.startsWith('g') ? 'group' : 'context');
+const by = { parents: (id: string) => rules[kindOfId(id)] };
+const groupIds = ['c1', 'g1', 't1', 't2', 't3'];
+const groupEdges = [edge('g1', 'c1', 'inContext'), edge('t1', 'g1', 'inGroup'), edge('t1', 'c1', 'inContext'), edge('t2', 'c1', 'inContext'), edge('t3', 'g1', 'inGroup')];
+
+describe('the containers by the parents rule', () => {
+  it('nests each node in the parent that the parents rule of its kind picks', () => {
+    const found = findContainers(groupIds, groupEdges, by);
+    expect(found.parentOf.get('g1')).toBe('c1');
+    expect(found.parentOf.get('t1')).toBe('g1');
+    expect(found.parentOf.get('t3')).toBe('g1');
+    expect(found.roots).toEqual(['c1']);
+  });
+  it('picks the next group of the rule when the picked parent is not on the canvas', () => {
+    const found = findContainers(['c1', 't1', 't3'], groupEdges, by);
+    expect(found.parentOf.get('t1')).toBe('c1');
+    expect(found.parentOf.has('t3')).toBe(false);
+    expect(found.roots).toEqual(['c1', 't3']);
+  });
+  it('picks the first group of the rule over a later group', () => {
+    const found = findContainers(groupIds, [edge('t1', 'c1', 'inContext'), edge('t1', 'g1', 'inGroup')], by);
+    expect(found.parentOf.get('t1')).toBe('g1');
+  });
+  it('skips a cycle of the parents rule', () => {
+    const loop = { parents: () => [['up']] };
+    const found = findContainers(['x', 'y'], [edge('x', 'y', 'up'), edge('y', 'x', 'up')], loop);
+    expect(found.parentOf.size).toBe(1);
+  });
+  it('marks the edge to the container and to a container above it as nested', () => {
+    const found = findContainers(groupIds, groupEdges, by);
+    const nested = (s: string, t: string) => groupEdges.some((e) => e.s === s && e.t === t && found.nested.has(e));
+    expect(nested('t1', 'g1')).toBe(true);
+    expect(nested('g1', 'c1')).toBe(true);
+    expect(nested('t1', 'c1')).toBe(true);
+    expect(nested('t2', 'c1')).toBe(true);
+  });
+  it('marks only the edge to the container as nested for a group edge', () => {
+    const first = edge('m', 'g1');
+    const second = edge('m', 'g2');
+    const found = findContainers(['m', 'g1', 'g2'], [first, second], 'in');
+    expect(found.nested.has(first)).toBe(true);
+    expect(found.nested.has(second)).toBe(false);
+  });
+  it('lays out a box in a box with the parents rule', () => {
+    const pos = grouped(groupIds, groupEdges, 'graph', by, none);
+    const { parentOf } = findContainers(groupIds, groupEdges, by);
+    const rects = rectsOf(groupIds, parentOf, pos, 'graph');
+    expect(inside(rects.get('t1')!, rects.get('g1')!)).toBe(true);
+    expect(inside(rects.get('g1')!, rects.get('c1')!)).toBe(true);
+  });
+});
+
 describe('the grouped layout', () => {
   it('gives every container a box that holds its members, 2 levels deep', () => {
     const pos = grouped(nestedIds, nestedEdges, 'graph', 'in', none);
@@ -169,6 +223,12 @@ describe('the layout key of a profile', () => {
   });
   it('refuses grouped without a group edge', () => {
     expect(validateProfile({ ...profile, layout: { default: 'grouped' } }).join()).toMatch(/needs a groupEdge/);
+  });
+  it('accepts grouped with groupBy parents and no group edge', () => {
+    expect(validateProfile({ ...profile, layout: { default: 'grouped', groupBy: 'parents' } })).toEqual([]);
+  });
+  it('refuses an unknown groupBy value', () => {
+    expect(validateProfile({ ...profile, layout: { groupBy: 'kinds' } }).length).toBeGreaterThan(0);
   });
   it('refuses a group edge that is not in edges', () => {
     expect(validateProfile({ ...profile, layout: { groupEdge: 'nothing' } }).join()).toMatch(/edge "nothing"/);
