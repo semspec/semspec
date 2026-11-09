@@ -5,15 +5,15 @@ title: Command line
 description: The commands and options of the semspec command.
 order: 1
 related: [getting-started, yaml-folder, workspace, export, schemas, mcp, gates, meaning-search, specs]
-documents: [req-build-info, req-serve, req-build-html, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check, req-context-slice, req-deliverables, req-embed-provider, req-embed-index, req-embed-hybrid, req-spec-markers, req-spec-check, req-spec-default, req-coverage-query]
+documents: [req-build-info, req-serve, req-build-html, req-serve-live, req-node-source, cap-validate, req-validate-graph, req-validate-profile, req-mcp-serve, req-search-keyword, req-gate-check, req-context-slice, req-deliverables, req-embed-provider, req-embed-index, req-embed-hybrid, req-spec-markers, req-spec-check, req-spec-default, req-coverage-query]
 ---
 ## Commands
 
 ```
 semspec serve --graph <graph> --profile <profile> [--port 4173] [--host 127.0.0.1] [--exclude <pattern>]...
-semspec build --graph <graph> --profile <profile> --out explorer.html [--exclude <pattern>]...
+semspec build --graph <graph> --profile <profile> --out explorer.html [--exclude <pattern>]... [--sources]
 semspec serve --workspace <file> [--port 4173] [--host 127.0.0.1]
-semspec build --workspace <file> --out workspace.html
+semspec build --workspace <file> --out workspace.html [--sources]
 semspec mcp --graph <graph> --profile <profile> [--exclude <pattern>]...
 semspec mcp --workspace <file>
 semspec search --graph <graph> --profile <profile> "<query>" [--kind <kind>]... [--scope <id>] [--limit <n>] [--mode keyword|hybrid|vector] [--json] [--exclude <pattern>]...
@@ -38,8 +38,8 @@ semspec --version
 semspec version --json
 ```
 
-- `serve` starts a server on localhost. It reads both inputs again on each page load.
-- `build` writes 1 HTML file. The file has the data, the script and the style inline. It opens from disk and makes no network request.
+- `serve` starts a server on localhost. It reads both inputs again on each page load. It also watches the files and reloads the open pages. See [Live reload](#live-reload).
+- `build` writes 1 HTML file. The file has the data, the script and the style inline. It opens from disk and makes no network request. The option `--sources` puts the text of the source files into the file. See [The Source section](#the-source-section).
 - The page has a Light, Dark and System switch in the header. It keeps the choice in the browser storage of the viewer.
 - `mcp` serves the graph or the workspace to an AI agent over the Model Context Protocol on stdio. See [MCP server](mcp.md).
 - `check` validates the inputs and the gates of the profile, and exits with a code for a hook or a CI step. See below.
@@ -59,6 +59,25 @@ semspec version --json
 `--exclude` skips paths of a graph folder. It can repeat. See [The YAML folder](../guide/yaml-folder.md).
 
 `--workspace` reads a workspace file instead of `--graph` and `--profile`. See [Workspace](../guide/workspace.md). It cannot combine with `--graph`, `--profile` or `--exclude`.
+
+## Live reload
+
+`serve` watches the graph folders and files, the profiles, the vocabulary files and the workspace file. When 1 of them changes, `serve` sends 1 event to each open page, and the page reloads. Several changes within 100 ms give 1 reload.
+
+- After the reload, the page shows the same view, scope, selection, layout and filters. A selected node that no longer exists is dropped. See [What the page remembers](../guide/state.md).
+- When the new files are not valid, `serve` keeps the last valid data. The page shows the error with the name of the file. The next valid save removes the error. A page that you open while the files are not valid shows the last valid data and the error.
+- The page uses Server-Sent Events on the path `/events` of `serve`. A page that `build` writes, or that you open from a file, has no event channel and makes no network request.
+- `serve` sends the event `reload` and the event `invalid`. The data of `invalid` is `{ "message": "<error>" }`.
+
+## The Source section
+
+The details panel of a node that comes from a file has a Source section. It shows the path of the file. The button Show the text loads the whole text of the file. A file with several nodes shows the whole file.
+
+- The path is relative to the workspace file, or to the profile in the single-graph form.
+- The profile key `source.origin` names a field of the node that holds the path of the file the node was copied from. When the field has a value, the Source section shows that file. See [The profile](profile.md).
+- `serve` gives the text when the section opens, on `GET /source?graph=<graph id>&node=<node id>`. The graph id of the single-graph form is `main`. The page data holds the path only.
+- `serve` returns the text only when the file is the source of a node and lies inside the source root. The source root is the key `sourceRoot` of the workspace file, or else the folder of the workspace file, or the folder of the profile in the single-graph form. `serve` resolves symbolic links before it checks the root. A path that leaves the root gives no text and the answer 404. No other file is ever served.
+- `build` writes the paths only. The option `--sources` puts the texts of the files inside the source root into the page. The paths in the page are relative.
 
 `serve`, `build` and `mcp` check the 2 inputs first and stop with a message when an input is not valid. A message about a YAML node names its file. `mcp` writes the message to stderr and exits with code 1.
 

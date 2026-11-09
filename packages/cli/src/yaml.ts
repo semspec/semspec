@@ -2,7 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // Reads YAML input. A folder of YAML files is the graph: 1 node for each file, or a list of nodes.
 import { readdirSync, readFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { parse } from 'yaml';
 import type { Graph, Profile } from '@semspec/core';
 
@@ -90,11 +90,12 @@ export function readMarkdownNode(path: string, profile: Profile): Record<string,
 }
 
 // Builds the graph from a folder. `exclude` holds the patterns of the paths to skip.
-// `labels` holds the file of each node, for the error messages.
+// `labels` holds the file of each node, for the error messages. `files` holds the absolute path of the file of each node.
 // `warnings` names the Markdown files that are no node.
-export function readGraphFolder(dir: string, profile: Profile, exclude: string[] = []): { graph: Graph; labels: string[]; warnings: string[] } {
+export function readGraphFolder(dir: string, profile: Profile, exclude: string[] = []): { graph: Graph; labels: string[]; files: string[]; warnings: string[] } {
   const nodes: Record<string, unknown>[] = [];
   const labels: string[] = [];
+  const files: string[] = [];
   const warnings: string[] = [];
   for (const rel of yamlFiles(dir, exclude.map(excludeMatcher), profile.source.markdown !== undefined)) {
     const path = join(dir, rel);
@@ -103,6 +104,7 @@ export function readGraphFolder(dir: string, profile: Profile, exclude: string[]
       if (node) {
         nodes.push(node);
         labels.push(`File "${path}"`);
+        files.push(resolve(path));
       } else warnings.push(`The Markdown file "${path}" has no front matter, so Semspec skips it.`);
       continue;
     }
@@ -110,14 +112,16 @@ export function readGraphFolder(dir: string, profile: Profile, exclude: string[]
     if (isMapping(data)) {
       nodes.push(data);
       labels.push(`File "${path}"`);
+      files.push(resolve(path));
     } else if (Array.isArray(data) && data.length && data.every(isMapping)) {
       data.forEach((n, i) => {
         nodes.push(n);
         labels.push(`File "${path}", node ${i}`);
+        files.push(resolve(path));
       });
     } else {
       throw new Error(`The graph file "${path}" must hold a mapping or a list of mappings.`);
     }
   }
-  return { graph: { [profile.source.nodes]: nodes }, labels, warnings };
+  return { graph: { [profile.source.nodes]: nodes }, labels, files, warnings };
 }

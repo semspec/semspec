@@ -2,7 +2,7 @@
 // Copyright 2026 The Semspec Authors
 // A workspace holds several graphs of 1 system. A node of 1 graph can link to a node of another
 // graph. A cross link is not an edge: no graph holds it as an edge.
-import type { Model } from './types.js';
+import type { Model, Profile, ProfileLayout } from './types.js';
 
 export interface WorkspaceGraph {
   id: string;
@@ -10,10 +10,65 @@ export interface WorkspaceGraph {
   model: Model;
 }
 
-// The data of a workspace page.
+// The default filters of a view. Each key has the same meaning as the key of the filters of the page.
+export interface ViewFilters {
+  kinds?: string[];
+  lifecycles?: string[];
+  deliveries?: string[];
+  statuses?: string[];
+  markers?: string[];
+  fields?: Record<string, string[]>;
+}
+
+// A view of a graph, as the page data holds it. A view with its own profile, parents rule or layout
+// holds its own model. Any other view shows the model of its graph.
+export interface WorkspaceView {
+  id: string;
+  label: string;
+  // The id of the graph of the view.
+  graph: string;
+  model?: Model;
+  filters?: ViewFilters;
+}
+
+// The data of a workspace page. A workspace with no `views` shows each graph as 1 view.
 export interface WorkspaceData {
   title: string;
   graphs: WorkspaceGraph[];
+  views?: WorkspaceView[];
+}
+
+// A view with its model. The page reads the views through this form.
+export interface ResolvedView {
+  id: string;
+  label: string;
+  graph: string;
+  model: Model;
+  filters?: ViewFilters;
+}
+
+// The views of a workspace in the order of the list. With no `views`, each graph is 1 view in the
+// order of the graphs, with the id and the label of the graph.
+export function workspaceViews(data: WorkspaceData): ResolvedView[] {
+  if (!data.views?.length) return data.graphs.map((g) => ({ id: g.id, label: g.label, graph: g.id, model: g.model }));
+  const models = new Map(data.graphs.map((g) => [g.id, g.model]));
+  return data.views.flatMap((v) => {
+    const model = v.model ?? models.get(v.graph);
+    return model ? [{ id: v.id, label: v.label, graph: v.graph, model, ...(v.filters ? { filters: v.filters } : {}) }] : [];
+  });
+}
+
+// The profile of a view: the profile of its graph, or the profile file of the view, with the parents
+// rule of a kind replaced and the layout keys set. A kind that the profile lacks is left out. The
+// check of the workspace names it.
+export function viewProfile(profile: Profile, view: { parents?: Record<string, string[][]>; layout?: ProfileLayout }): Profile {
+  const { parents, layout } = view;
+  if (!parents && !layout) return profile;
+  return {
+    ...profile,
+    kinds: parents ? profile.kinds.map((k) => (Object.hasOwn(parents, k.id) ? { ...k, parents: parents[k.id] } : k)) : profile.kinds,
+    ...(layout ? { layout: { ...profile.layout, ...layout } } : {}),
+  };
 }
 
 // A cross link seen from its target node.

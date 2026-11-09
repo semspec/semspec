@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 The Semspec Authors
-// The state store of the page. 1 store holds the active graph and, for each graph, what the reader did:
+// The state store of the page. 1 store holds the active view and, for each view, what the reader did:
 // scope, depth, walk, filters, selection, view, layout, canvas viewport, open tree groups, table column
 // widths, the dock and the side panel.
 //
-// The store keeps the state in memory, so a switch of the graph restores it. A small adapter writes the
+// The store keeps the state in memory, so a switch of the view restores it. A small adapter writes the
 // state of the workspace to the browser storage, so a reload restores it. The hash of the address
-// links to a graph, a scope and a node.
+// links to a view, a scope and a node. A workspace with no views has 1 view for each graph, with the
+// id of the graph, so the keys of the old state and the old links stay valid.
 import { create } from 'zustand';
-import type { WorkspaceData } from '@semspec/core';
+import { workspaceViews, type ViewFilters, type WorkspaceData } from '@semspec/core';
 import { Core, setProfile, type Filters, type Index, type Model, type VEdge, type Walk } from './core';
 import { LAYOUTS, type LayoutName } from './layouts';
 import { formatLink, parseLink, type LinkValues } from './link';
@@ -34,7 +35,7 @@ const WRITE_DELAY = 200;
 // The key of the table widths before the store held them. The store reads it once, then drops it.
 const OLD_WIDTHS_PREFIX = 'semspec.table-widths.';
 
-// What the reader did in 1 graph.
+// What the reader did in 1 view.
 export interface GraphState {
   scope: Scope;
   depth: number | null;
@@ -61,9 +62,11 @@ export interface GraphState {
 }
 
 export interface PageState {
+  // The id of the active view.
   active: string;
   // A reset of the view adds 1, so the graph view mounts again.
   epoch: number;
+  // The state of each view, by view id.
   graphs: Record<string, GraphState>;
 }
 
@@ -73,12 +76,13 @@ export const useAppStore = create<PageState>(() => ({ active: '', epoch: 0, grap
 
 interface Context {
   key: string;
-  graphs: Map<string, { model: Model; index: Index }>;
+  // The views by view id. Views that share a model share its index.
+  graphs: Map<string, { model: Model; index: Index; graph: string; filters?: ViewFilters }>;
   first: string;
 }
 let ctx: Context | null = null;
 
-// The canvas positions of each graph. They live in memory only. A reload lays out again.
+// The canvas positions of each view. They live in memory only. A reload lays out again.
 const positionStores = new Map<string, { current: Positions }>();
 export function positionsOf(graph: string): { current: Positions } {
   let p = positionStores.get(graph);
@@ -94,11 +98,11 @@ export function positionsOf(graph: string): { current: Positions } {
   return p;
 }
 
-export function freshGraph(model: Model): GraphState {
+export function freshGraph(model: Model, filters: Filters = EMPTY_FILTERS): GraphState {
   return {
     scope: null,
     depth: null,
-    filters: EMPTY_FILTERS,
+    filters,
     view: 'graph',
     selected: null,
     selectedEdge: null,
@@ -204,9 +208,10 @@ function cleanViewport(raw: unknown): Viewport | undefined {
   return isRecord(raw) && finite(raw.x) && finite(raw.y) && finite(raw.zoom) && raw.zoom > 0 ? { x: raw.x, y: raw.y, zoom: raw.zoom } : undefined;
 }
 
-// A stored state of 1 graph, without what the graph no longer has.
-export function cleanGraph(raw: unknown, model: Model, index: Index): GraphState {
-  const out = freshGraph(model);
+// A stored state of 1 view, without what the graph no longer has. Without a stored state, the view
+// starts with its default filters.
+export function cleanGraph(raw: unknown, model: Model, index: Index, defaults?: ViewFilters): GraphState {
+  const out = freshGraph(model, defaults ? cleanFilters(defaults, index) : EMPTY_FILTERS);
   if (!isRecord(raw)) return out;
   const has = (id: string) => index.byId.has(id);
   if (isRecord(raw.scope)) {
@@ -271,19 +276,22 @@ function serialize(state: PageState) {
 // ---------- the load ----------
 
 // Loads the state of a workspace: the stored state, cleaned, then the link of the address.
-// Every graph of the workspace gets a state.
+// Every view of the workspace gets a state.
 export function hydrate(data: WorkspaceData, hash = currentHash()): void {
   const key = storageKey(data);
-  const graphs = new Map(data.graphs.map((g) => [g.id, { model: g.model, index: Core.buildIndex(g.model) }]));
-  ctx = { key, graphs, first: data.graphs[0].id };
+  const indexes = new Map<Model, Index>();
+  const indexOf = (m: Model) => indexes.get(m) ?? indexes.set(m, Core.buildIndex(m)).get(m)!;
+  const views = workspaceViews(data);
+  const graphs = new Map(views.map((v) => [v.id, { model: v.model, index: indexOf(v.model), graph: v.graph, filters: v.filters }]));
+  ctx = { key, graphs, first: views[0].id };
   positionStores.clear();
   const raw = readJson(key);
   const stored = isRecord(raw) && raw.version === STORE_VERSION && isRecord(raw.graphs) ? raw : null;
   const state: Record<string, GraphState> = {};
   let migrated = false;
   const oldKeys = new Set<string>();
-  for (const [id, { model, index }] of graphs) {
-    state[id] = cleanGraph(stored?.graphs && (stored.graphs as Record<string, unknown>)[id], model, index);
+  for (const [id, { model, index, filters }] of graphs) {
+    state[id] = cleanGraph(stored?.graphs && (stored.graphs as Record<string, unknown>)[id], model, index, filters);
     // The widths of the old key move into the store once.
     const oldKey = OLD_WIDTHS_PREFIX + model.profile.project;
     const old = readJson(oldKey);
@@ -319,18 +327,27 @@ function currentHash(): string {
 
 // ---------- the link ----------
 
-// The link values of the active graph.
+// The link values of the active view. The key `graph` holds the id of the view.
 export function linkOf(state: PageState = useAppStore.getState()): LinkValues {
   const g = state.graphs[state.active];
   if (!g) return {};
   return { graph: state.active, scope: g.scope?.type === 'node' ? g.scope.id : undefined, node: g.selected ?? undefined };
 }
 
-// Applies a link. It wins over the stored state. An unknown graph, scope or node is ignored.
+// The id of the view that a link names. A link can name a view, or a graph, which opens in the first
+// view of the graph. An unknown name gives nothing.
+export function viewOfLink(name: string | undefined): string | undefined {
+  if (!ctx || !name) return undefined;
+  if (ctx.graphs.has(name)) return name;
+  for (const [id, v] of ctx.graphs) if (v.graph === name) return id;
+  return undefined;
+}
+
+// Applies a link. It wins over the stored state. An unknown view, scope or node is ignored.
 export function applyLink(link: LinkValues): void {
   if (!ctx) return;
   const state = useAppStore.getState();
-  const id = link.graph && ctx.graphs.has(link.graph) ? link.graph : state.active;
+  const id = viewOfLink(link.graph) ?? state.active;
   const { model, index } = ctx.graphs.get(id)!;
   let g = state.graphs[id];
   setProfile(model.profile);
@@ -404,11 +421,11 @@ export function attachPersistence(): () => void {
   };
 }
 
-// Forgets the stored state of the workspace and starts fresh in every graph.
+// Forgets the stored state of the workspace and starts fresh in every view.
 export function resetStored(): void {
   if (!ctx) return;
   const graphs: Record<string, GraphState> = {};
-  for (const [id, { model }] of ctx.graphs) graphs[id] = freshGraph(model);
+  for (const [id, { model, index, filters }] of ctx.graphs) graphs[id] = freshGraph(model, filters ? cleanFilters(filters, index) : EMPTY_FILTERS);
   positionStores.clear();
   useAppStore.setState((s) => ({ active: ctx!.first, epoch: s.epoch + 1, graphs }));
   if (timer) clearTimeout(timer);
