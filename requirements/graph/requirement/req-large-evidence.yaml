@@ -1,0 +1,25 @@
+id: req-large-evidence
+kind: requirement
+title: Read large evidence files fast
+state: draft
+priority: next
+statement: "Semspec reads large evidence files, such as many test reports, coverage reports and traces, within a time budget, and caches the result by the hash of each file."
+rationale: "Projects keep thousands of tests and coverage files. A load that reads them all again on each request makes serve, check and the MCP server slow."
+capabilities:
+  - cap-evidence
+area:
+  - core
+  - cli
+acceptance:
+  - id: benchmark
+    text: "A benchmark fixture holds a large invented set of reports. CI measures the load time and fails when it grows past a budget that the repository sets."
+    status: open
+  - id: cache
+    text: "Semspec caches the results of each evidence file by its hash, and reads again only the changed files."
+    status: open
+  - id: stream
+    text: "An adapter reads a large file as a stream, so the memory does not grow with the size of the file."
+    status: open
+  - id: native
+    text: "An adapter can be a native program that writes the run record, so a slow format can move to Rust with no change of the core."
+    status: open

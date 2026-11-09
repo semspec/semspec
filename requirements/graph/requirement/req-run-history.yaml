@@ -1,0 +1,25 @@
+id: req-run-history
+kind: requirement
+title: Keep the history of evidence runs
+state: draft
+priority: next
+statement: "Semspec keeps each evidence run with its provenance: the commit, the build, the environment, the run of CI, the agent or person, and the time. The status of a condition is a query over the runs."
+rationale: "A condition can be verified on a branch, not yet on master and not deployed. Only the history of runs can tell these states apart, and show flaky and skipped tests."
+capabilities:
+  - cap-evidence
+area:
+  - core
+  - cli
+acceptance:
+  - id: record
+    text: "Each run is 1 record with the commit, the build, the environment, the id of the CI run, the agent or person, the time and the outcome of each check."
+    status: open
+  - id: query
+    text: "The coverage report takes a commit, a release tag or an environment, and gives the status of each condition at that point."
+    status: open
+  - id: flaky
+    text: "The report names a check that passed and failed on the same commit, and a check that a run skipped."
+    status: open
+  - id: source
+    text: "Each piece of evidence names its source: a test run, a gate, a review or a runtime monitor."
+    status: open

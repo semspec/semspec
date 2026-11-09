@@ -1,0 +1,8 @@
+id: cap-planning
+kind: capability
+title: Roadmap and planning
+state: draft
+priority: later
+statement: "A roadmap builds from the priority, the delivery and the dependencies of the nodes, and links to the tickets of an issue tracker."
+features:
+  - feat-explore

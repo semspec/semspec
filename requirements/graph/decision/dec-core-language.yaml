@@ -1,0 +1,9 @@
+id: dec-core-language
+kind: decision
+title: Keep the core in TypeScript, and add Rust behind language-neutral contracts
+state: draft
+statement: "The core library stays in TypeScript. The profile, the graph, the workspace, the run record and a generated graph each have a JSON Schema. A component in Rust, such as a scanner of code, an adapter for large evidence files or the shell of a desktop app, reads and writes these formats."
+rationale: "The domain model still changes often, and the core runs in the browser page, the command line tool and the MCP server. A port of the core to Rust waits until measurements show the need and the model is stable. The contracts and the test fixtures then make the port mechanical."
+governs:
+  - req-cli-platforms
+  - req-large-evidence

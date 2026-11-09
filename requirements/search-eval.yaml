@@ -39,7 +39,7 @@ questions:
   - { q: where does a node without a parent go in the tree, expect: [req-tree, req-placement] }
   - { q: switch between layered, force and grouped drawing, expect: [req-layouts] }
   - { q: write a formal specification of a condition, expect: [req-verify-models, cap-formal] }
-  - { q: test results change whether a condition is met, expect: [req-verify-conformance, cap-formal] }
+  - { q: test results change whether a condition is met, expect: [req-verify-conformance, cap-formal, cap-evidence] }
   - { q: vector similarity together with keywords, expect: [req-embed-hybrid, cap-embeddings] }
   - { q: which AI model comes with the tool, expect: [req-embed-license, req-embed-provider] }
   - { q: where a fact came from and when it was read, expect: [req-provenance] }
@@ -49,3 +49,7 @@ questions:
   - { q: reject a graph with repeated ids, expect: [req-validate-graph] }
   - { q: give my editor autocomplete for the yaml files, expect: [cap-schemas, req-schema-per-kind] }
   - { q: how does an assistant read the codes and their definitions, expect: [req-mcp-resources] }
+  - { q: how many conditions are verified in each capability, expect: [req-coverage-query, cap-coverage] }
+  - { q: build the domain model from the source code, expect: [req-code-domain-model] }
+  - { q: check a runtime trace against the model, expect: [req-runtime-conformance] }
+  - { q: which tests run the code of an aggregate, expect: [req-code-model-tests] }

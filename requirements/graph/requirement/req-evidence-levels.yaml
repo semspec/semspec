@@ -1,0 +1,24 @@
+id: req-evidence-levels
+kind: requirement
+title: Name the evidence that a condition needs
+state: draft
+priority: next
+statement: "The profile names the levels of evidence that a condition needs, by the kind of its owner or by a tag. A condition is verified only when each needed level has passing evidence."
+rationale: "Some passing unit tests can be enough for a parser rule and not enough for a flow across 2 systems. The status must say that the needed evidence passed, not that some evidence passed."
+capabilities:
+  - cap-evidence
+area:
+  - core
+acceptance:
+  - id: levels
+    text: "The profile declares the levels of evidence, such as unit, integration, end to end, contract, formal model, review and runtime monitor, and maps each check type to 1 level."
+    status: open
+  - id: needs
+    text: "The profile names the needed levels for the conditions of an owner kind, or for the conditions with a tag. A condition can name more levels of its own."
+    status: open
+  - id: status
+    text: "The derived status of a condition is verified only when each needed level has passing evidence. A missing level gives the warn tone and names the level."
+    status: open
+  - id: report
+    text: "The coverage report counts the conditions that miss a needed level, for each level."
+    status: open

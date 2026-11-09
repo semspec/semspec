@@ -43,7 +43,7 @@ describe('semspec mcp --workspace', () => {
     expect(client.getServerVersion()?.name).toBe('semspec');
     expect(client.getInstructions()).toContain('schema');
     const tools = await client.listTools();
-    expect(tools.tools.map((t) => t.name)).toEqual(['schema', 'search', 'get', 'trace', 'walk', 'slice', 'impact', 'gaps', 'validate']);
+    expect(tools.tools.map((t) => t.name)).toEqual(['schema', 'search', 'get', 'trace', 'walk', 'slice', 'impact', 'gaps', 'coverage', 'validate']);
     for (const t of tools.tools) expect(t.inputSchema.type).toBe('object');
 
     const resources = await client.listResources();
@@ -113,6 +113,18 @@ describe('semspec mcp --workspace', () => {
     const vocab = JSON.parse((vocabularies.contents[0] as { text: string }).text);
     expect(vocab.segment.concepts[0]).toMatchObject({ code: 'retail', label: 'Retail' });
     expect(Object.keys(vocab)).toContain('status');
+  });
+
+  it('answers the tool coverage with counts, groups, a list and a gate', { timeout: 60000 }, async () => {
+    const r = await call(shared, 'coverage', { format: 'json', group: 'epic', list: ['fail'], gate: ['bad'] });
+    expect(r.json.total).toMatchObject({ conditions: 2 });
+    expect(r.json.graphs.map((g: any) => g.graph)).toEqual(['req', 'domain']);
+    expect(r.json.graphs[0].groups.map((g: any) => g.key)).toEqual(['epic-checkout']);
+    expect(r.json.list.items.map((i: any) => i.id)).toEqual(['story-pay-by-card#charged']);
+    expect(r.json.gate).toMatchObject({ pass: false });
+    const text = await call(shared, 'coverage', { graph: 'req' }, true);
+    expect(text.text).toContain('| Total | 2 |');
+    expect((await call(shared, 'coverage', { scope: 'epic-checkout' })).text).toContain('needs "graph"');
   });
 
   it('returns an error that names an unknown id, graph, tool or resource', { timeout: 60000 }, async () => {

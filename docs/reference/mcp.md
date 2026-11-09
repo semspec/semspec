@@ -5,7 +5,7 @@ title: MCP server
 description: The command semspec mcp, its tools and its resources.
 order: 9
 related: [cli, workspace, provenance, vocabularies]
-documents: [req-mcp-serve, req-mcp-read-tools, req-mcp-check-tools, req-mcp-resources, req-navigate-walk, req-navigate-search, req-search-keyword, req-search-synonyms, req-search-context, req-context-slice, req-embed-hybrid]
+documents: [req-mcp-serve, req-mcp-read-tools, req-mcp-check-tools, req-mcp-resources, req-navigate-walk, req-navigate-search, req-search-keyword, req-search-synonyms, req-search-context, req-context-slice, req-embed-hybrid, req-coverage-query]
 ---
 ## Command
 
@@ -288,6 +288,41 @@ With a `scope` and a profile with a status, the answer also has `rollup`.
 
 ```json
 {"graph":"req","scope":null,"nodes":24,"counts":{"status":2,"uncheckedParts":1,"withoutSource":0,"unplaced":2,"unresolvedLinks":0,"brokenCrossLinks":0,"missingDeliverables":0},"status":[{"id":"story-loose-child","kind":"story","title":"Loose child","status":"fail","tone":"bad"}],"uncheckedParts":[{"id":"story-pay-by-card#charged","kind":"scenario","title":"Charged","owner":"story-pay-by-card"}],"withoutSource":[],"unplaced":[{"id":"story-loose","kind":"story","title":"Loose"}],"unresolvedLinks":[],"brokenCrossLinks":[],"missingDeliverables":[]}
+```
+
+### coverage
+
+Reports the status of the conditions in a selection of nodes. A condition is a node of a kind in the `parts` of the profile. The command `semspec coverage` takes the same inputs and gives the same answer. See [Command line](cli.md#coverage).
+
+| Input | Meaning |
+| --- | --- |
+| `graph` | Optional. The id of 1 graph. The default is all graphs, unlike the other tools. |
+| `scope` | Optional. A node id. The selection covers this node and its scope. With several graphs, it needs `graph`. |
+| `kinds` | Optional. Keep the conditions that have one of these kinds, or that are below a node of one of these kinds. |
+| `lifecycles` | Optional. Keep the conditions whose owner has one of these lifecycle states. |
+| `deliveries` | Optional. Keep the conditions that have one of these deliveries, or that are below a node with one of them. |
+| `statuses` | Optional. Keep the conditions with one of these status values. The empty text selects the conditions with no status. |
+| `markers` | Optional. Keep the conditions that have one of these provenance markers, or that are below a node with one of them. |
+| `fields` | Optional. An object with the values of each field filter of the profile, for example `{"area": ["core", "cli"]}`. |
+| `group` | Optional. A hierarchy kind id or a field. The counts get 1 row for each node of the kind or each value of the field. |
+| `list` | Optional. Status values, `no-status` or `no-check`. The answer lists the conditions that match one of them. |
+| `limit` | Optional. The most conditions in the list. The default is 50. |
+| `gate` | Optional. A list of tones: `good`, `warn` or `bad`. |
+| `format` | `markdown` (the default) or `json`. |
+
+The values of 1 filter are OR. The filters are AND. A filter works as in the explorer, with one difference: a condition has no kind, delivery or marker of its own, so it takes them from the nodes above it.
+
+The answer has these parts:
+
+- `total`: the counts of the selection. `conditions` is the number of conditions. `statuses` has 1 entry for each status value of the profile, with `count` and `percent`. `noStatus` and `noCheck` have `count` and `percent`. The percent is the share of the conditions in the selection.
+- `graphs`: the same counts for each graph. With `group`, each graph has `groups`, a row for each group with the same counts. The percent in a group row is the share of the conditions in that group.
+- `list`: with `list`. It has `statuses`, `limit`, `total` and `items`. An item has `graph`, `id`, `owner`, `status`, `tone`, `text` and `checks`. When the list is longer than `limit`, `truncated.list` says how many items the answer cuts.
+- `gate`: with `gate`. It has `tones`, `pass` and `failing`. `failing` has an item for each condition whose status has one of the tones. It is never cut.
+
+A group by a hierarchy kind has a row for each node of the kind that has a condition in the selection. A condition counts in each group of its owner, and a node counts the conditions of all nodes below it. A condition counts once in the total. With several graphs, the total adds the counts of a status value that the profiles share. A graph with no such group kind or field has no group rows.
+
+```json
+{"scope":null,"filters":{},"total":{"conditions":2,"statuses":[{"value":"pass","label":"Pass","tone":"good","count":1,"percent":50},{"value":"partial","label":"Partial","tone":"warn","count":0,"percent":0},{"value":"fail","label":"Fail","tone":"bad","count":1,"percent":50}],"noStatus":{"count":0,"percent":0},"noCheck":{"count":1,"percent":50}},"graphs":[{"graph":"req","label":"Requirements","conditions":2,"statuses":[{"value":"pass","label":"Pass","tone":"good","count":1,"percent":50},{"value":"partial","label":"Partial","tone":"warn","count":0,"percent":0},{"value":"fail","label":"Fail","tone":"bad","count":1,"percent":50}],"noStatus":{"count":0,"percent":0},"noCheck":{"count":1,"percent":50}}]}
 ```
 
 ### validate
