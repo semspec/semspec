@@ -94,7 +94,7 @@ acceptance:
         file: test/spec.test.ts
         name: "links to the generated document of another graph and writes plain text otherwise"
   - id: columns
-    text: "For shape table and shape traceability, the option columns names the columns and their order. A cell shows a short value in 1 line, and a long text is cut with an ellipsis."
+    text: "For shape table and shape traceability, the option columns names the columns and their order. A cell shows the full text in 1 line, and never cuts it."
     status: verified
     tests:
       - type: unit
@@ -102,7 +102,7 @@ acceptance:
         name: "sets the columns of a table and of a traceability table"
       - type: unit
         file: test/spec.test.ts
-        name: "cuts a long cell with an ellipsis, in 1 line, and escapes pipes and Markdown"
+        name: "shows the full text of a long cell in 1 line, and escapes pipes and Markdown"
       - type: unit
         file: test/spec.test.ts
         name: "escapes Markdown characters and table pipes in values"
