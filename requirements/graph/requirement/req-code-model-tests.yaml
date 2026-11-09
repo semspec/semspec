@@ -1,0 +1,28 @@
+id: req-code-model-tests
+kind: requirement
+title: Show the tests of each node of a domain model from code
+state: draft
+priority: later
+statement: "For a graph from code, Semspec maps a coverage report and a test result file to the file and the symbol of each node. Each node shows the tests that run its code and their outcome in the last run."
+rationale: "A dynamic view of the domain model shows which aggregate methods, events and commands the tests exercise, and whether those tests pass."
+capabilities:
+  - cap-evidence
+area:
+  - core
+  - cli
+acceptance:
+  - id: members
+    text: "A rule of the domain schema can make nodes for the methods of a class, such as a command method of an aggregate root, each with its line range."
+    status: open
+  - id: coverage
+    text: "An adapter reads an Istanbul coverage JSON file, as Vitest writes it with the v8 or the istanbul provider, and marks a node as run when a line in its range ran."
+    status: open
+  - id: per-test
+    text: "To name the tests of a node, the adapter reads 1 coverage file for each test file. The answer states the grain: a test file, not a single test, unless the coverage file names the test."
+    status: open
+  - id: results
+    text: "An adapter reads the JSON report of Vitest and gives the outcome of each test: passed, failed or skipped."
+    status: open
+  - id: status
+    text: "The derived status of a node is verified when tests run its code and all of them pass, failed when 1 of them fails, and unverified when no test runs its code. The status colouring shows it."
+    status: open

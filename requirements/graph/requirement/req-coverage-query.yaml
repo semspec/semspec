@@ -1,0 +1,105 @@
+id: req-coverage-query
+kind: requirement
+title: Report coverage by filter
+state: draft
+priority: now
+statement: "The MCP tool coverage and the command semspec coverage report the status of the conditions in a selection of nodes, grouped by a field or a kind."
+rationale: "Each repository that uses a requirement graph has its own script for coverage. The filters of the explorer exist only in the browser, and the tool gaps limits a scope by 1 node only."
+capabilities:
+  - cap-coverage
+area:
+  - core
+  - cli
+  - harness
+acceptance:
+  - id: same-answer
+    text: "The MCP tool coverage and the command semspec coverage take the same inputs and give the same answer, as JSON or as Markdown."
+    status: verified
+    tests:
+      - type: unit
+        file: test/coverage.test.ts
+        name: gives the same answer through the tool and the command, as JSON and as Markdown
+      - type: unit
+        file: test/mcp.test.ts
+        name: answers the tool coverage with counts, groups, a list and a gate
+  - id: filters
+    text: "The selection takes the filters of the explorer: a scope node, kinds, lifecycles, deliveries, status values, provenance markers and the values of each field filter of the profile. The values of 1 filter are OR, and the filters are AND. A condition takes a filter that it has no value for from any node above it, and each filter can match a different node above it."
+    status: verified
+    tests:
+      - type: unit
+        file: test/coverage.test.ts
+        name: selects with a scope node and with each filter of the explorer
+      - type: unit
+        file: test/coverage.test.ts
+        name: ORs the values of 1 filter and ANDs the filters
+      - type: unit
+        file: test/coverage.test.ts
+        name: refuses an unknown field filter, an unknown graph and a scope without a graph in a workspace
+      - type: unit
+        file: test/coverage.test.ts
+        name: reads the filters of the command from the options
+      - type: unit
+        file: test/coverage.test.ts
+        name: matches each inherited filter on its own node above a condition
+  - id: counts
+    text: "The answer gives the number of conditions for each status value of the profile, the number with no status and the number with no check. Next to each number, it gives the percentage of the conditions in the selection, and in a group row the percentage of the conditions in that group."
+    status: verified
+    tests:
+      - type: unit
+        file: test/coverage.test.ts
+        name: counts the conditions for each status value, with no status and with no check, and gives percentages
+      - type: unit
+        file: test/coverage.test.ts
+        name: groups by the nodes of a hierarchy kind and counts a condition in each group of its owner
+  - id: group
+    text: "A group option gives 1 row of counts for each value of a field, or for each node of a hierarchy kind. A condition counts in each group of its owner, and a hierarchy node counts the conditions of all nodes below it. A scope limits the conditions, not the groups, so a group node above the scope still gets its row."
+    status: verified
+    tests:
+      - type: unit
+        file: test/coverage.test.ts
+        name: groups by the nodes of a hierarchy kind and counts a condition in each group of its owner
+      - type: unit
+        file: test/coverage.test.ts
+        name: groups by the values of a field
+      - type: unit
+        file: test/coverage.test.ts
+        name: refuses a group that is no hierarchy kind and no field
+      - type: unit
+        file: test/coverage.test.ts
+        name: gives a row to a group node above the scope
+  - id: list
+    text: "A list option returns the conditions of 1 or more status values, each with its owner, its text and its checks, cut at a limit that the answer names."
+    status: verified
+    tests:
+      - type: unit
+        file: test/coverage.test.ts
+        name: lists the conditions of chosen status values with owner, text and checks
+      - type: unit
+        file: test/coverage.test.ts
+        name: cuts the list at the limit and names the limit
+  - id: workspace
+    text: "In a workspace, the selection covers 1 graph or all graphs, and the answer gives the counts of each graph and the total."
+    status: verified
+    tests:
+      - type: unit
+        file: test/coverage.test.ts
+        name: counts each graph and the total in a workspace
+      - type: unit
+        file: test/mcp.test.ts
+        name: answers the tool coverage with counts, groups, a list and a gate
+  - id: derived-status
+    text: "A node can have an authored status and a derived status. When the profile derives a status from evidence, the answer counts both, counts the conditions where the 2 differ, and counts the stale conditions apart. A filter and a group option select which of the 2 they use."
+    status: open
+  - id: gate
+    text: "With the gate option, the command is a gate for a selection: it exits with a non-zero code when the selection has a condition whose status value has a tone that the option names, and it names each such condition. CI, a hook or a test runs it next to the other gates. An unknown option or an option with no value is a wrong use, with exit code 2, so a typing error cannot pass the gate."
+    status: verified
+    tests:
+      - type: unit
+        file: test/coverage.test.ts
+        name: fails the gate for a condition with a tone and names it
+      - type: unit
+        file: test/coverage.test.ts
+        name: exits with 1 from the command when the gate fails and with 0 when it passes
+      - type: unit
+        file: test/coverage.test.ts
+        name: exits with 2 for an unknown option and for an option with no value

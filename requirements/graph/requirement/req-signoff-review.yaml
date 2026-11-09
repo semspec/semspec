@@ -24,3 +24,6 @@ acceptance:
   - id: read-only
     text: "A page built as 1 HTML file shows the sign-off state of each node and has no Review actions, because it cannot write a file."
     status: open
+  - id: fit
+    text: "For each link from a condition to a check, a person or an agent records a fit verdict: decides, partial or unrelated. The verdict holds a fingerprint of the condition and of the check, and goes stale when either changes."
+    status: open

@@ -1,0 +1,8 @@
+id: cap-views
+kind: capability
+title: Views and diagrams
+state: draft
+priority: later
+statement: "A view node shows a set of nodes as a LikeC4 view or a Mermaid diagram. A box of a view opens its node."
+features:
+  - feat-explore

@@ -5,7 +5,7 @@ title: Gates
 description: Block a change that breaks the graph with semspec check, an agent hook, a pre-commit hook and a CI step.
 order: 8
 related: [cli, profile, specs]
-documents: [feat-harness, cap-gate, req-gate-check, req-gate-hooks, req-deliverables, req-spec-check]
+documents: [feat-harness, cap-gate, req-gate-check, req-gate-hooks, req-deliverables, req-spec-check, req-coverage-query]
 ---
 The command `semspec check` reads the graph and the profile with the rules of `build`. It exits with a code that a hook or a CI step can use. The examples on this page are copies for your project. Semspec installs none of them.
 
@@ -55,6 +55,17 @@ gates:
 | `missing-deliverable` | A node that misses a deliverable that the profile key `deliverables` states for its kind. One finding for each missing item. See [The profile](../reference/profile.md#deliverables). |
 
 These are the same gaps as the MCP tool `gaps`. `semspec deliverables` lists the missing deliverables with no gate. In a workspace, each graph uses the `gates` of its own profile.
+
+## The coverage gate
+
+`semspec coverage --gate <tone>` is a gate for a selection of nodes. It exits with 1 when the selection has a condition whose status value has one of the tones, and it names each such condition. The selection takes the scope and the filters of the explorer, so a gate can cover one capability, one area or one delivery.
+
+```
+semspec coverage --graph <graph> --profile <profile> --scope <id> --gate bad
+semspec coverage --graph <graph> --profile <profile> --field area=core --status open --gate bad,warn
+```
+
+The exit code is 0 when no condition has such a tone, 1 when the gate fails, and 2 for a wrong use of the command. A condition with no status has no tone, so it never fails the gate. Run the command next to `semspec check` in a hook or a CI step. See [Command line](../reference/cli.md#coverage).
 
 ## Agent hook
 

@@ -1,0 +1,46 @@
+id: req-code-domain-model
+kind: requirement
+title: Build a domain model graph from the code
+state: draft
+priority: next
+statement: "A source adapter reads the code of a project with a domain schema that the project declares, and gives 1 graph of the workspace. Each node links to its file and symbol. The adapter caches the result by the hashes of the files."
+rationale: "A team that copies aggregates, events and commands from the code into YAML nodes gets a copy that drifts. Most of the domain model is already in the code. The graph must come from the code, and only the meaning of a term comes from the vocabulary."
+capabilities:
+  - cap-foreign-models
+area:
+  - core
+  - cli
+acceptance:
+  - id: schema
+    text: "The project declares the kinds of the domain schema. Each kind has a rule that finds its classes: file globs, an optional base class and an optional name pattern. TypeScript is the first language."
+    status: open
+  - id: exclude
+    text: "The schema has exclude globs, such as the folders of test fixtures, test files and generated files. The schema can name files that the adapter reads only for facts, such as a generated registry of the routes of commands, and that give no node."
+    status: open
+  - id: contexts
+    text: "A file glob can capture a named part of the path, such as the context in packages/{context}/src. The adapter makes 1 node for each captured value and places the classes of that path under it. A new folder that matches the glob gives a new context node with no change of the schema."
+    status: open
+  - id: nodes
+    text: "The adapter makes 1 node for each class that a rule finds, with the kind, an id from a template of the profile, the title, the file and the symbol. A class that 2 rules find is an error that names the class and the rules."
+    status: open
+  - id: relations
+    text: "The project declares relations from facts of the code: a class imports, extends or implements a class, has a field of a type, makes an instance of a class, makes an instance as the argument of a named call such as this.apply, passes a member of a class to a named call such as subscribe(X.eventType), and a method with a parameter of 1 type calls a method of another type, also inside a callback. A relation can also be a path of facts, such as a query handler, its port, the implementation of the port and the reducer of the projection. Examples are an aggregate emits an event, an aggregate handles a command, an aggregate contains a value object, a saga reacts to an event and issues a command, and a query reads a projection."
+    status: open
+  - id: profile
+    text: "The generated graph uses a normal profile, so its kinds, parents rules, groups, grouped layout, filters and views work as for a graph of files."
+    status: open
+  - id: source-link
+    text: "Each generated node and edge names the file and the symbol it comes from, and an external link template can open them."
+    status: open
+  - id: terms
+    text: "The project can join a generated node to a term of a vocabulary graph, by name or by an explicit map. The details show the definition of the term, and the adapter copies no definition into the node."
+    status: open
+  - id: cache
+    text: "The adapter caches the graph with the hash of each file it read. build, serve, check and the MCP server use the cache, and read again only the changed files. A command generates the graph on demand."
+    status: open
+  - id: report
+    text: "The check reports a rule that finds no class, and a relation that names a class no rule found."
+    status: open
+  - id: fixture
+    text: "A fixture of TypeScript code with aggregates, value objects, events, commands, a query, a projection and a saga has a hand-written expected graph, and the generated graph equals it. The fixture has these shapes: 1 command handler class for each context with 1 method for each command, events applied with this.apply(new Event()), a saga that subscribes to an event type and makes a command, and a query handler that reads a projection through a port."
+    status: open

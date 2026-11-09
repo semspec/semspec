@@ -1,0 +1,24 @@
+id: req-cli-platforms
+kind: requirement
+title: Run the command line tool on macOS, Windows and Linux
+state: draft
+priority: next
+statement: "The command line tool and the MCP server run on macOS, Windows and Linux, on x64 and arm64."
+capabilities:
+  - cap-packages
+area:
+  - cli
+  - repository
+acceptance:
+  - id: ci-matrix
+    text: "CI runs the tests on macOS, Windows and Linux."
+    status: open
+  - id: paths
+    text: "Paths in the page data, the source index, the evidence keys and the messages use the separator /, on each platform."
+    status: open
+  - id: watch
+    text: "The live reload of serve works on each platform."
+    status: open
+  - id: binary
+    text: "A release can ship the command line tool as 1 file for each platform, with no Node installed."
+    status: open

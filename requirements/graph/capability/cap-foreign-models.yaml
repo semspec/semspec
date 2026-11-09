@@ -1,0 +1,8 @@
+id: cap-foreign-models
+kind: capability
+title: Models of other tools as graphs
+state: draft
+priority: later
+statement: "A source adapter reads the model of another tool, such as a LikeC4 model or a ReqIF file, as 1 graph of the workspace. Requirements link to its nodes."
+features:
+  - feat-connect

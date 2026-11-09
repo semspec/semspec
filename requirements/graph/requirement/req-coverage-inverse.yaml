@@ -1,0 +1,22 @@
+id: req-coverage-inverse
+kind: requirement
+title: Report what no node claims
+state: draft
+priority: next
+statement: "The coverage report also lists the artifacts that no node of the graph claims, for each artifact type that the profile declares."
+rationale: "A report of coverage in both directions finds work that the forward report hides. An unclaimed source file, model element or test is either an undocumented rule or a helper, and the list is a worklist."
+capabilities:
+  - cap-coverage
+area:
+  - core
+  - cli
+acceptance:
+  - id: types
+    text: "The profile declares artifact types, each with a set of files and a rule that finds the artifacts in them, such as tests, source files or the elements of a model."
+    status: open
+  - id: unclaimed
+    text: "The report gives, for each artifact type, the number of claimed artifacts and the list of unclaimed artifacts."
+    status: open
+  - id: readiness
+    text: "The profile can define a readiness rule from lifecycle, delivery, checks and status, and the report gives the ready members of each hierarchy node."
+    status: open
