@@ -667,6 +667,10 @@
                   "type": "string"
                 },
                 "description": "A label for \"<tag>.<key>\" and for \"<tag>\". A missing label falls back to the tag and the key as written."
+              },
+              "linkKey": {
+                "type": "string",
+                "description": "An inner key whose value is a URL. The value links the line of its entry and gives no line of its own."
               }
             }
           },

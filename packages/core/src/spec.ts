@@ -10,7 +10,7 @@ import { gapLists, plainFields, type GraphIndex } from './agent.js';
 import { applyFilters, computeScope, statusOf } from './explore.js';
 import { getPath, kindLabel, kindsWithRole } from './profile.js';
 import { provenanceOf } from './provenance.js';
-import { taggedLines } from './tagged.js';
+import { taggedLines, type TaggedLine, type TaggedNode } from './tagged.js';
 import { conceptOf, fieldLabel, schemeOfField, sortConcepts } from './vocabulary.js';
 import {
   SPEC_OPTIONS,
@@ -317,10 +317,35 @@ function idRef(c: Ctx, n: VNode): string {
   return href ? `[${code(n.id)}](${href})` : code(n.id);
 }
 
-function valueLabel(p: Profile, field: string, value: unknown): string {
+// The first node of any graph of the run that has the id, the graph of the node first.
+const findNode = (c: Ctx, id: string): TaggedNode | undefined => {
+  for (const g of [c.s.g, ...c.graphs.filter((x) => x !== c.s.g && x.id !== c.s.g.id)]) {
+    const n = g.index.byId.get(id);
+    if (n) return { graph: g.id, id, title: n.title || id };
+  }
+  return undefined;
+};
+
+const isObjectList = (value: unknown): value is unknown[] => Array.isArray(value) && value.every((x) => typeof x === 'object' && x !== null && !Array.isArray(x));
+
+function taggedOf(c: Ctx, field: string, value: unknown[]): TaggedLine[][] {
+  const tagged = (profileOf(c).details?.taggedLists ?? []).find((t) => t.field === field);
+  return value.map((x) => taggedLines(x, tagged?.labels, { linkKey: tagged?.linkKey, resolve: (id) => findNode(c, id) }));
+}
+
+// The Markdown of a tagged list: a link for the address of a line, and a link to the anchor of a node.
+function taggedMarkdown(c: Ctx, field: string, value: unknown[]): string {
+  return taggedOf(c, field, value)
+    .flat()
+    .map((l) => (l.node ? `${esc(l.label)}: ${nodeRef(c, l.node.graph, l.node.id)}` : l.href ? markdownLink({ label: l.text, url: l.href }) : esc(l.text)))
+    .join('; ');
+}
+
+function valueLabel(p: Profile, field: string, value: unknown, c?: Ctx): string {
   if (Array.isArray(value)) {
+    if (c && isObjectList(value)) return taggedOf(c, field, value).flat().map((l) => l.text).join('; ');
     const tagged = (p.details?.taggedLists ?? []).find((t) => t.field === field);
-    if (value.every((x) => typeof x === 'object' && x !== null && !Array.isArray(x))) return value.map((x) => taggedLines(x, tagged?.labels).join('; ')).join('; ');
+    if (isObjectList(value)) return value.map((x) => taggedLines(x, tagged?.labels, { linkKey: tagged?.linkKey }).map((l) => l.text).join('; ')).join('; ');
     return value.map((x) => valueLabel(p, field, x)).join(', ');
   }
   if (typeof value === 'object' && value !== null) return JSON.stringify(value);
@@ -374,7 +399,7 @@ function fieldLines(c: Ctx, n: VNode): string[] {
     const st = statusOf(c.s.g.index, n.id);
     if (st.total) lines.push(`- ${esc(p.status.label)}: ${esc(statusLabelOf(p, st.value))}`);
   }
-  for (const [field, value] of Object.entries(plainFields(p, n))) if (filled(value)) lines.push(`- ${esc(fieldTitle(p, field))}: ${esc(valueLabel(p, field, value))}`);
+  for (const [field, value] of Object.entries(plainFields(p, n))) if (filled(value)) lines.push(`- ${esc(fieldTitle(p, field))}: ${isObjectList(value) ? taggedMarkdown(c, field, value) : esc(valueLabel(p, field, value))}`);
   return lines;
 }
 
@@ -530,7 +555,9 @@ function renderTable(c: Ctx, ids: string[]): string[] {
       else if (col === 'parent') cell = n.parents[0] ? nodeRef(c, c.s.g.id, n.parents[0]) : '';
       else {
         const v = getPath(n.d, col);
-        cell = filled(v) ? esc(valueLabel(p, col, v)) : '';
+        // A tagged list keeps its links in a table cell, as in a list. Its Markdown is already escaped.
+        if (Array.isArray(v) && isObjectList(v)) cell = taggedMarkdown(c, col, v);
+        else cell = filled(v) ? esc(valueLabel(p, col, v, c)) : '';
       }
       return (i === 0 ? anchorTag(c, id) : '') + cell;
     });
