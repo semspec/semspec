@@ -1,8 +1,6 @@
 id: req-node-source
 kind: requirement
 title: Show the source file of a node
-state: draft
-priority: now
 statement: "The details panel has a Source section with the path and the text of the file that holds the node, as it is written."
 rationale: "The profile shows only some fields of a node. A person who reviews a draft wants to read the whole file and know where it is."
 capabilities:

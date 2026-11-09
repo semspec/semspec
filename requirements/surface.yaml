@@ -18,6 +18,7 @@ cli-command:
   version: req-build-info
   export: req-export-rdf-cypher
 cli-flag:
+  "--sources": req-node-source
   "--graph": req-mcp-serve
   "--profile": req-mcp-serve
   "--exclude": req-exclude-patterns
@@ -69,6 +70,8 @@ profile-key:
   verification: req-test-record
   vocabularies: req-vocabularies
 workspace-key:
+  views: req-workspace-views
+  sourceRoot: req-node-source
   graphs: req-workspace-file
   search: req-embed-provider
 site-page:
@@ -77,6 +80,7 @@ site-page:
   docs: req-site-generated
   doc: req-site-generated
 app-control:
+  Views: req-workspace-views
   Graph: req-graph-view
   Cards: req-cards-table
   Table: req-cards-table

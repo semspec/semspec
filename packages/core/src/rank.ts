@@ -84,7 +84,8 @@ function pieces(index: Index, n: VNode): Piece[] {
   const statementWeight = weight('statement', DEFAULT_WEIGHT.statement);
   out.push([n.statement, statementWeight]);
   for (const f of P.fields.statement) for (const t of textsOf(n.d[f])) out.push([t, weight(f, statementWeight)]);
-  out.push([n.title, titleWeight]);
+  // A title that the profile does not hold comes from the id, and the id already counts. It does not count twice.
+  if (P.fields.title.some((f) => textsOf(n.d[f]).length)) out.push([n.title, titleWeight]);
   for (const f of P.fields.title) for (const t of textsOf(n.d[f])) out.push([t, weight(f, titleWeight)]);
   out.push([n.sub, weight('sub', DEFAULT_WEIGHT.sub)]);
   const partWeight = weight('parts', DEFAULT_WEIGHT.parts);

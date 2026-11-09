@@ -98,6 +98,30 @@ describe('searchGraphs', () => {
   });
 });
 
+describe('generated titles', () => {
+  const profile = {
+    project: 'Mini',
+    source: { nodes: 'nodes', id: 'id', kind: 'kind' },
+    fields: { title: ['title'], statement: ['text'] },
+    lifecycle: { field: 'state', fallback: 'live' },
+    kinds: [
+      { id: 'item', label: 'Item', plural: 'items', prefix: 'item-', role: 'hierarchy', color: { light: '#222222', dark: '#dddddd' }, chips: [] },
+      { id: 'step', label: 'Step', plural: 'steps', role: 'part', color: { light: '#222222', dark: '#dddddd' }, chips: [] },
+    ],
+    edges: { step: { labels: ['Step of', 'Has step'], down: true } },
+    parts: [{ kind: 'step', owner: 'item', field: 'steps', id: 'id', text: 'text', edge: 'step' }],
+  };
+  it('counts a title that comes from the id once, as the id, and an authored title again', () => {
+    const model = buildModel({ nodes: [{ id: 'item-a', kind: 'item', title: 'Alpha', steps: [{ id: 'edit', text: 'Runs again on a change.' }] }] } as Graph, profile as never);
+    const rank = rankIndexOf(buildIndex(model));
+    const tf = (id: string, word: string) => rank.docs[rank.ids.indexOf(id)].tf.get(word);
+    // The condition has no title of its own. Its title "Edit" comes from its id and counts once.
+    expect(tf('item-a#edit', 'edit')).toBe(2);
+    // The item has the authored title "Alpha", which counts with the weight of a title.
+    expect(tf('item-a', 'alpha')).toBeGreaterThanOrEqual(3);
+  });
+});
+
 describe('synonyms', () => {
   it('widens the query with the alt labels of a concept', () => {
     // The glossary vocabulary gives the code "replaced" the alt label "superseded". No node holds that word.

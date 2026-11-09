@@ -1,8 +1,6 @@
 id: req-serve-live
 kind: requirement
 title: Reload the page when a file changes
-state: draft
-priority: now
 statement: "The serve command watches the files of the graph and pushes a reload to each open page. The page reads the new data and keeps its view, scope, selection, layout and filters."
 rationale: "A person edits draft nodes while the page is open. A manual reload on each save breaks the work."
 capabilities:

@@ -53,3 +53,10 @@ acceptance:
       - type: unit
         file: test/search.test.ts
         name: returns an empty list for a query with no match, not an error
+  - id: generated-title
+    text: "A title that Semspec makes from the id of a node counts once, as the id. It does not count again with the weight of a title, so a short generated title does not outrank an authored text."
+    status: verified
+    tests:
+      - type: unit
+        file: test/search.test.ts
+        name: counts a title that comes from the id once, as the id, and an authored title again

@@ -46,7 +46,7 @@ questions:
   - { q: which AI model comes with the tool, expect: [req-embed-license, req-embed-provider] }
   - { q: where a fact came from and when it was read, expect: [req-provenance] }
   - { q: the error says which file holds the bad data, expect: [req-name-bad-file] }
-  - { q: refresh the page when I edit the files, expect: [req-serve] }
+  - { q: refresh the page when I edit the files, expect: [req-serve, req-serve-live] }
   - { q: pinch to zoom on a touch screen, expect: [req-phone-touch] }
   - { q: reject a graph with repeated ids, expect: [req-validate-graph] }
   - { q: give my editor autocomplete for the yaml files, expect: [cap-schemas, req-schema-per-kind] }
